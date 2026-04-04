@@ -1,0 +1,67 @@
+enum question_type {
+    MCQ
+    TRUE_FALSE
+    SHORT_ANSWER
+}
+
+model Quiz {
+    id         String   @id @default(uuid())
+    lesson_id  String
+    lesson     Lesson   @relation(fields: [lesson_id], references: [id])
+    title      String
+    pass_score Int      @default(70)
+    time_limit Int?
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    questions Question[]
+    attempts  QuizAttempt[]
+}
+
+model Question {
+    id            String        @id @default(uuid())
+    quiz_id       String
+    quiz          Quiz          @relation(fields: [quiz_id], references: [id])
+    content       String
+    type          question_type
+    points        Int           @default(1)
+    order         Int
+    sample_answer String?
+
+    options Option[]
+    answers AttemptAnswer[]
+}
+
+model Option {
+    id          String   @id @default(uuid())
+    question_id String
+    question    Question @relation(fields: [question_id], references: [id])
+    content     String
+    is_correct  Boolean  @default(false)
+    order       Int
+}
+
+model QuizAttempt {
+    id           String   @id @default(uuid())
+    user_id      String
+    user         User     @relation(fields: [user_id], references: [id])
+    quiz_id      String
+    quiz         Quiz     @relation(fields: [quiz_id], references: [id])
+    score        Float?
+    is_passed    Boolean?
+    submitted_at DateTime @default(now())
+
+    answers AttemptAnswer[]
+}
+
+model AttemptAnswer {
+    id            String      @id @default(uuid())
+    attempt_id    String
+    attempt       QuizAttempt @relation(fields: [attempt_id], references: [id])
+    question_id   String
+    question      Question    @relation(fields: [question_id], references: [id])
+    answer        String
+    is_correct    Boolean?
+    ai_feedback   String?
+    points_earned Float?
+}

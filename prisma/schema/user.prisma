@@ -1,0 +1,52 @@
+enum userRole {
+    STUDENT
+    ADMIN
+    TEACHER
+}
+
+model User {
+    id             String           @id @default(uuid())
+    name           String
+    email          String           @unique
+    password_hash  String
+    role           userRole
+    created_at     DateTime         @default(now())
+    updated_at     DateTime         @updatedAt
+    avatar         String?
+    refresh_tokens RefreshToken[]
+    courses        Course[]
+    lessonProgress LessonProgress[]
+    enrollments    Enrollment[]
+    attempts       QuizAttempt[]
+}
+
+model RefreshToken {
+    id         String   @id @default(uuid())
+    token      String   @unique
+    user_id    String
+    user       User     @relation(fields: [user_id], references: [id])
+    created_at DateTime @default(now())
+    expires_at DateTime
+}
+
+model Enrollment {
+    id          String   @id @default(uuid())
+    user_id     String
+    user        User     @relation(fields: [user_id], references: [id])
+    course_id   String
+    course      Course   @relation(fields: [course_id], references: [id])
+    enrolled_at DateTime @default(now())
+
+    @@unique([user_id, course_id])
+}
+
+model LessonProgress {
+    id              String    @id @default(uuid())
+    user_id         String
+    user            User      @relation(fields: [user_id], references: [id])
+    lesson_id       String
+    lesson          Lesson    @relation(fields: [lesson_id], references: [id])
+    is_completed    Boolean   @default(false)
+    last_watched_at DateTime?
+    updated_at      DateTime  @updatedAt
+}

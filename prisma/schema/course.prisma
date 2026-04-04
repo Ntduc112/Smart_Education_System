@@ -1,0 +1,54 @@
+enum course_status {
+    DRAFT
+    PUBLISHED
+}
+
+model Category {
+    id          String   @id @default(uuid())
+    name        String
+    description String
+    created_at  DateTime @default(now())
+    updated_at  DateTime @updatedAt
+    courses     Course[]
+}
+
+model Course {
+    id            String        @id @default(uuid())
+    title         String
+    description   String
+    thumbnail     String
+    price         Decimal
+    level         String
+    status        course_status
+    created_at    DateTime      @default(now())
+    updated_at    DateTime      @updatedAt
+    instructor_id String
+    instructor    User          @relation(fields: [instructor_id], references: [id])
+    category_id   String
+    category      Category      @relation(fields: [category_id], references: [id])
+    sections      Chapter[]
+    enrollments   Enrollment[]
+}
+
+model Chapter {
+    id        String   @id @default(uuid())
+    title     String
+    course_id String
+    order     Int
+    course    Course   @relation(fields: [course_id], references: [id])
+    lessons   Lesson[]
+}
+
+model Lesson {
+    id             String           @id @default(uuid())
+    title          String
+    order          Int
+    content        String?
+    video_url      String?
+    pdf_url        String?
+    quiz           Quiz[]
+    is_free        Boolean          @default(false)
+    chapter_id     String
+    chapter        Chapter          @relation(fields: [chapter_id], references: [id])
+    lessonProgress LessonProgress[]
+}
