@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { verifyAccessToken } from "./token";
-const ACCESS_TOKEN_COOKIE = "access_token"
-const REFRESH_TOKEN_COOKIE = "refresh_token"
+const ACCESS_TOKEN_COOKIE = "access_token";
+const REFRESH_TOKEN_COOKIE = "refresh_token";
 
 export async function getSession() {
     try {
