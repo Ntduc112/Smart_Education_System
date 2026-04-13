@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAccessToken } from "./lib/auth/token";
+import { verifyAccessToken } from "@/lib/auth/token";
 
 const ACCESS_TOKEN_COOKIE = "access_token";
 
@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest){
         response.cookies.delete(ACCESS_TOKEN_COOKIE);
         return response; 
     }
-    if(matchesRoutes(pathName, ADMIN_ROUTES) && session.role !== "admin"){
+    if(matchesRoutes(pathName, ADMIN_ROUTES) && session.role !== "ADMIN"){
         if(pathName.startsWith("/api")){
             return NextResponse.json({ error: "Không có quyền truy cập" }, { status: 403 });
         }

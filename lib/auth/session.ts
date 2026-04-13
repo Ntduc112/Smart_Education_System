@@ -7,6 +7,7 @@ export async function getSession() {
     try {
         const cookieStore = await cookies();
         const accessToken = cookieStore.get(ACCESS_TOKEN_COOKIE)?.value;
+        const refreshToken = cookieStore.get(REFRESH_TOKEN_COOKIE)?.value;
         if (!accessToken) return null;
         return verifyAccessToken(accessToken);
     }
@@ -22,14 +23,14 @@ export async function setSession(accessToken: string, refreshToken: string) {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
-            maxAge: parseInt(process.env.ACCESS_TOKEN_MAX_AGE!),
+            maxAge: parseInt(process.env.ACCESS_TOKEN_EXPIRES_IN!),
             path: "/"
         });
         cookieStore.set(REFRESH_TOKEN_COOKIE, refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
-            maxAge: parseInt(process.env.REFRESH_TOKEN_MAX_AGE!),
+            maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN!),
             path: "/"
         })
     }

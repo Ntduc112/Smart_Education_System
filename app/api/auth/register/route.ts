@@ -1,9 +1,7 @@
-import { PrismaClient } from "@/prisma/generated/prisma";
+import prisma from "@/prisma/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { z } from "zod";
 import { hashPassword } from "@/lib/auth/password";
-
-const prisma = new PrismaClient();
 
 const Registerschema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -25,7 +23,8 @@ export async function POST(request: NextRequest) {
                 role
             }
         });
-        return NextResponse.json({ user }, { status: 201 });
+        const { password_hash: _, ...safeUser } = user;
+        return NextResponse.json({ user: safeUser }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ errors: error.message }, { status: 400 });

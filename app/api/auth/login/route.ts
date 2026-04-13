@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import prisma from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import {z} from "zod";
 import { verifyPassword } from "@/lib/auth/password";
@@ -20,18 +20,22 @@ export async function POST(request: NextRequest) {
         if (!user || !(await verifyPassword(password, user.password_hash))) {
             return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
         }
-
-        await setSession(
-            await signAccessToken({ userId: user.id, role: user.role }),
-            await signRefreshToken({ userId: user.id, role: user.role })
-        );
-
+        const accessToken = await signAccessToken({ userId: user.id, role: user.role });
+        const refreshToken = await signRefreshToken({ userId: user.id, role: user.role });
+        await setSession(accessToken, refreshToken);
+        await prisma.refreshToken.create({
+            data:{
+                user_id: user.id,
+                token: refreshToken,
+                expires_at: new Date(Date.now() + parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN!) * 1000)
+            }
+        })
         const { password_hash: _, ...safeUser } = user;
         return NextResponse.json({ user: safeUser }, { status: 200 });
 
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ errors: error.errors }, { status: 400 });
+            return NextResponse.json({ errors: error.message }, { status: 400 });
         }
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
