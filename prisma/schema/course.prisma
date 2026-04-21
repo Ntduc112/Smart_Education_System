@@ -28,6 +28,7 @@ model Course {
     category      Category      @relation(fields: [category_id], references: [id])
     sections      Chapter[]
     enrollments   Enrollment[]
+    payments      Payment[]
 }
 
 model Chapter {
@@ -51,4 +52,24 @@ model Lesson {
     chapter_id     String
     chapter        Chapter          @relation(fields: [chapter_id], references: [id])
     lessonProgress LessonProgress[]
+}
+
+enum payment_status {
+    PENDING
+    PAID
+    CANCELLED
+    FAILED
+}
+
+model Payment {
+    id         String         @id @default(uuid())
+    user_id    String
+    user       User           @relation(fields: [user_id], references: [id])
+    course_id  String
+    course     Course         @relation(fields: [course_id], references: [id])
+    amount     Decimal
+    status     payment_status @default(PENDING)
+    order_code Int            @unique
+    created_at DateTime       @default(now())
+    updated_at DateTime       @updatedAt
 }

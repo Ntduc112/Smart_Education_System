@@ -7,6 +7,28 @@ const UpdateChapterSchema = z.object({
     order: z.number().int().min(1, "Order must be a positive integer").optional(),
 });
 
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+    try {
+        const userId = request.headers.get("x-user-id");
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const chapter = await prisma.chapter.findFirst({
+            where:   { id: params.id, course: { instructor_id: userId } },
+            include: { lessons: { orderBy: { order: "asc" } } },
+        });
+        if (!chapter) {
+            return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({ chapter }, { status: 200 });
+    } catch (error) {
+        console.error("Error fetching chapter:", error);
+        return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
+    }
+}
+
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
     try {
         const userId = request.headers.get("x-user-id");

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
     try {
+        const userId = request.headers.get("x-user-id");
+
         const course = await prisma.course.findFirst({
             where: { id: params.id, status: "PUBLISHED" },
             include: {
@@ -33,6 +35,12 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
             return NextResponse.json({ error: "Course not found" }, { status: 404 });
         }
 
+        const isEnrolled = userId
+            ? !!(await prisma.enrollment.findUnique({
+                  where: { user_id_course_id: { user_id: userId, course_id: params.id } },
+              }))
+            : false;
+
         // Mask video_url và pdf_url với lesson không free
         const maskedCourse = {
             ...course,
@@ -44,6 +52,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
                     pdf_url:   lesson.is_free ? lesson.pdf_url   : null,
                 })),
             })),
+            is_enrolled: isEnrolled,
+            is_free:     Number(course.price) === 0,
         };
 
         return NextResponse.json({ course: maskedCourse }, { status: 200 });
