@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
     "/api/payment/webhook",
     "/api/courses",
     "/api/admin/categories",
+    "/courses",
 ];
 const ADMIN_ROUTES = [
     "/admin",

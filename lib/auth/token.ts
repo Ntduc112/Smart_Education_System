@@ -15,7 +15,7 @@ export async function signAccessToken(payload: Omit<TokenPayload, keyof JWTPaylo
         const accessToken = await new SignJWT({ ...payload })
             .setProtectedHeader({ alg: "HS256" })
             .setIssuedAt()
-            .setExpirationTime(process.env.ACCESS_TOKEN_EXPIRES_IN!)
+            .setExpirationTime(`${process.env.ACCESS_TOKEN_EXPIRES_IN}s`)
             .sign(getSecret("ACCESS_TOKEN_SECRET"))
         return accessToken;
     } catch (error) {
@@ -28,7 +28,7 @@ export async function signRefreshToken(payload: Omit<TokenPayload, keyof JWTPayl
         const refreshToken = await new SignJWT({ ...payload })
             .setProtectedHeader({ alg: "HS256" })
             .setIssuedAt()
-            .setExpirationTime(process.env.REFRESH_TOKEN_EXPIRES_IN!)
+            .setExpirationTime(`${process.env.REFRESH_TOKEN_EXPIRES_IN}s`)
             .sign(getSecret("REFRESH_TOKEN_SECRET"))
         return refreshToken;
     } catch (error) {

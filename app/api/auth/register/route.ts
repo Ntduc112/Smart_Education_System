@@ -6,15 +6,15 @@ import { hashPassword } from "@/lib/auth/password";
 const Registerschema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
-    password_hash: z.string().min(6, "Password must be at least 6 characters long"),
+    password: z.string().min(6, "Password must be at least 6 characters long"),
     role: z.enum(["STUDENT", "TEACHER"], { message: "Role must be either STUDENT or TEACHER" })
 });
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { name, email, password_hash, role } = Registerschema.parse(body);
-        const hashedPassword = await hashPassword(password_hash);
+        const { name, email, password, role } = Registerschema.parse(body);
+        const hashedPassword = await hashPassword(password);
         const user = await prisma.user.create({
             data: {
                 name,
