@@ -3,6 +3,7 @@ import { Home, BookOpen, Sparkles } from "lucide-react";
 import { Logo } from "./_components/Logo";
 import { CoursesSection } from "./_components/CoursesSection";
 import { SearchBar } from "./_components/SearchBar";
+import { HeaderAuth } from "./_components/HeaderAuth";
 
 // ── Sidebar nav items ──────────────────────────────────────────────────────
 
@@ -59,33 +60,23 @@ export default function HomePage() {
       <div className="flex-1 ml-[72px] flex flex-col min-w-0">
 
         {/* ── Navbar ── */}
-        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#e0e2e6] h-[60px] flex items-center px-6 gap-4">
-          {/* Brand */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0 mr-4">
-            <Logo size={32} />
-            <span className="text-[22px] font-bold text-[#1b61c9] tracking-tight leading-none">SmartEdu</span>
-          </Link>
+        <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-[#e0e2e6] h-[60px] flex items-center px-6">
+          {/* Brand — flex-1 để bằng với Auth */}
+          <div className="flex-1 min-w-0">
+            <Link href="/" className="flex items-center gap-2.5 w-fit">
+              <Logo size={32} />
+              <span className="text-[22px] font-bold text-[#1b61c9] tracking-tight leading-none">SmartEdu</span>
+            </Link>
+          </div>
 
-          {/* Search */}
-          <div className="flex-1 flex justify-center">
+          {/* Search — cùng chiều rộng với dòng hero text */}
+          <div style={{ width: 520, flexShrink: 0, transform: "translateX(-10px)" }}>
             <SearchBar />
           </div>
 
-          {/* Auth */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-[#181d26] px-4 py-2 rounded-xl hover:bg-[#f8fafc] transition-colors"
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm font-semibold bg-[#1b61c9] text-white px-4 py-2 rounded-xl hover:bg-[#254fad] transition-colors"
-              style={{ boxShadow: "rgba(45,127,249,0.28) 0px 2px 8px" }}
-            >
-              Đăng ký
-            </Link>
+          {/* Auth — flex-1 để bằng với Brand, căn phải */}
+          <div className="flex-1 min-w-0 flex justify-end">
+            <HeaderAuth />
           </div>
         </header>
 
@@ -97,7 +88,7 @@ export default function HomePage() {
               <span className="font-black text-[#1b61c9] block">AI cá nhân hóa</span>
             </h1>
 
-            <p className="text-lg text-[rgba(4,14,32,0.69)] leading-relaxed tracking-[0.18px] mb-10 max-w-2xl mx-auto">
+            <p className="text-lg text-[rgba(4,14,32,0.69)] leading-relaxed tracking-[0.18px] mb-10 max-w-2xl mx-auto text-center">
               Hệ thống giáo dục thông minh giúp học viên tiếp cận kiến thức theo cách phù hợp nhất
               với bản thân, được hỗ trợ bởi AI Tutor 24/7.
             </p>

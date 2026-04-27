@@ -20,15 +20,16 @@ async function verifyOwnership(questionId: string, userId: string) {
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const existing = await verifyOwnership(params.id, userId);
+        const existing = await verifyOwnership(id, userId);
         if (!existing) {
             return NextResponse.json({ error: "Question not found" }, { status: 404 });
         }
@@ -37,7 +38,7 @@ export async function PUT(
         const data = UpdateQuestionSchema.parse(body);
 
         const question = await prisma.question.update({
-            where:   { id: params.id },
+            where:   { id },
             data,
             include: { options: { orderBy: { order: "asc" } } },
         });
@@ -53,20 +54,21 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const existing = await verifyOwnership(params.id, userId);
+        const existing = await verifyOwnership(id, userId);
         if (!existing) {
             return NextResponse.json({ error: "Question not found" }, { status: 404 });
         }
 
-        await prisma.question.delete({ where: { id: params.id } });
+        await prisma.question.delete({ where: { id } });
         return NextResponse.json({ message: "Question deleted" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting question:", error);

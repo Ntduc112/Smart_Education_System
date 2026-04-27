@@ -19,8 +19,9 @@ const CreateQuestionSchema = z.object({
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
@@ -29,7 +30,7 @@ export async function POST(
 
         const quiz = await prisma.quiz.findFirst({
             where: {
-                id:     params.id,
+                id,
                 lesson: { chapter: { course: { instructor_id: userId } } },
             },
         });
@@ -43,7 +44,7 @@ export async function POST(
         const question = await prisma.question.create({
             data: {
                 ...questionData,
-                quiz_id: params.id,
+                quiz_id: id,
                 options: options ? { create: options } : undefined,
             },
             include: { options: true },

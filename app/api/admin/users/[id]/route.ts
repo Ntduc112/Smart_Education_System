@@ -8,11 +8,12 @@ const UpdateUserSchema = z.object({
 
 export async function GET(
     _request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const user = await prisma.user.findUnique({
-            where:  { id: params.id },
+            where:  { id },
             select: {
                 id:         true,
                 name:       true,
@@ -37,19 +38,20 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const body = await request.json();
         const { role } = UpdateUserSchema.parse(body);
 
-        const user = await prisma.user.findUnique({ where: { id: params.id } });
+        const user = await prisma.user.findUnique({ where: { id } });
         if (!user) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         const updated = await prisma.user.update({
-            where:  { id: params.id },
+            where:  { id },
             data:   { role },
             select: { id: true, name: true, email: true, role: true },
         });

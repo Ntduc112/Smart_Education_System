@@ -10,16 +10,16 @@ import { useCourses, useCategories, CourseInList } from "./courses.hook";
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const LEVELS = [
-  { value: "",             label: "Tất cả cấp độ" },
-  { value: "beginner",    label: "Cơ bản" },
-  { value: "intermediate",label: "Trung cấp" },
-  { value: "advanced",    label: "Nâng cao" },
+  { value: "", label: "Tất cả cấp độ" },
+  { value: "beginner", label: "Cơ bản" },
+  { value: "intermediate", label: "Trung cấp" },
+  { value: "advanced", label: "Nâng cao" },
 ];
 
 const LEVEL_LABEL: Record<string, string> = {
-  beginner:     "Cơ bản",
+  beginner: "Cơ bản",
   intermediate: "Trung cấp",
-  advanced:     "Nâng cao",
+  advanced: "Nâng cao",
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -89,14 +89,14 @@ function CourseCard({ course }: { course: CourseInList }) {
           <div className="flex items-center gap-3 text-xs text-[rgba(4,14,32,0.45)]">
             <span className="flex items-center gap-1">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
               </svg>
               {course._count.enrollments.toLocaleString("vi-VN")}
             </span>
             <span className="flex items-center gap-1">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
               </svg>
               {course._count.sections} chương
             </span>
@@ -136,14 +136,15 @@ function CourseCardSkeleton() {
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function CoursesPage() {
-  const { data: user } = useMe();
+  const { data: user, isLoading: userLoading } = useMe();
+  const isLoggedIn = !userLoading && !!user;
   const { data: categories = [] } = useCategories();
 
-  const [search, setSearch]         = useState("");
+  const [search, setSearch] = useState("");
   const [debouncedSearch, setDebounced] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [level, setLevel]           = useState<string>("");
-  const [page, setPage]             = useState(1);
+  const [level, setLevel] = useState<string>("");
+  const [page, setPage] = useState(1);
 
   // Debounce search
   useEffect(() => {
@@ -152,47 +153,47 @@ export default function CoursesPage() {
   }, [search]);
 
   const { data, isLoading, isFetching } = useCourses({
-    search:      debouncedSearch || undefined,
+    search: debouncedSearch || undefined,
     category_id: categoryId || undefined,
-    level:       level || undefined,
+    level: level || undefined,
     page,
   });
 
-  const courses    = data?.courses ?? [];
+  const courses = data?.courses ?? [];
   const pagination = data?.pagination;
 
   const handleCategory = (id: string) => { setCategoryId(id); setPage(1); };
-  const handleLevel    = (v: string)  => { setLevel(v); setPage(1); };
+  const handleLevel = (v: string) => { setLevel(v); setPage(1); };
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* ── Navbar ── */}
       <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="w-full px-6 h-16 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <Logo size={32} />
             <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
           </Link>
-
-          <nav className="hidden md:flex items-center gap-1">
-            {[
-              { href: "/student/dashboard", label: "Dashboard" },
-              { href: "/courses",           label: "Khóa học",  active: true },
-              { href: "/student/ai-tutor",  label: "AI Tutor" },
-            ].map((item) => (
-              <Link key={item.href} href={item.href}
-                className={`px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-colors ${
-                  item.active
-                    ? "bg-[#1b61c9]/8 text-[#1b61c9]"
-                    : "text-[rgba(4,14,32,0.69)] hover:text-[#181d26] hover:bg-[#f8fafc]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <UserMenu user={user ?? null} />
+          {!userLoading && (
+            isLoggedIn ? (
+              <UserMenu user={user} />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 rounded-xl text-sm font-medium text-[rgba(4,14,32,0.69)] hover:text-[#181d26] hover:bg-[#f8fafc] transition-colors tracking-[0.08px]"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors tracking-[0.08px]"
+                >
+                  Đăng ký
+                </Link>
+              </div>
+            )
+          )}
         </div>
       </header>
 
@@ -209,7 +210,7 @@ export default function CoursesPage() {
           {/* Search */}
           <div className="max-w-xl mx-auto relative">
             <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)]" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
             <input
               type="text"
@@ -224,7 +225,7 @@ export default function CoursesPage() {
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             )}
@@ -235,11 +236,10 @@ export default function CoursesPage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
           <button
             onClick={() => handleCategory("")}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${
-              categoryId === ""
-                ? "bg-[#1b61c9] text-white"
-                : "bg-white text-[rgba(4,14,32,0.69)] border border-[#e0e2e6] hover:border-[#1b61c9]/40 hover:text-[#181d26]"
-            }`}
+            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${categoryId === ""
+              ? "bg-[#1b61c9] text-white"
+              : "bg-white text-[rgba(4,14,32,0.69)] border border-[#e0e2e6] hover:border-[#1b61c9]/40 hover:text-[#181d26]"
+              }`}
           >
             Tất cả
           </button>
@@ -247,11 +247,10 @@ export default function CoursesPage() {
             <button
               key={cat.id}
               onClick={() => handleCategory(cat.id)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${
-                categoryId === cat.id
-                  ? "bg-[#1b61c9] text-white"
-                  : "bg-white text-[rgba(4,14,32,0.69)] border border-[#e0e2e6] hover:border-[#1b61c9]/40 hover:text-[#181d26]"
-              }`}
+              className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${categoryId === cat.id
+                ? "bg-[#1b61c9] text-white"
+                : "bg-white text-[rgba(4,14,32,0.69)] border border-[#e0e2e6] hover:border-[#1b61c9]/40 hover:text-[#181d26]"
+                }`}
             >
               {cat.name}
             </button>
@@ -262,7 +261,7 @@ export default function CoursesPage() {
         <div className="flex items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-2">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(4,14,32,0.45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
             </svg>
             <span className="text-sm text-[rgba(4,14,32,0.55)]">Cấp độ:</span>
             <select
@@ -280,7 +279,7 @@ export default function CoursesPage() {
             {isFetching ? (
               <span className="inline-flex items-center gap-1.5">
                 <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                 </svg>
                 Đang tải...
               </span>
@@ -299,7 +298,7 @@ export default function CoursesPage() {
           <div className="bg-white border border-[#e0e2e6] rounded-2xl py-20 flex flex-col items-center gap-4">
             <div className="w-14 h-14 bg-[#f8fafc] rounded-2xl flex items-center justify-center border border-[#e0e2e6]">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(4,14,32,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </div>
             <div className="text-center">
@@ -330,14 +329,14 @@ export default function CoursesPage() {
               className="w-9 h-9 rounded-xl border border-[#e0e2e6] flex items-center justify-center text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-white"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6"/>
+                <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
 
             {Array.from({ length: pagination.totalPages }).map((_, i) => {
               const p = i + 1;
               const show = p === 1 || p === pagination.totalPages || Math.abs(p - page) <= 1;
-              const gap  = p === 2 && page > 4;
+              const gap = p === 2 && page > 4;
               const gap2 = p === pagination.totalPages - 1 && page < pagination.totalPages - 3;
               if (!show && !gap && !gap2) return null;
               if (gap || gap2) return <span key={p} className="text-[rgba(4,14,32,0.35)] text-sm">…</span>;
@@ -345,11 +344,10 @@ export default function CoursesPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${
-                    p === page
-                      ? "bg-[#1b61c9] text-white"
-                      : "bg-white text-[rgba(4,14,32,0.69)] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
-                  }`}
+                  className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${p === page
+                    ? "bg-[#1b61c9] text-white"
+                    : "bg-white text-[rgba(4,14,32,0.69)] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
+                    }`}
                 >
                   {p}
                 </button>
@@ -362,7 +360,7 @@ export default function CoursesPage() {
               className="w-9 h-9 rounded-xl border border-[#e0e2e6] flex items-center justify-center text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] disabled:opacity-30 disabled:cursor-not-allowed transition-all bg-white"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6"/>
+                <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
           </div>

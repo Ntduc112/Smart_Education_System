@@ -3,8 +3,9 @@ import prisma from "@/prisma/prisma";
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
@@ -12,14 +13,13 @@ export async function POST(
         }
 
         const lesson = await prisma.lesson.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: { chapter: { select: { course_id: true } } },
         });
         if (!lesson) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
         }
 
-        // Verify student đã enroll course này
         const enrollment = await prisma.enrollment.findUnique({
             where: {
                 user_id_course_id: {
@@ -33,15 +33,15 @@ export async function POST(
         }
 
         const progress = await prisma.lessonProgress.upsert({
-            where: { user_id_lesson_id: { user_id: userId, lesson_id: params.id } },
+            where: { user_id_lesson_id: { user_id: userId, lesson_id: id } },
             create: {
-                user_id:        userId,
-                lesson_id:      params.id,
-                is_completed:   true,
+                user_id:         userId,
+                lesson_id:       id,
+                is_completed:    true,
                 last_watched_at: new Date(),
             },
             update: {
-                is_completed:   true,
+                is_completed:    true,
                 last_watched_at: new Date(),
             },
         });

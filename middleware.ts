@@ -14,6 +14,8 @@ const PUBLIC_ROUTES = [
     "/api/courses",
     "/api/admin/categories",
     "/courses",
+    "/payment/success",
+    "/payment/cancel",
 ];
 const ADMIN_ROUTES = [
     "/admin",

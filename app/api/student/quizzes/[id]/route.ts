@@ -3,8 +3,9 @@ import prisma from "@/prisma/prisma";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
@@ -12,7 +13,7 @@ export async function GET(
         }
 
         const quiz = await prisma.quiz.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 lesson: { include: { chapter: { select: { course_id: true } } } },
                 questions: {
@@ -20,7 +21,6 @@ export async function GET(
                     include: {
                         options: {
                             orderBy: { order: "asc" },
-                            // Ẩn is_correct với student
                             select: { id: true, content: true, order: true },
                         },
                     },
@@ -44,7 +44,6 @@ export async function GET(
             return NextResponse.json({ error: "Not enrolled in this course" }, { status: 403 });
         }
 
-        // Không trả sample_answer cho student
         const safeQuiz = {
             ...quiz,
             questions: quiz.questions.map(({ sample_answer: _, ...q }) => q),

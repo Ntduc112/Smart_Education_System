@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
         const userId = request.headers.get("x-user-id");
 
         const course = await prisma.course.findFirst({
-            where: { id: params.id, status: "PUBLISHED" },
+            where: { id, status: "PUBLISHED" },
             include: {
                 category:   { select: { id: true, name: true } },
                 instructor: { select: { id: true, name: true, avatar: true } },
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 
         const isEnrolled = userId
             ? !!(await prisma.enrollment.findUnique({
-                  where: { user_id_course_id: { user_id: userId, course_id: params.id } },
+                  where: { user_id_course_id: { user_id: userId, course_id: id } },
               }))
             : false;
 

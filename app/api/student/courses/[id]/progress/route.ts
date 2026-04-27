@@ -3,8 +3,9 @@ import prisma from "@/prisma/prisma";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
@@ -12,14 +13,14 @@ export async function GET(
         }
 
         const enrollment = await prisma.enrollment.findUnique({
-            where: { user_id_course_id: { user_id: userId, course_id: params.id } },
+            where: { user_id_course_id: { user_id: userId, course_id: id } },
         });
         if (!enrollment) {
             return NextResponse.json({ error: "Not enrolled in this course" }, { status: 403 });
         }
 
         const lessons = await prisma.lesson.findMany({
-            where: { chapter: { course_id: params.id } },
+            where: { chapter: { course_id: id } },
             select: { id: true },
         });
         const lessonIds = lessons.map((l) => l.id);
@@ -41,8 +42,8 @@ export async function GET(
 
         return NextResponse.json({
             progress: {
-                total_lessons:     totalLessons,
-                completed_lessons: completedLessons,
+                total_lessons:        totalLessons,
+                completed_lessons:    completedLessons,
                 percentage,
                 completed_lesson_ids: completed.map((c) => c.lesson_id),
             },

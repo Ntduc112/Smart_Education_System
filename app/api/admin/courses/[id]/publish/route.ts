@@ -6,18 +6,19 @@ const PublishSchema = z.object({
     status: z.enum(["PUBLISHED", "DRAFT"]),
 });
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
     try {
         const body = await request.json();
         const { status } = PublishSchema.parse(body);
 
-        const course = await prisma.course.findUnique({ where: { id: params.id } });
+        const course = await prisma.course.findUnique({ where: { id } });
         if (!course) {
             return NextResponse.json({ error: "Course not found" }, { status: 404 });
         }
 
         const updated = await prisma.course.update({
-            where: { id: params.id },
+            where: { id },
             data: { status },
         });
         return NextResponse.json({ course: updated }, { status: 200 });

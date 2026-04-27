@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
+import { SearchBar } from "@/app/_components/SearchBar";
 import { UserMenu } from "@/app/_components/UserMenu";
 import { useState } from "react";
 import { useMe, useStudentCourses, useCoursesProgress, StudentCourse, CourseProgress } from "./dashboard.hook";
@@ -150,11 +151,10 @@ function CourseCard({
 
           <Link
             href={`/student/courses/${course.id}/learn`}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${
-              isDone
-                ? "bg-[#f8fafc] text-[#181d26] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
-                : "bg-[#1b61c9] text-white hover:bg-[#254fad]"
-            }`}
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${isDone
+              ? "bg-[#f8fafc] text-[#181d26] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
+              : "bg-[#1b61c9] text-white hover:bg-[#254fad]"
+              }`}
             style={
               !isDone
                 ? { boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }
@@ -242,36 +242,24 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen bg-[#f8fafc]">
       {/* ── Navbar ── */}
       <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <Logo size={32} />
-            <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
-          </Link>
+        <div className="w-full px-6 h-16 flex items-center">
+          {/* Logo — flex-1 để cân bằng với auth */}
+          <div className="flex-1 min-w-0">
+            <Link href="/" className="flex items-center gap-2 w-fit">
+              <Logo size={32} />
+              <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
+            </Link>
+          </div>
 
-          {/* Nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {[
-              { href: "/student/dashboard", label: "Dashboard", active: true },
-              { href: "/courses", label: "Khóa học" },
-              { href: "/student/ai-tutor", label: "AI Tutor" },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-colors ${
-                  item.active
-                    ? "bg-[#1b61c9]/8 text-[#1b61c9]"
-                    : "text-[rgba(4,14,32,0.69)] hover:text-[#181d26] hover:bg-[#f8fafc]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Search — cố định giữa */}
+          <div style={{ width: 520, flexShrink: 0, transform: "translateX(-10px)" }}>
+            <SearchBar />
+          </div>
 
-          {/* User dropdown */}
-          <UserMenu user={user ?? null} />
+          {/* Auth — flex-1, căn phải */}
+          <div className="flex-1 min-w-0 flex justify-end">
+            <UserMenu user={user ?? null} />
+          </div>
         </div>
       </header>
 
@@ -321,7 +309,7 @@ export default function StudentDashboardPage() {
             )}
           </h2>
           <Link
-            href="/(marketing)/courses"
+            href="/courses"
             className="text-sm text-[#1b61c9] hover:text-[#254fad] font-medium tracking-[0.07px] transition-colors"
           >
             Khám phá thêm →

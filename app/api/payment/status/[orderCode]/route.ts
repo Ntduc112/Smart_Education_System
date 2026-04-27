@@ -3,7 +3,7 @@ import prisma from "@/prisma/prisma";
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { orderCode: string } }
+    { params }: { params: Promise<{ orderCode: string }> }
 ) {
     try {
         const userId = request.headers.get("x-user-id");
@@ -11,7 +11,8 @@ export async function GET(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const orderCode = parseInt(params.orderCode);
+        const { orderCode: orderCodeParam } = await params;
+        const orderCode = parseInt(orderCodeParam);
         if (isNaN(orderCode)) {
             return NextResponse.json({ error: "Invalid orderCode" }, { status: 400 });
         }

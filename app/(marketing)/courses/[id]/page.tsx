@@ -108,7 +108,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const { data: course, isLoading } = useCourse(id);
   const { mutateAsync: enroll, isPending: enrolling } = useEnrollCourse();
 
-  const [enrollError, setEnrollError] = useState<string | null>(null);
+  const [enrollError, setEnrollError]     = useState<string | null>(null);
+  const [enrollSuccess, setEnrollSuccess] = useState(false);
 
   const totalLessons = course?.sections.reduce((s, ch) => s + ch.lessons.length, 0) ?? 0;
 
@@ -118,7 +119,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
     try {
       const result = await enroll(course.id);
       if (result.enrolled) {
-        router.push(`/student/courses/${course.id}/learn`);
+        setEnrollSuccess(true);
+        setTimeout(() => router.push(`/student/courses/${course.id}/learn`), 2000);
       } else if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
       }
@@ -286,11 +288,23 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     </div>
 
                     {/* CTA */}
-                    {enrollError && (
-                      <p className="text-xs text-red-500 mb-3 px-1">{enrollError}</p>
+                    {enrollSuccess ? (
+                      <div className="mb-5 flex flex-col items-center gap-2 py-4 px-4 bg-green-50 border border-green-200 rounded-xl text-center">
+                        <svg className="text-green-500" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        <p className="text-sm font-semibold text-green-700">Đăng ký thành công!</p>
+                        <p className="text-xs text-green-600">Đang chuyển sang trang học...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {enrollError && (
+                          <p className="text-xs text-red-500 mb-3 px-1">{enrollError}</p>
+                        )}
+                      </>
                     )}
 
-                    {course.is_enrolled ? (
+                    {!enrollSuccess && (course.is_enrolled ? (
                       <Link
                         href={`/student/courses/${course.id}/learn`}
                         className="w-full flex items-center justify-center gap-2 bg-[#006400] text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:bg-[#005200] transition-colors"
@@ -314,7 +328,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                         ) : null}
                         {course.is_free ? "Đăng ký miễn phí" : `Mua ngay · ${formatPrice(course.price)}`}
                       </button>
-                    )}
+                    ))}
 
                     {/* Features */}
                     <ul className="mt-5 space-y-2.5">

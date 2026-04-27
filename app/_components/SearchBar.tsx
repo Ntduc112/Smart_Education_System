@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function SearchBar() {
-  const router  = useRouter();
+export function SearchBar({ className }: { className?: string }) {
+  const router = useRouter();
   const [value, setValue] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -14,7 +14,7 @@ export function SearchBar() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative w-full max-w-md">
+    <form onSubmit={handleSubmit} className={`relative ${className ?? "w-full"}`}>
       <svg
         className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] pointer-events-none"
         width="16" height="16" viewBox="0 0 24 24" fill="none"

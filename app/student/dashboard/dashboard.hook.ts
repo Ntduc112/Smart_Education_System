@@ -57,7 +57,7 @@ const fetchCourseProgress = async (courseId: string): Promise<CourseProgress> =>
 // ── Hooks ──────────────────────────────────────────────────────────────────
 
 export function useMe() {
-  return useQuery({ queryKey: ["me"], queryFn: fetchMe });
+  return useQuery({ queryKey: ["me"], queryFn: fetchMe, retry: false });
 }
 
 export function useStudentCourses() {

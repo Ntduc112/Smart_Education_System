@@ -28,7 +28,7 @@ export default function LoginPage() {
       const role = result.user?.role;
       if (role === "ADMIN") router.push("/admin/dashboard");
       else if (role === "TEACHER") router.push("/teacher/dashboard");
-      else router.push("/student/dashboard");
+      else router.push("/");
     } catch (err) {
       setError("root", { message: getApiError(err, "Đăng nhập thất bại") });
     }

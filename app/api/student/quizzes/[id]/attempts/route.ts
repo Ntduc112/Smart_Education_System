@@ -11,8 +11,9 @@ const SubmitAttemptSchema = z.object({
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
@@ -20,7 +21,7 @@ export async function POST(
         }
 
         const quiz = await prisma.quiz.findUnique({
-            where:   { id: params.id },
+            where:   { id },
             include: {
                 lesson:    { include: { chapter: { select: { course_id: true } } } },
                 questions: { include: { options: true } },
@@ -42,12 +43,12 @@ export async function POST(
             return NextResponse.json({ error: "Not enrolled in this course" }, { status: 403 });
         }
 
-        const body    = await request.json();
+        const body = await request.json();
         const { answers } = SubmitAttemptSchema.parse(body);
 
         const questionMap = new Map(quiz.questions.map((q) => [q.id, q]));
-        let   totalPoints = 0;
-        let   earnedPoints = 0;
+        let totalPoints  = 0;
+        let earnedPoints = 0;
 
         const gradedAnswers = answers.map(({ question_id, answer }) => {
             const question = questionMap.get(question_id);
@@ -56,7 +57,6 @@ export async function POST(
             totalPoints += question.points;
 
             if (question.type === "SHORT_ANSWER") {
-                // SHORT_ANSWER: chờ AI chấm, chưa tính điểm
                 return { question_id, answer, is_correct: null, points_earned: null };
             }
 
@@ -82,7 +82,7 @@ export async function POST(
         const attempt = await prisma.quizAttempt.create({
             data: {
                 user_id:  userId,
-                quiz_id:  params.id,
+                quiz_id:  id,
                 score,
                 is_passed: isPassed,
                 answers: { create: gradedAnswers },
@@ -102,8 +102,9 @@ export async function POST(
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const userId = request.headers.get("x-user-id");
         if (!userId) {
@@ -111,7 +112,7 @@ export async function GET(
         }
 
         const attempts = await prisma.quizAttempt.findMany({
-            where:   { quiz_id: params.id, user_id: userId },
+            where:   { quiz_id: id, user_id: userId },
             orderBy: { submitted_at: "desc" },
             include: { answers: true },
         });

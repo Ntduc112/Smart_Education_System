@@ -199,25 +199,25 @@ async function main() {
         {
           title: "Giới thiệu & Cài đặt môi trường",
           lessons: [
-            { title: "Next.js là gì?", is_free: true, content: "Tổng quan về Next.js và lý do sử dụng." },
-            { title: "Cài đặt Node.js và tạo project", is_free: true, video_url: "https://example.com/video/1" },
-            { title: "Cấu trúc thư mục", is_free: false, video_url: "https://example.com/video/2" },
+            { title: "Next.js là gì?", is_free: true, video_url: "https://www.youtube.com/embed/b4ba60j_4o8" },
+            { title: "Cài đặt Node.js và tạo project", is_free: true, video_url: "https://www.youtube.com/embed/xiSuX0f1mEI" },
+            { title: "Cấu trúc thư mục", is_free: false, video_url: "https://www.youtube.com/embed/ZVnjOPwW4ZA" },
           ],
         },
         {
           title: "App Router & Pages",
           lessons: [
-            { title: "App Router vs Pages Router", is_free: false, video_url: "https://example.com/video/3" },
-            { title: "Dynamic Routes", is_free: false, video_url: "https://example.com/video/4" },
-            { title: "Layout và Template", is_free: false, video_url: "https://example.com/video/5" },
+            { title: "App Router vs Pages Router", is_free: false, video_url: "https://www.youtube.com/embed/vDIMKxMVbj8" },
+            { title: "Dynamic Routes", is_free: false, video_url: "https://www.youtube.com/embed/0cgTEb0XBNM" },
+            { title: "Layout và Template", is_free: false, video_url: "https://www.youtube.com/embed/T2TcFGKFBvs" },
           ],
         },
         {
           title: "Data Fetching & Server Actions",
           lessons: [
-            { title: "Server Components vs Client Components", is_free: false, video_url: "https://example.com/video/6" },
-            { title: "Server Actions", is_free: false, video_url: "https://example.com/video/7" },
-            { title: "Tích hợp Prisma ORM", is_free: false, video_url: "https://example.com/video/8" },
+            { title: "Server Components vs Client Components", is_free: false, video_url: "https://www.youtube.com/embed/TQQPAU21ZUw" },
+            { title: "Server Actions", is_free: false, video_url: "https://www.youtube.com/embed/RadgkoJrhu0" },
+            { title: "Tích hợp Prisma ORM", is_free: false, video_url: "https://www.youtube.com/embed/QXxy8Uv1LnQ" },
           ],
         },
       ],
@@ -228,23 +228,23 @@ async function main() {
         {
           title: "Python cơ bản",
           lessons: [
-            { title: "Cài đặt Python và VS Code", is_free: true, video_url: "https://example.com/video/10" },
-            { title: "Biến, kiểu dữ liệu và toán tử", is_free: true, video_url: "https://example.com/video/11" },
-            { title: "Câu lệnh điều kiện và vòng lặp", is_free: false, video_url: "https://example.com/video/12" },
+            { title: "Cài đặt Python và VS Code", is_free: true, video_url: "https://www.youtube.com/embed/7utwZ_Rbr_Q" },
+            { title: "Biến, kiểu dữ liệu và toán tử", is_free: true, video_url: "https://www.youtube.com/embed/kqtD5dpn9C8" },
+            { title: "Câu lệnh điều kiện và vòng lặp", is_free: false, video_url: "https://www.youtube.com/embed/6iF8Xb7Z3wQ" },
           ],
         },
         {
           title: "Hàm và Module",
           lessons: [
-            { title: "Định nghĩa và gọi hàm", is_free: false, video_url: "https://example.com/video/13" },
-            { title: "Import module", is_free: false, video_url: "https://example.com/video/14" },
+            { title: "Định nghĩa và gọi hàm", is_free: false, video_url: "https://www.youtube.com/embed/BVfCWuca9nw" },
+            { title: "Import module", is_free: false, video_url: "https://www.youtube.com/embed/CqvZ3vGoGs8" },
           ],
         },
         {
           title: "Thực chiến với Python",
           lessons: [
-            { title: "Đọc/ghi file CSV", is_free: false, video_url: "https://example.com/video/15" },
-            { title: "Web scraping với BeautifulSoup", is_free: false, video_url: "https://example.com/video/16" },
+            { title: "Đọc/ghi file CSV", is_free: false, video_url: "https://www.youtube.com/embed/Uh2ebFW8OYM" },
+            { title: "Web scraping với BeautifulSoup", is_free: false, video_url: "https://www.youtube.com/embed/gRLHr664tXA" },
           ],
         },
       ],
@@ -255,16 +255,16 @@ async function main() {
         {
           title: "Làm quen với Figma",
           lessons: [
-            { title: "Giao diện Figma", is_free: true, video_url: "https://example.com/video/20" },
-            { title: "Frame, Group và Component", is_free: false, video_url: "https://example.com/video/21" },
+            { title: "Giao diện Figma", is_free: true, video_url: "https://www.youtube.com/embed/FTFaQWZBqQ8" },
+            { title: "Frame, Group và Component", is_free: false, video_url: "https://www.youtube.com/embed/Cx2dkpBxst8" },
           ],
         },
         {
           title: "Xây dựng Design System",
           lessons: [
-            { title: "Color & Typography Styles", is_free: false, video_url: "https://example.com/video/22" },
-            { title: "Component và Variants", is_free: false, video_url: "https://example.com/video/23" },
-            { title: "Auto Layout", is_free: false, video_url: "https://example.com/video/24" },
+            { title: "Color & Typography Styles", is_free: false, video_url: "https://www.youtube.com/embed/EK-pHkc5EL4" },
+            { title: "Component và Variants", is_free: false, video_url: "https://www.youtube.com/embed/9iOzfR-LNQY" },
+            { title: "Auto Layout", is_free: false, video_url: "https://www.youtube.com/embed/TyaGpGDFczw" },
           ],
         },
       ],
