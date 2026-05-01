@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
 import { useState, useEffect } from "react";
-import { useMe } from "@/app/student/dashboard/dashboard.hook";
+import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
 import { useCourses, useCategories, CourseInList } from "./courses.hook";
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -32,12 +32,12 @@ function formatPrice(price: string) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function CourseCard({ course }: { course: CourseInList }) {
+function CourseCard({ course, isEnrolled }: { course: CourseInList; isEnrolled: boolean }) {
   const isFree = parseFloat(course.price) === 0;
 
   return (
     <Link
-      href={`/courses/${course.id}`}
+      href={isEnrolled ? `/student/courses/${course.id}/learn` : `/courses/${course.id}`}
       className="group bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-lg"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
     >
@@ -51,6 +51,14 @@ function CourseCard({ course }: { course: CourseInList }) {
         {isFree && (
           <div className="absolute top-3 left-3 bg-[#006400] text-white text-xs font-semibold px-2.5 py-1 rounded-full">
             Miễn phí
+          </div>
+        )}
+        {isEnrolled && (
+          <div className="absolute top-3 right-3 flex items-center gap-1 bg-[#1b61c9] text-white text-xs font-semibold px-2.5 py-1 rounded-full">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Đã đăng ký
           </div>
         )}
       </div>
@@ -138,6 +146,8 @@ function CourseCardSkeleton() {
 export default function CoursesPage() {
   const { data: user, isLoading: userLoading } = useMe();
   const isLoggedIn = !userLoading && !!user;
+  const { data: enrolledCourses = [] } = useStudentCourses({ enabled: isLoggedIn });
+  const enrolledIds = new Set(enrolledCourses.map((c) => c.id));
   const { data: categories = [] } = useCategories();
 
   const [search, setSearch] = useState("");
@@ -315,7 +325,7 @@ export default function CoursesPage() {
         ) : (
           <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
             {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
+              <CourseCard key={course.id} course={course} isEnrolled={enrolledIds.has(course.id)} />
             ))}
           </div>
         )}

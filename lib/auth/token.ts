@@ -38,19 +38,17 @@ export async function signRefreshToken(payload: Omit<TokenPayload, keyof JWTPayl
 }
 export async function verifyAccessToken(token: string): Promise<TokenPayload | null> {
     try {
-        const { payload } = await jwtVerify(token, getSecret("ACCESS_TOKEN_SECRET"));
+        const { payload } = await jwtVerify(token, getSecret("ACCESS_TOKEN_SECRET"), { algorithms: ["HS256"] });
         return payload as TokenPayload;
-    } catch (error) {
-        console.error("Error verifying access token:", error);
+    } catch {
         return null;
     }
 }
 export async function verifyRefreshToken(token: string): Promise<TokenPayload | null> {
     try {
-        const { payload } = await jwtVerify(token, getSecret("REFRESH_TOKEN_SECRET"));
+        const { payload } = await jwtVerify(token, getSecret("REFRESH_TOKEN_SECRET"), { algorithms: ["HS256"] });
         return payload as TokenPayload;
-    } catch (error) {
-        console.error("Error verifying refresh token:", error);
+    } catch {
         return null;
     }
 }

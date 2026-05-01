@@ -150,7 +150,11 @@ function CourseCard({
           )}
 
           <Link
-            href={`/student/courses/${course.id}/learn`}
+            href={
+              progress?.current_lesson_id
+                ? `/student/courses/${course.id}/learn?lesson=${progress.current_lesson_id}`
+                : `/student/courses/${course.id}/learn`
+            }
             className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${isDone
               ? "bg-[#f8fafc] text-[#181d26] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
               : "bg-[#1b61c9] text-white hover:bg-[#254fad]"

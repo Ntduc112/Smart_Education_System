@@ -33,6 +33,7 @@ export interface CourseProgress {
   completed_lessons: number;
   percentage: number;
   completed_lesson_ids: string[];
+  current_lesson_id: string | null;
 }
 
 // ── Fetchers ───────────────────────────────────────────────────────────────
@@ -60,10 +61,11 @@ export function useMe() {
   return useQuery({ queryKey: ["me"], queryFn: fetchMe, retry: false });
 }
 
-export function useStudentCourses() {
+export function useStudentCourses(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["student", "courses"],
     queryFn: fetchStudentCourses,
+    enabled: options?.enabled ?? true,
   });
 }
 

@@ -20,8 +20,9 @@ export async function GET(
         }
 
         const lessons = await prisma.lesson.findMany({
-            where: { chapter: { course_id: id } },
-            select: { id: true },
+            where:   { chapter: { course_id: id } },
+            select:  { id: true, order: true, chapter: { select: { order: true } } },
+            orderBy: [{ chapter: { order: "asc" } }, { order: "asc" }],
         });
         const lessonIds = lessons.map((l) => l.id);
 
@@ -31,21 +32,26 @@ export async function GET(
                 lesson_id:    { in: lessonIds },
                 is_completed: true,
             },
-            select: { lesson_id: true, last_watched_at: true },
+            select: { lesson_id: true },
         });
 
+        const completedSet     = new Set(completed.map((c) => c.lesson_id));
         const totalLessons     = lessonIds.length;
-        const completedLessons = completed.length;
+        const completedLessons = completedSet.size;
         const percentage       = totalLessons > 0
             ? Math.round((completedLessons / totalLessons) * 100)
             : 0;
+
+        // Bài đang học = bài đầu tiên chưa hoàn thành (theo thứ tự), hoặc bài cuối nếu xong hết
+        const currentLesson = lessons.find((l) => !completedSet.has(l.id)) ?? lessons.at(-1);
 
         return NextResponse.json({
             progress: {
                 total_lessons:        totalLessons,
                 completed_lessons:    completedLessons,
                 percentage,
-                completed_lesson_ids: completed.map((c) => c.lesson_id),
+                completed_lesson_ids: [...completedSet],
+                current_lesson_id:    currentLesson?.id ?? null,
             },
         }, { status: 200 });
     } catch (error) {

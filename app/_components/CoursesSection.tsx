@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCourses, CourseInList } from "@/app/(marketing)/courses/courses.hook";
+import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
 
 // ── Gradient palette ───────────────────────────────────────────────────────
 
@@ -35,17 +36,22 @@ function GradientCard({
   course,
   index,
   variant = "sm",
+  isEnrolled = false,
 }: {
   course: CourseInList;
   index: number;
   variant?: "sm" | "lg";
+  isEnrolled?: boolean;
 }) {
   const isFree    = parseFloat(course.price) === 0;
   const gradient  = getGradient(course, index);
   const isLg      = variant === "lg";
 
   return (
-    <Link href={`/courses/${course.id}`} className="group block">
+    <Link
+      href={isEnrolled ? `/student/courses/${course.id}/learn` : `/courses/${course.id}`}
+      className="group block"
+    >
       {/* Gradient thumbnail */}
       <div
         className={`relative rounded-2xl overflow-hidden ${isLg ? "aspect-[16/10]" : "aspect-video"}`}
@@ -54,6 +60,16 @@ function GradientCard({
         {/* Decorative blobs */}
         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
         <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+
+        {/* Enrolled chip */}
+        {isEnrolled && (
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-white/90 backdrop-blur-sm text-[#1b61c9] text-[10px] font-bold px-2 py-1 rounded-full">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Đã đăng ký
+          </div>
+        )}
 
         {/* Text overlay */}
         <div className="absolute inset-0 p-5 flex flex-col justify-end">
@@ -156,6 +172,9 @@ function Section({
 
 export function CoursesSection() {
   const { data, isLoading } = useCourses({ limit: 20 });
+  const { data: me } = useMe();
+  const { data: enrolledCourses = [] } = useStudentCourses({ enabled: !!me });
+  const enrolledIds = new Set(enrolledCourses.map((c) => c.id));
 
   const all  = data?.courses ?? [];
   const free = all.filter((c) => parseFloat(c.price) === 0);
@@ -173,7 +192,7 @@ export function CoursesSection() {
           {isLoading
             ? Array.from({ length: 5 }).map((_, i) => <CardSkeleton key={i} />)
             : free.length > 0
-            ? free.map((c, i) => <GradientCard key={c.id} course={c} index={i} />)
+            ? free.map((c, i) => <GradientCard key={c.id} course={c} index={i} isEnrolled={enrolledIds.has(c.id)} />)
             : (
               <p className="col-span-5 text-sm text-[rgba(4,14,32,0.45)] py-8 text-center">
                 Chưa có khóa học miễn phí.
@@ -192,7 +211,7 @@ export function CoursesSection() {
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => <CardSkeleton key={i} variant="lg" />)
             : paid.length > 0
-            ? paid.map((c, i) => <GradientCard key={c.id} course={c} index={i} variant="lg" />)
+            ? paid.map((c, i) => <GradientCard key={c.id} course={c} index={i} variant="lg" isEnrolled={enrolledIds.has(c.id)} />)
             : (
               <p className="col-span-4 text-sm text-[rgba(4,14,32,0.45)] py-8 text-center">
                 Chưa có khóa học trả phí.

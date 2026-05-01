@@ -28,6 +28,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     include: {
                         lessons: {
                             orderBy: { order: "asc" },
+                            include: {
+                                quiz: { select: { id: true, title: true } },
+                            },
                         },
                     },
                 },
