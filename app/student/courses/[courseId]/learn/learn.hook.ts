@@ -56,6 +56,7 @@ export interface QuizOption {
   id: string;
   content: string;
   order: number;
+  is_correct?: boolean;
 }
 
 export interface QuizQuestion {

@@ -360,6 +360,7 @@ function QuizView({ quizId }: { quizId: string }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [showingResult, setShowingResult] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const lastAttempt = attempts?.[0] ?? null;
 
@@ -381,6 +382,7 @@ function QuizView({ quizId }: { quizId: string }) {
     setAnswers({});
     setSubmitted(false);
     setShowingResult(false);
+    setRetrying(true);
   };
 
   if (isLoading) {
@@ -401,7 +403,7 @@ function QuizView({ quizId }: { quizId: string }) {
   );
 
   const attemptToShow = showingResult ? submit.data?.data?.attempt : lastAttempt;
-  const answerMap = new Map(attemptToShow?.answers.map((a: { question_id: string; answer: string }) => [a.question_id, a.answer]) ?? []);
+  const answerMap = new Map<string, string>(attemptToShow?.answers?.map((a: { question_id: string; answer: string }) => [a.question_id, a.answer] as [string, string]) ?? []);
 
   return (
     <div className="flex flex-col gap-5">
@@ -505,7 +507,7 @@ function QuizView({ quizId }: { quizId: string }) {
           <QuestionItem
             key={q.id}
             question={q}
-            answer={showingResult ? (answerMap.get(q.id) ?? "") : (answers[q.id] ?? "")}
+            answer={(showingResult || (!!lastAttempt && !submitted && !retrying)) ? (answerMap.get(q.id) ?? "") : (answers[q.id] ?? "")}
             onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
             submitted={showingResult}
             correctAnswer={correctAnswerMap.get(q.id)}
