@@ -3,27 +3,11 @@
 import Link from "next/link";
 import { Plus, BookOpen, Users } from "lucide-react";
 import {
+  useMe,
   useTeacherDashboard,
   RecentCourse,
   RecentEnrollment,
 } from "./dashboard.hook";
-import { useQuery } from "@tanstack/react-query";
-import api from "@/lib/axios";
-
-interface Me {
-  id: string;
-  name: string;
-  email: string;
-}
-
-function useMe() {
-  return useQuery<Me>({
-    queryKey: ["me"],
-    queryFn:  async () => (await api.get<{ user: Me }>("/user/me")).data.user,
-    retry: false,
-    staleTime: 60_000,
-  });
-}
 
 function getGreeting() {
   const h = new Date().getHours();

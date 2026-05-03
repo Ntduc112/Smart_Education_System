@@ -1,6 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
+// ── Me ─────────────────────────────────────────────────────────────────────
+
+export interface Me {
+  id:         string;
+  name:       string;
+  email:      string;
+  role:       string;
+  avatar:     string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useMe() {
+  return useQuery<Me>({
+    queryKey: ["me"],
+    queryFn:  async () => (await api.get<{ user: Me }>("/user/me")).data.user,
+    retry: false,
+    staleTime: 60_000,
+  });
+}
+
+// ── Dashboard ───────────────────────────────────────────────────────────────
+
 export interface DashboardStats {
   total_courses:      number;
   published:          number;

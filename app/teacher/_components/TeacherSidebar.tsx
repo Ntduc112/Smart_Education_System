@@ -9,10 +9,13 @@ import { useState } from "react";
 import api from "@/lib/axios";
 
 interface Me {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string | null;
+  id:         string;
+  name:       string;
+  email:      string;
+  role:       string;
+  avatar:     string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 const NAV = [
@@ -37,9 +40,10 @@ export function TeacherSidebar() {
   const handleLogout = async () => {
     setLoggingOut(true);
     try { await api.post("/auth/logout"); } finally {
-      queryClient.clear();
+      queryClient.removeQueries({ queryKey: ["me"] });
+      queryClient.removeQueries({ queryKey: ["teacher", "dashboard"] });
       setLoggingOut(false);
-      router.push("/login");
+      router.push("/");
     }
   };
 
