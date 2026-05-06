@@ -3,6 +3,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
+export interface Certificate {
+  id: string;
+  user_id: string;
+  course_id: string;
+  issued_at: string;
+  certificate_no: string;
+  course: { title: string; instructor: { name: string } };
+  user: { name: string };
+}
+
 // ── Course / Lesson types ──────────────────────────────────────────────────
 
 export interface QuizSummary {
@@ -155,5 +165,23 @@ export function useSubmitQuizAttempt(quizId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["quiz-attempts", quizId] });
     },
+  });
+}
+
+export function useCourseCertificate(courseId: string) {
+  return useQuery({
+    queryKey: ["certificate", courseId],
+    queryFn: async () => {
+      const res = await api.get(`/student/courses/${courseId}/certificate`);
+      return res.data.certificate as Certificate | null;
+    },
+  });
+}
+
+export function useIssueCertificate(courseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post(`/student/courses/${courseId}/certificate`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["certificate", courseId] }),
   });
 }

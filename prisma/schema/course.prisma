@@ -29,7 +29,10 @@ model Course {
     sections      Chapter[]
     enrollments   Enrollment[]
     payments      Payment[]
+    reviews       Review[]
+    certificates  Certificate[]
 }
+
 
 model Chapter {
     id        String   @id @default(uuid())
@@ -59,6 +62,32 @@ enum payment_status {
     PAID
     CANCELLED
     FAILED
+}
+
+model Review {
+    id         String   @id @default(uuid())
+    user_id    String
+    user       User     @relation(fields: [user_id], references: [id])
+    course_id  String
+    course     Course   @relation(fields: [course_id], references: [id])
+    rating     Int
+    comment    String?
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+
+    @@unique([user_id, course_id])
+}
+
+model Certificate {
+    id             String   @id @default(uuid())
+    user_id        String
+    user           User     @relation(fields: [user_id], references: [id])
+    course_id      String
+    course         Course   @relation(fields: [course_id], references: [id])
+    issued_at      DateTime @default(now())
+    certificate_no String   @unique
+
+    @@unique([user_id, course_id])
 }
 
 model Payment {

@@ -20,7 +20,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         const course = await prisma.course.findFirst({
-            where: { id, instructor_id: userId },
+            where:   { id, instructor_id: userId },
+            include: {
+                category: { select: { id: true, name: true } },
+                sections: {
+                    orderBy: { order: "asc" },
+                    include: {
+                        lessons: {
+                            orderBy: { order: "asc" },
+                            include: { quiz: true },
+                        },
+                    },
+                },
+            },
         });
         if (!course) {
             return NextResponse.json({ error: "Course not found" }, { status: 404 });

@@ -3,10 +3,287 @@
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
-import { use, useState, useEffect } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { useCourse, useEnrollCourse, Chapter } from "../courses.hook";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import api from "@/lib/axios";
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface Review {
+  id: string;
+  user_id: string;
+  course_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  user: { name: string; avatar: string | null };
+}
+
+// ── Review hooks ───────────────────────────────────────────────────────────
+
+function useReviews(courseId: string) {
+  return useQuery({
+    queryKey: ["reviews", courseId],
+    queryFn: async () => {
+      const res = await api.get(`/courses/${courseId}/reviews`);
+      return res.data as { reviews: Review[]; averageRating: number | null; totalCount: number };
+    },
+  });
+}
+
+function useMyReview(courseId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["my-review", courseId],
+    queryFn: async () => {
+      const res = await api.get(`/student/courses/${courseId}/review`);
+      return res.data.review as Review | null;
+    },
+    enabled,
+  });
+}
+
+// ── Star components ────────────────────────────────────────────────────────
+
+function StarFilled({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function StarEmpty({ className }: { className?: string }) {
+  return (
+    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </svg>
+  );
+}
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) =>
+        i <= rating ? (
+          <StarFilled key={i} className="text-[#f59e0b]" />
+        ) : (
+          <StarEmpty key={i} className="text-[#f59e0b]" />
+        )
+      )}
+    </div>
+  );
+}
+
+function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [hovered, setHovered] = useState(0);
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onChange(i)}
+          onMouseEnter={() => setHovered(i)}
+          onMouseLeave={() => setHovered(0)}
+          className="focus:outline-none"
+        >
+          {i <= (hovered || value) ? (
+            <StarFilled className="text-[#f59e0b] w-7 h-7" />
+          ) : (
+            <StarEmpty className="text-[#e0e2e6] hover:text-[#f59e0b] w-7 h-7" />
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── Review form ────────────────────────────────────────────────────────────
+
+function ReviewForm({
+  courseId,
+  initialReview,
+  onCancel,
+}: {
+  courseId: string;
+  initialReview: Review | null;
+  onCancel?: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [rating, setRating] = useState(initialReview?.rating ?? 0);
+  const [comment, setComment] = useState(initialReview?.comment ?? "");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      const res = await api.post(`/student/courses/${courseId}/review`, { rating, comment });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews", courseId] });
+      queryClient.invalidateQueries({ queryKey: ["my-review", courseId] });
+      if (onCancel) onCancel();
+    },
+    onError: (err: any) => {
+      setFormError(err?.response?.data?.error ?? "Gửi đánh giá thất bại.");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (rating === 0) {
+      setFormError("Vui lòng chọn số sao.");
+      return;
+    }
+    mutate();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-[#f8fafc] border border-[#e0e2e6] rounded-2xl p-5 space-y-4">
+      <div>
+        <p className="text-sm font-medium text-[#181d26] mb-2">Đánh giá của bạn</p>
+        <StarPicker value={rating} onChange={setRating} />
+      </div>
+      <div>
+        <textarea
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Chia sẻ cảm nhận của bạn về khóa học..."
+          rows={4}
+          className="w-full border border-[#e0e2e6] rounded-xl px-4 py-3 text-sm text-[#181d26] placeholder-[rgba(4,14,32,0.35)] focus:outline-none focus:border-[#1b61c9] resize-none bg-white"
+        />
+      </div>
+      {formError && <p className="text-xs text-red-500">{formError}</p>}
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="px-5 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
+        >
+          {isPending ? "Đang gửi..." : initialReview ? "Cập nhật đánh giá" : "Gửi đánh giá"}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-5 py-2.5 text-sm font-medium text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
+          >
+            Hủy
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+// ── Reviews section ────────────────────────────────────────────────────────
+
+function ReviewsSection({ courseId, isEnrolled, isLoggedIn }: { courseId: string; isEnrolled: boolean; isLoggedIn: boolean }) {
+  const { data: reviewsData, isLoading: reviewsLoading } = useReviews(courseId);
+  const { data: myReview } = useMyReview(courseId, isLoggedIn);
+  const [editing, setEditing] = useState(false);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" });
+  };
+
+  return (
+    <div className="mt-10">
+      <div className="flex items-center gap-3 mb-6">
+        <h2 className="text-lg font-semibold text-[#181d26] tracking-[0.08px]">Đánh giá</h2>
+        {reviewsData && reviewsData.averageRating !== null && (
+          <span className="text-sm text-[rgba(4,14,32,0.55)]">
+            {reviewsData.averageRating} ★ ({reviewsData.totalCount} đánh giá)
+          </span>
+        )}
+      </div>
+
+      {reviewsData && reviewsData.averageRating !== null && (
+        <div className="flex items-center gap-3 mb-6 p-4 bg-white border border-[#e0e2e6] rounded-2xl w-fit">
+          <span className="text-4xl font-light text-[#181d26]">{reviewsData.averageRating}</span>
+          <div>
+            <StarRating rating={Math.round(reviewsData.averageRating)} />
+            <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1">{reviewsData.totalCount} đánh giá</p>
+          </div>
+        </div>
+      )}
+
+      {isEnrolled && isLoggedIn && (
+        <div className="mb-6">
+          {myReview && !editing ? (
+            <div className="bg-[#f8fafc] border border-[#e0e2e6] rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-[#181d26]">Đánh giá của bạn</p>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-xs text-[#1b61c9] hover:text-[#254fad] font-medium transition-colors"
+                >
+                  Sửa đánh giá
+                </button>
+              </div>
+              <StarRating rating={myReview.rating} />
+              {myReview.comment && (
+                <p className="mt-2 text-sm text-[rgba(4,14,32,0.69)]">{myReview.comment}</p>
+              )}
+            </div>
+          ) : (
+            <ReviewForm
+              courseId={courseId}
+              initialReview={myReview ?? null}
+              onCancel={myReview ? () => setEditing(false) : undefined}
+            />
+          )}
+        </div>
+      )}
+
+      {reviewsLoading ? (
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="animate-pulse flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-gray-100 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 bg-gray-100 rounded" />
+                <div className="h-3 w-full bg-gray-100 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : reviewsData && reviewsData.reviews.length > 0 ? (
+        <div className="space-y-5">
+          {reviewsData.reviews.map((review) => (
+            <div key={review.id} className="flex gap-4 pb-5 border-b border-[#f0f2f5] last:border-0 last:pb-0">
+              {review.user.avatar ? (
+                <img src={review.user.avatar} alt={review.user.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-[#1b61c9]/15 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-[#1b61c9]">{review.user.name.charAt(0)}</span>
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="text-sm font-medium text-[#181d26]">{review.user.name}</span>
+                  <span className="text-xs text-[rgba(4,14,32,0.35)]">{formatDate(review.created_at)}</span>
+                </div>
+                <StarRating rating={review.rating} />
+                {review.comment && (
+                  <p className="mt-2 text-sm text-[rgba(4,14,32,0.69)] leading-relaxed">{review.comment}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-[rgba(4,14,32,0.45)]">Chưa có đánh giá nào.</p>
+      )}
+    </div>
+  );
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -263,6 +540,13 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                   ))}
                 </div>
               </div>
+
+              {/* Reviews */}
+              <ReviewsSection
+                courseId={course.id}
+                isEnrolled={course.is_enrolled}
+                isLoggedIn={!!user}
+              />
             </div>
 
             {/* ── Right: Sidebar ── */}
