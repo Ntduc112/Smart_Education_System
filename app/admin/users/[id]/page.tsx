@@ -1,8 +1,11 @@
 "use client";
 
 import { use, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { editUserSchema, EditUserInput } from "./edit-user.schema";
 import {
   ArrowLeft, Pencil, Trash2, X, Check, Plus, Search,
   BookOpen, Users, CreditCard, Globe, Lock,
@@ -45,10 +48,17 @@ function EditModal({
   onClose: () => void;
 }) {
   const update = useUpdateUser(user.id);
-  const [form, setForm] = useState({ name: user.name, email: user.email, role: user.role });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<EditUserInput>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: { name: user.name, email: user.email, role: user.role as EditUserInput["role"] },
+  });
 
-  const handleSave = async () => {
-    await update.mutateAsync(form);
+  const onSubmit = async (values: EditUserInput) => {
+    await update.mutateAsync(values);
     onClose();
   };
 
@@ -66,16 +76,16 @@ function EditModal({
           </button>
         </div>
 
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5">
               Họ tên
             </label>
             <input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              {...register("name")}
               className="w-full px-3 py-2.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all"
             />
+            {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5">
@@ -83,46 +93,47 @@ function EditModal({
             </label>
             <input
               type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              {...register("email")}
               className="w-full px-3 py-2.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all"
             />
+            {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
           </div>
           <div>
             <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5">
               Vai trò
             </label>
             <select
-              value={form.role}
-              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              {...register("role")}
               className="w-full px-3 py-2.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] bg-white transition-all"
             >
               <option value="STUDENT">Học sinh</option>
               <option value="TEACHER">Giáo viên</option>
               <option value="ADMIN">Admin</option>
             </select>
+            {errors.role && <p className="mt-1 text-xs text-red-500">{errors.role.message}</p>}
           </div>
-        </div>
 
-        {update.isError && (
-          <p className="mt-3 text-xs text-red-500">Cập nhật thất bại. Vui lòng thử lại.</p>
-        )}
+          {update.isError && (
+            <p className="text-xs text-red-500">Cập nhật thất bại. Vui lòng thử lại.</p>
+          )}
 
-        <div className="flex gap-3 justify-end mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc] transition-colors"
-          >
-            Hủy
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={update.isPending}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#1b61c9] rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
-          >
-            {update.isPending ? "Đang lưu..." : "Lưu"}
-          </button>
-        </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc] transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={update.isPending}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#1b61c9] rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
+            >
+              {update.isPending ? "Đang lưu..." : "Lưu"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

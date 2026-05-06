@@ -1,9 +1,12 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
 import { useEssays, useGradeAnswer, EssayAnswer } from "./essays.hook";
+import { gradeAnswerSchema, GradeAnswerInput } from "./grade-answer.schema";
 
 function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("vi-VN", {
@@ -56,18 +59,24 @@ function AnswerCard({
 
     const isGraded = answer.points_earned !== null;
     const [editing, setEditing] = useState(!isGraded);
-    const [points, setPoints] = useState<string>(
-        answer.points_earned !== null ? String(answer.points_earned) : ""
-    );
-    const [feedback, setFeedback] = useState(answer.ai_feedback ?? "");
-
     const maxPoints = answer.question.points;
 
-    const handleSave = () => {
-        const numPoints = parseFloat(points);
-        if (isNaN(numPoints) || numPoints < 0 || numPoints > maxPoints) return;
+    const schema = useMemo(() => gradeAnswerSchema(maxPoints), [maxPoints]);
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+    } = useForm<GradeAnswerInput>({
+        resolver: zodResolver(schema),
+        defaultValues: {
+            points:   answer.points_earned ?? undefined,
+            feedback: answer.ai_feedback ?? "",
+        },
+    });
+
+    const onSubmit = (values: GradeAnswerInput) => {
         gradeAnswer(
-            { answerId: answer.id, points_earned: numPoints, feedback },
+            { answerId: answer.id, points_earned: values.points, feedback: values.feedback },
             { onSuccess: () => setEditing(false) }
         );
     };
@@ -145,7 +154,7 @@ function AnswerCard({
                     </button>
                 </div>
             ) : (
-                <div className="space-y-3 pt-1 border-t border-[#f0f2f5]">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 pt-1 border-t border-[#f0f2f5]">
                     <div className="flex items-center gap-3">
                         <label className="text-xs font-semibold text-[rgba(4,14,32,0.55)] shrink-0">
                             Điểm (tối đa {maxPoints}):
@@ -155,32 +164,34 @@ function AnswerCard({
                             min={0}
                             max={maxPoints}
                             step={0.5}
-                            value={points}
-                            onChange={(e) => setPoints(e.target.value)}
+                            {...register("points", { valueAsNumber: true })}
                             className="w-24 border border-[#e0e2e6] rounded-lg px-3 py-1.5 text-sm text-[#181d26] focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/20"
                             placeholder="0"
                         />
                     </div>
+                    {errors.points && (
+                        <p className="text-xs text-red-500">{errors.points.message}</p>
+                    )}
                     <div className="space-y-1">
                         <label className="text-xs font-semibold text-[rgba(4,14,32,0.55)]">Nhận xét:</label>
                         <textarea
                             rows={3}
-                            value={feedback}
-                            onChange={(e) => setFeedback(e.target.value)}
+                            {...register("feedback")}
                             placeholder="Viết nhận xét cho học viên..."
                             className="w-full border border-[#e0e2e6] rounded-xl px-3 py-2 text-sm text-[#181d26] resize-none focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/20"
                         />
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={handleSave}
-                            disabled={isPending || points === ""}
+                            type="submit"
+                            disabled={isPending}
                             className="px-4 py-2 bg-[#1b61c9] hover:bg-[#1550aa] text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isPending ? "Đang lưu..." : "Lưu điểm"}
                         </button>
                         {isGraded && (
                             <button
+                                type="button"
                                 onClick={() => setEditing(false)}
                                 className="px-4 py-2 text-sm font-medium text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] rounded-xl transition-colors"
                             >
@@ -188,7 +199,7 @@ function AnswerCard({
                             </button>
                         )}
                     </div>
-                </div>
+                </form>
             )}
         </div>
     );
