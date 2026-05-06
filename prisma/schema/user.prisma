@@ -19,6 +19,8 @@ model User {
     enrollments    Enrollment[]
     attempts       QuizAttempt[]
     payments       Payment[]
+    reviews        Review[]
+    certificates   Certificate[]
 }
 
 model RefreshToken {

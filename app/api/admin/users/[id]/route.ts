@@ -3,7 +3,9 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 
 const UpdateUserSchema = z.object({
-    role: z.enum(["STUDENT", "TEACHER", "ADMIN"]),
+    name:  z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    role:  z.enum(["STUDENT", "TEACHER", "ADMIN"]).optional(),
 });
 
 export async function GET(
@@ -43,7 +45,7 @@ export async function PUT(
     const { id } = await params;
     try {
         const body = await request.json();
-        const { role } = UpdateUserSchema.parse(body);
+        const { name, email, role } = UpdateUserSchema.parse(body);
 
         const user = await prisma.user.findUnique({ where: { id } });
         if (!user) {
@@ -52,7 +54,7 @@ export async function PUT(
 
         const updated = await prisma.user.update({
             where:  { id },
-            data:   { role },
+            data:   { ...(name && { name }), ...(email && { email }), ...(role && { role }) },
             select: { id: true, name: true, email: true, role: true },
         });
 
@@ -62,6 +64,20 @@ export async function PUT(
             return NextResponse.json({ errors: error.message }, { status: 400 });
         }
         console.error("Error updating user (admin):", error);
+        return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
+    }
+}
+
+export async function DELETE(
+    _request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params;
+    try {
+        await prisma.user.delete({ where: { id } });
+        return NextResponse.json({ message: "User deleted" }, { status: 200 });
+    } catch (error) {
+        console.error("Error deleting user (admin):", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
 }
