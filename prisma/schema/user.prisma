@@ -22,6 +22,7 @@ model User {
     reviews        Review[]
     certificates   Certificate[]
     notifications   Notification[]
+    wishlist        Wishlist[]
     questions       LessonQuestion[]
     questionReplies QuestionReply[]
     questionVotes   QuestionVote[]

@@ -6,6 +6,8 @@ import { UserMenu } from "@/app/_components/UserMenu";
 import { useState, useEffect } from "react";
 import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
 import { useCourses, useCategories, CourseInList } from "./courses.hook";
+import { useWishlist } from "@/app/student/wishlist/wishlist.hook";
+import { WishlistButton } from "@/app/_components/WishlistButton";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -32,15 +34,35 @@ function formatPrice(price: string) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function CourseCard({ course, isEnrolled }: { course: CourseInList; isEnrolled: boolean }) {
+function CourseCard({
+  course,
+  isEnrolled,
+  isWishlisted,
+  isLoggedIn,
+}: {
+  course: CourseInList;
+  isEnrolled: boolean;
+  isWishlisted: boolean;
+  isLoggedIn: boolean;
+}) {
   const isFree = parseFloat(course.price) === 0;
 
   return (
-    <Link
-      href={isEnrolled ? `/student/courses/${course.id}/learn` : `/courses/${course.id}`}
-      className="group bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-lg"
+    <div
+      className="group bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-lg relative"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
     >
+      {/* WishlistButton overlay — top-right, only when not enrolled */}
+      {!isEnrolled && (
+        <div className="absolute top-3 right-3 z-10">
+          <WishlistButton courseId={course.id} isWishlisted={isWishlisted} isLoggedIn={isLoggedIn} size="sm" />
+        </div>
+      )}
+
+      <Link
+        href={isEnrolled ? `/student/courses/${course.id}/learn` : `/courses/${course.id}`}
+        className="flex flex-col flex-1"
+      >
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden bg-[#f8fafc]">
         <img
@@ -114,7 +136,8 @@ function CourseCard({ course, isEnrolled }: { course: CourseInList; isEnrolled: 
           </span>
         </div>
       </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
@@ -148,6 +171,8 @@ export default function CoursesPage() {
   const isLoggedIn = !userLoading && !!user;
   const { data: enrolledCourses = [] } = useStudentCourses({ enabled: isLoggedIn });
   const enrolledIds = new Set(enrolledCourses.map((c) => c.id));
+  const { data: wishlist = [] } = useWishlist(isLoggedIn);
+  const wishlistedIds = new Set(wishlist.map((w) => w.course_id));
   const { data: categories = [] } = useCategories();
 
   const [search, setSearch] = useState("");
@@ -325,7 +350,13 @@ export default function CoursesPage() {
         ) : (
           <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
             {courses.map((course) => (
-              <CourseCard key={course.id} course={course} isEnrolled={enrolledIds.has(course.id)} />
+              <CourseCard
+                key={course.id}
+                course={course}
+                isEnrolled={enrolledIds.has(course.id)}
+                isWishlisted={wishlistedIds.has(course.id)}
+                isLoggedIn={isLoggedIn}
+              />
             ))}
           </div>
         )}

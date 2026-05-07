@@ -9,6 +9,8 @@ import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { useCourse, useEnrollCourse, Chapter } from "../courses.hook";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import { useWishlist } from "@/app/student/wishlist/wishlist.hook";
+import { WishlistButton } from "@/app/_components/WishlistButton";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -382,8 +384,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   const router  = useRouter();
 
   const { data: user }   = useMe();
+  const isLoggedIn = !!user;
   const { data: course, isLoading } = useCourse(id);
   const { mutateAsync: enroll, isPending: enrolling } = useEnrollCourse();
+  const { data: wishlist = [] } = useWishlist(isLoggedIn);
+  const isWishlisted = wishlist.some((w) => w.course_id === id);
 
   const [enrollError, setEnrollError]     = useState<string | null>(null);
   const [enrollSuccess, setEnrollSuccess] = useState(false);
@@ -599,19 +604,22 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                         Vào học ngay
                       </Link>
                     ) : (
-                      <button
-                        onClick={handleEnroll}
-                        disabled={enrolling}
-                        className="w-full flex items-center justify-center gap-2 bg-[#1b61c9] text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                        style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
-                      >
-                        {enrolling ? (
-                          <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                          </svg>
-                        ) : null}
-                        {course.is_free ? "Đăng ký miễn phí" : `Mua ngay · ${formatPrice(course.price)}`}
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleEnroll}
+                          disabled={enrolling}
+                          className="flex-1 flex items-center justify-center gap-2 bg-[#1b61c9] text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
+                        >
+                          {enrolling ? (
+                            <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                          ) : null}
+                          {course.is_free ? "Đăng ký miễn phí" : `Mua ngay · ${formatPrice(course.price)}`}
+                        </button>
+                        <WishlistButton courseId={course.id} isWishlisted={isWishlisted} isLoggedIn={isLoggedIn} size="md" />
+                      </div>
                     ))}
 
                     {/* Features */}

@@ -28,6 +28,7 @@ model Course {
     category      Category      @relation(fields: [category_id], references: [id])
     sections      Chapter[]
     enrollments   Enrollment[]
+    wishlist      Wishlist[]
     payments      Payment[]
     reviews       Review[]
     certificates  Certificate[]
