@@ -21,6 +21,7 @@ model User {
     payments       Payment[]
     reviews        Review[]
     certificates   Certificate[]
+    notifications  Notification[]
 }
 
 model RefreshToken {
