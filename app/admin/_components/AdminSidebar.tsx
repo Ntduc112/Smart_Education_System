@@ -45,7 +45,7 @@ export function AdminSidebar() {
     <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-[#e0e2e6] flex flex-col z-20">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-[#e0e2e6]">
-        <Link href="/admin/statistics" className="flex items-center gap-2.5">
+        <Link href="/admin/dashboard" className="flex items-center gap-2.5">
           <Logo size={32} />
           <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
         </Link>

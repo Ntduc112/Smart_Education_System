@@ -12,7 +12,7 @@ export function useDashboardStats() {
 
 export function useRecentUsers() {
   return useQuery<AdminUser[]>({
-    queryKey: ["admin", "users", "recent"],
+    queryKey: ["admin", "recent-users"],
     queryFn:  async () =>
       (await api.get<{ users: AdminUser[] }>("/admin/users?limit=5&page=1")).data.users,
     staleTime: 60_000,

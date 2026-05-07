@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ category }, { status: 201 });
     }catch(error){
         if(error instanceof z.ZodError){
-            return NextResponse.json({ errors: error.message }, { status: 400 });
+            return NextResponse.json({ error: error.errors[0]?.message ?? "Dữ liệu không hợp lệ" }, { status: 400 });
         }
         console.error("Error creating category:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
