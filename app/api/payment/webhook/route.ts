@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { verifyWebhook, isPaymentSuccess } from "@/lib/payment/payos";
+import { createNotification } from "@/lib/notification";
 
 // PayOS yêu cầu response { code: "00" } để xác nhận đã nhận webhook
 const OK = NextResponse.json({ code: "00", message: "success" }, { status: 200 });
@@ -37,6 +38,30 @@ export async function POST(request: NextRequest) {
                     update: {},
                 }),
             ]);
+
+            // Fire-and-forget notifications
+            createNotification(
+                payment.user_id,
+                "PAYMENT",
+                "Thanh toán thành công",
+                "Bạn đã đăng ký khóa học thành công",
+                "/student/dashboard"
+            ).catch(console.error);
+
+            prisma.course.findUnique({
+                where:  { id: payment.course_id },
+                select: { instructor_id: true },
+            }).then((course) => {
+                if (course?.instructor_id) {
+                    createNotification(
+                        course.instructor_id,
+                        "ENROLLMENT",
+                        "Học viên mới",
+                        "Có học viên mới đăng ký khóa học của bạn",
+                        `/teacher/courses/${payment.course_id}/students`
+                    ).catch(console.error);
+                }
+            }).catch(console.error);
         } else {
             await prisma.payment.update({
                 where: { order_code: orderCode },
