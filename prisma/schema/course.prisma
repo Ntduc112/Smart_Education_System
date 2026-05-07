@@ -55,6 +55,7 @@ model Lesson {
     chapter_id     String
     chapter        Chapter          @relation(fields: [chapter_id], references: [id])
     lessonProgress LessonProgress[]
+    questions      LessonQuestion[]
 }
 
 enum payment_status {

@@ -21,7 +21,11 @@ model User {
     payments       Payment[]
     reviews        Review[]
     certificates   Certificate[]
-    notifications  Notification[]
+    notifications   Notification[]
+    questions       LessonQuestion[]
+    questionReplies QuestionReply[]
+    questionVotes   QuestionVote[]
+    replyVotes      ReplyVote[]
 }
 
 model RefreshToken {

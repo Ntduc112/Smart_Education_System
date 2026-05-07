@@ -185,3 +185,115 @@ export function useIssueCertificate(courseId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["certificate", courseId] }),
   });
 }
+
+// ── Q&A types ──────────────────────────────────────────────────────────────
+
+export interface QAUser {
+  id: string;
+  name: string;
+  avatar: string | null;
+  role: string;
+}
+
+export interface QAReply {
+  id: string;
+  content: string;
+  created_at: string;
+  vote_count: number;
+  has_voted: boolean;
+  user: QAUser;
+}
+
+export interface QAQuestion {
+  id: string;
+  content: string;
+  created_at: string;
+  vote_count: number;
+  reply_count: number;
+  has_voted: boolean;
+  user: QAUser;
+  replies: QAReply[];
+}
+
+// ── Q&A hooks ──────────────────────────────────────────────────────────────
+
+export function useQuestions(lessonId: string) {
+  return useQuery<QAQuestion[]>({
+    queryKey: ["questions", lessonId],
+    queryFn: async () => {
+      const res = await api.get(`/lessons/${lessonId}/questions`);
+      return res.data.questions;
+    },
+  });
+}
+
+export function useAskQuestion(lessonId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) =>
+      api.post(`/lessons/${lessonId}/questions`, { content }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["questions", lessonId] }),
+  });
+}
+
+export function usePostReply(lessonId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ questionId, content }: { questionId: string; content: string }) =>
+      api.post(`/questions/${questionId}/replies`, { content }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["questions", lessonId] }),
+  });
+}
+
+export function useToggleQuestionVote(lessonId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (questionId: string) =>
+      api.post(`/questions/${questionId}/vote`),
+    onMutate: async (questionId) => {
+      await qc.cancelQueries({ queryKey: ["questions", lessonId] });
+      const prev = qc.getQueryData<QAQuestion[]>(["questions", lessonId]);
+      qc.setQueryData<QAQuestion[]>(["questions", lessonId], (old) =>
+        old?.map((q) =>
+          q.id === questionId
+            ? { ...q, has_voted: !q.has_voted, vote_count: q.has_voted ? q.vote_count - 1 : q.vote_count + 1 }
+            : q
+        )
+      );
+      return { prev };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["questions", lessonId], ctx.prev);
+    },
+  });
+}
+
+export function useToggleReplyVote(lessonId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ replyId }: { replyId: string; questionId: string }) =>
+      api.post(`/replies/${replyId}/vote`),
+    onMutate: async ({ replyId, questionId }) => {
+      await qc.cancelQueries({ queryKey: ["questions", lessonId] });
+      const prev = qc.getQueryData<QAQuestion[]>(["questions", lessonId]);
+      qc.setQueryData<QAQuestion[]>(["questions", lessonId], (old) =>
+        old?.map((q) =>
+          q.id === questionId
+            ? {
+                ...q,
+                replies: q.replies.map((r) =>
+                  r.id === replyId
+                    ? { ...r, has_voted: !r.has_voted, vote_count: r.has_voted ? r.vote_count - 1 : r.vote_count + 1 }
+                    : r
+                ),
+              }
+            : q
+        )
+      );
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["questions", lessonId], ctx.prev);
+    },
+  });
+}

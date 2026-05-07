@@ -20,6 +20,7 @@ import {
   QuizSummary,
   QuizQuestion,
 } from "./learn.hook";
+import { QASection } from "./_components/QASection";
 
 type NavItem =
   | { kind: "lesson"; item: Lesson }
@@ -842,6 +843,13 @@ export default function LearnPage({
                           {selectedItem.item.content}
                         </p>
                       </div>
+                    )}
+
+                    {user && (
+                      <QASection
+                        lessonId={selectedItem.item.id}
+                        currentUserId={user.id}
+                      />
                     )}
                   </>
                 ) : (
