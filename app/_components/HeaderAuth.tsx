@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { UserMenu } from "./UserMenu";
+import { NotificationBell } from "./NotificationBell";
 
 export function HeaderAuth() {
   const { data: user, isLoading } = useMe();
 
   if (isLoading) return <div className="w-32 h-9" />;
 
-  if (user) return <UserMenu user={user} />;
+  if (user) {
+    return (
+      <div className="flex items-center gap-2 shrink-0">
+        <NotificationBell />
+        <UserMenu user={user} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2 shrink-0">
