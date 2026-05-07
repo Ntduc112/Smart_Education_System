@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Users, GraduationCap, BarChart2, LogOut, Loader2, ShieldCheck } from "lucide-react";
+import { Users, GraduationCap, BarChart2, LogOut, Loader2, ShieldCheck, LayoutDashboard, UsersRound, Tag } from "lucide-react";
 import { Logo } from "@/app/_components/Logo";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -11,8 +11,11 @@ import api from "@/lib/axios";
 interface Me { id: string; name: string; email: string; avatar: string | null }
 
 const NAV = [
+  { href: "/admin/dashboard",  label: "Tổng quan",  icon: LayoutDashboard },
+  { href: "/admin/users",      label: "Người dùng", icon: UsersRound },
   { href: "/admin/teachers",   label: "Giáo viên",  icon: GraduationCap },
   { href: "/admin/students",   label: "Học sinh",   icon: Users },
+  { href: "/admin/categories", label: "Danh mục",   icon: Tag },
   { href: "/admin/statistics", label: "Thống kê",   icon: BarChart2 },
 ];
 
