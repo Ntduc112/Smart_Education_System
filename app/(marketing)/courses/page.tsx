@@ -4,12 +4,26 @@ import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
-import { useCourses, useCategories, CourseInList } from "./courses.hook";
+import { useCourses, useCategories, CourseInList, SortOption, PriceType } from "./courses.hook";
 import { useWishlist } from "@/app/student/wishlist/wishlist.hook";
 import { WishlistButton } from "@/app/_components/WishlistButton";
 
 // ── Constants ──────────────────────────────────────────────────────────────
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "newest",     label: "Mới nhất" },
+  { value: "popular",    label: "Nhiều học viên nhất" },
+  { value: "price_asc",  label: "Giá tăng dần" },
+  { value: "price_desc", label: "Giá giảm dần" },
+];
+
+const PRICE_TYPES: { value: PriceType; label: string }[] = [
+  { value: "all",  label: "Tất cả" },
+  { value: "free", label: "Miễn phí" },
+  { value: "paid", label: "Có phí" },
+];
 
 const LEVELS = [
   { value: "", label: "Tất cả cấp độ" },
@@ -175,11 +189,34 @@ export default function CoursesPage() {
   const wishlistedIds = new Set(wishlist.map((w) => w.course_id));
   const { data: categories = [] } = useCategories();
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebounced] = useState("");
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [level, setLevel] = useState<string>("");
-  const [page, setPage] = useState(1);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const [search, setSearch]         = useState(() => searchParams.get("search") ?? "");
+  const [debouncedSearch, setDebounced] = useState(() => searchParams.get("search") ?? "");
+  const [categoryId, setCategoryId] = useState(() => searchParams.get("category") ?? "");
+  const [level, setLevel]           = useState(() => searchParams.get("level") ?? "");
+  const [sort, setSort]             = useState<SortOption>(() => (searchParams.get("sort") as SortOption) ?? "newest");
+  const [priceType, setPriceType]   = useState<PriceType>(() => (searchParams.get("priceType") as PriceType) ?? "all");
+  const [minPrice, setMinPrice]     = useState(() => searchParams.get("minPrice") ?? "");
+  const [maxPrice, setMaxPrice]     = useState(() => searchParams.get("maxPrice") ?? "");
+  const [priceInputMin, setPriceInputMin] = useState(() => searchParams.get("minPrice") ?? "");
+  const [priceInputMax, setPriceInputMax] = useState(() => searchParams.get("maxPrice") ?? "");
+  const [page, setPage]             = useState(() => parseInt(searchParams.get("page") ?? "1"));
+
+  // Sync state → URL
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (debouncedSearch) p.set("search", debouncedSearch);
+    if (categoryId)      p.set("category", categoryId);
+    if (level)           p.set("level", level);
+    if (sort !== "newest") p.set("sort", sort);
+    if (priceType !== "all") p.set("priceType", priceType);
+    if (minPrice)        p.set("minPrice", minPrice);
+    if (maxPrice)        p.set("maxPrice", maxPrice);
+    if (page > 1)        p.set("page", String(page));
+    router.replace(`/courses${p.toString() ? `?${p.toString()}` : ""}`, { scroll: false });
+  }, [debouncedSearch, categoryId, level, sort, priceType, minPrice, maxPrice, page]);
 
   // Debounce search
   useEffect(() => {
@@ -191,6 +228,10 @@ export default function CoursesPage() {
     search: debouncedSearch || undefined,
     category_id: categoryId || undefined,
     level: level || undefined,
+    sort,
+    priceType: priceType !== "all" ? priceType : undefined,
+    minPrice: minPrice ? parseFloat(minPrice) : undefined,
+    maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
     page,
   });
 
@@ -199,6 +240,19 @@ export default function CoursesPage() {
 
   const handleCategory = (id: string) => { setCategoryId(id); setPage(1); };
   const handleLevel = (v: string) => { setLevel(v); setPage(1); };
+  const handleSort = (v: SortOption) => { setSort(v); setPage(1); };
+  const handlePriceType = (v: PriceType) => {
+    setPriceType(v);
+    if (v !== "paid") { setMinPrice(""); setMaxPrice(""); setPriceInputMin(""); setPriceInputMax(""); }
+    setPage(1);
+  };
+  const applyPriceRange = () => { setMinPrice(priceInputMin); setMaxPrice(priceInputMax); setPage(1); };
+  const clearAllFilters = () => {
+    setSearch(""); setDebounced(""); setCategoryId(""); setLevel("");
+    setSort("newest"); setPriceType("all");
+    setMinPrice(""); setMaxPrice(""); setPriceInputMin(""); setPriceInputMax("");
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -293,35 +347,103 @@ export default function CoursesPage() {
         </div>
 
         {/* ── Filter row ── */}
-        <div className="flex items-center justify-between mb-6 gap-4">
-          <div className="flex items-center gap-2">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(4,14,32,0.45)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-            </svg>
-            <span className="text-sm text-[rgba(4,14,32,0.55)]">Cấp độ:</span>
-            <select
-              value={level}
-              onChange={(e) => handleLevel(e.target.value)}
-              className="text-sm text-[#181d26] bg-white border border-[#e0e2e6] rounded-xl px-3 py-1.5 outline-none focus:border-[#1b61c9] cursor-pointer"
-            >
-              {LEVELS.map((l) => (
-                <option key={l.value} value={l.value}>{l.label}</option>
-              ))}
-            </select>
+        <div className="mb-6 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Level */}
+              <select
+                value={level}
+                onChange={(e) => handleLevel(e.target.value)}
+                className="text-sm text-[#181d26] bg-white border border-[#e0e2e6] rounded-xl px-3 py-1.5 outline-none focus:border-[#1b61c9] cursor-pointer"
+              >
+                {LEVELS.map((l) => (
+                  <option key={l.value} value={l.value}>{l.label}</option>
+                ))}
+              </select>
+
+              {/* Sort */}
+              <select
+                value={sort}
+                onChange={(e) => handleSort(e.target.value as SortOption)}
+                className="text-sm text-[#181d26] bg-white border border-[#e0e2e6] rounded-xl px-3 py-1.5 outline-none focus:border-[#1b61c9] cursor-pointer"
+              >
+                {SORT_OPTIONS.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+
+              {/* Price type toggle */}
+              <div className="flex items-center rounded-xl overflow-hidden border border-[#e0e2e6] bg-white">
+                {PRICE_TYPES.map((pt) => (
+                  <button
+                    key={pt.value}
+                    onClick={() => handlePriceType(pt.value)}
+                    className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                      priceType === pt.value
+                        ? "bg-[#1b61c9] text-white"
+                        : "text-[rgba(4,14,32,0.69)] hover:bg-[#f8fafc]"
+                    }`}
+                  >
+                    {pt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-sm text-[rgba(4,14,32,0.45)] shrink-0">
+              {isFetching ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                  </svg>
+                  Đang tải...
+                </span>
+              ) : pagination ? (
+                `${pagination.total} khóa học`
+              ) : null}
+            </p>
           </div>
 
-          <p className="text-sm text-[rgba(4,14,32,0.45)] shrink-0">
-            {isFetching ? (
-              <span className="inline-flex items-center gap-1.5">
-                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                </svg>
-                Đang tải...
-              </span>
-            ) : pagination ? (
-              `${pagination.total} khóa học`
-            ) : null}
-          </p>
+          {/* Price range — only shown when priceType=paid */}
+          {priceType === "paid" && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-[rgba(4,14,32,0.55)]">Giá:</span>
+              <input
+                type="number"
+                min={0}
+                placeholder="Từ"
+                value={priceInputMin}
+                onChange={(e) => setPriceInputMin(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyPriceRange()}
+                className="w-28 px-3 py-1.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] bg-white"
+              />
+              <span className="text-sm text-[rgba(4,14,32,0.35)]">—</span>
+              <input
+                type="number"
+                min={0}
+                placeholder="Đến"
+                value={priceInputMax}
+                onChange={(e) => setPriceInputMax(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyPriceRange()}
+                className="w-28 px-3 py-1.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] bg-white"
+              />
+              <span className="text-sm text-[rgba(4,14,32,0.45)]">VND</span>
+              <button
+                onClick={applyPriceRange}
+                className="px-3 py-1.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
+              >
+                Áp dụng
+              </button>
+              {(minPrice || maxPrice) && (
+                <button
+                  onClick={() => { setMinPrice(""); setMaxPrice(""); setPriceInputMin(""); setPriceInputMax(""); setPage(1); }}
+                  className="text-xs text-[rgba(4,14,32,0.45)] hover:text-[#181d26] transition-colors"
+                >
+                  Xóa
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Grid ── */}
@@ -341,7 +463,7 @@ export default function CoursesPage() {
               <p className="text-sm text-[rgba(4,14,32,0.55)]">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
             </div>
             <button
-              onClick={() => { setSearch(""); setCategoryId(""); setLevel(""); setPage(1); }}
+              onClick={clearAllFilters}
               className="text-sm text-[#1b61c9] font-medium hover:text-[#254fad] transition-colors"
             >
               Xóa bộ lọc
