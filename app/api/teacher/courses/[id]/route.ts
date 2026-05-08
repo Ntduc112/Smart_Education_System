@@ -3,13 +3,14 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 
 const CourseSchema = z.object({
-    title:       z.string().min(1, "Title is required"),
-    description: z.string().min(1, "Description is required"),
-    thumbnail:   z.string().url("Thumbnail must be a valid URL"),
-    status:      z.enum(["DRAFT", "PUBLISHED"]),
-    price:       z.number().min(0, "Price must be a non-negative number"),
-    level:       z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]),
-    category_id: z.string().uuid("Category ID must be a valid UUID"),
+    title:            z.string().min(1, "Title is required"),
+    description:      z.string().min(1, "Description is required"),
+    thumbnail:        z.string().url("Thumbnail must be a valid URL"),
+    status:           z.enum(["DRAFT", "PUBLISHED"]),
+    price:            z.number().min(0, "Price must be a non-negative number"),
+    level:            z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED"]),
+    category_id:      z.string().uuid("Category ID must be a valid UUID"),
+    discount_percent: z.number().int().min(0).max(100).nullable().optional(),
 });
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -52,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         const body = await request.json();
-        const { title, description, thumbnail, price, level, category_id, status } = CourseSchema.parse(body);
+        const { title, description, thumbnail, price, level, category_id, status, discount_percent } = CourseSchema.parse(body);
 
         const existingCourse = await prisma.course.findFirst({
             where: { id, instructor_id: userId },
@@ -62,7 +63,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         }
         const course = await prisma.course.update({
             where: { id, instructor_id: userId },
-            data:  { title, description, thumbnail, price, level, category_id, status },
+            data:  { title, description, thumbnail, price, level, category_id, status, discount_percent: discount_percent ?? null },
         });
         return NextResponse.json({ course }, { status: 200 });
     } catch (error) {

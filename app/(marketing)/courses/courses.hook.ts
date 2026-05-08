@@ -9,6 +9,7 @@ export interface CourseInList {
   description: string;
   thumbnail: string;
   price: string;
+  discount_percent: number | null;
   level: string;
   created_at: string;
   instructor: { id: string; name: string; avatar: string | null };

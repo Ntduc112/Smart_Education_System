@@ -301,6 +301,15 @@ function formatPrice(price: string) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 }
 
+function formatPriceNum(n: number) {
+  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
+}
+
+function discountedPrice(price: string, percent: number | null | undefined): number | null {
+  if (!percent || percent <= 0) return null;
+  return parseFloat(price) * (1 - percent / 100);
+}
+
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function CurriculumChapter({ chapter }: { chapter: Chapter }) {
@@ -571,6 +580,18 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     <div className="mb-5">
                       {course.is_free ? (
                         <span className="text-2xl font-semibold text-[#006400]">Miễn phí</span>
+                      ) : discountedPrice(course.price, course.discount_percent) !== null ? (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-semibold text-[#e53e3e]">
+                            {formatPriceNum(discountedPrice(course.price, course.discount_percent)!)}
+                          </span>
+                          <span className="text-sm text-[rgba(4,14,32,0.4)] line-through">
+                            {formatPrice(course.price)}
+                          </span>
+                          <span className="text-xs font-semibold text-white bg-[#e53e3e] px-1.5 py-0.5 rounded">
+                            -{course.discount_percent}%
+                          </span>
+                        </div>
                       ) : (
                         <span className="text-2xl font-semibold text-[#181d26]">{formatPrice(course.price)}</span>
                       )}
@@ -616,7 +637,12 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                               <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
                             </svg>
                           ) : null}
-                          {course.is_free ? "Đăng ký miễn phí" : `Mua ngay · ${formatPrice(course.price)}`}
+                          {course.is_free
+                            ? "Đăng ký miễn phí"
+                            : discountedPrice(course.price, course.discount_percent) !== null
+                              ? `Mua ngay · ${formatPriceNum(discountedPrice(course.price, course.discount_percent)!)}`
+                              : `Mua ngay · ${formatPrice(course.price)}`
+                          }
                         </button>
                         <WishlistButton courseId={course.id} isWishlisted={isWishlisted} isLoggedIn={isLoggedIn} size="md" />
                       </div>

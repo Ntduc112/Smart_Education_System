@@ -17,8 +17,9 @@ model Course {
     title         String
     description   String
     thumbnail     String
-    price         Decimal
-    level         String
+    price            Decimal
+    discount_percent Int?
+    level            String
     status        course_status
     created_at    DateTime      @default(now())
     updated_at    DateTime      @updatedAt

@@ -47,28 +47,33 @@ function CourseInfoPanel({
 }) {
   const updateCourse = useUpdateCourse(courseId);
   const [form, setForm] = useState({
-    title:       course.title,
-    description: course.description,
-    thumbnail:   course.thumbnail,
-    price:       parseFloat(course.price),
-    level:       course.level,
-    category_id: course.category_id,
-    status:      course.status,
+    title:            course.title,
+    description:      course.description,
+    thumbnail:        course.thumbnail,
+    price:            parseFloat(course.price),
+    discount_percent: course.discount_percent ?? 0,
+    level:            course.level,
+    category_id:      course.category_id,
+    status:           course.status,
   });
 
   useEffect(() => {
     setForm({
-      title:       course.title,
-      description: course.description,
-      thumbnail:   course.thumbnail,
-      price:       parseFloat(course.price),
-      level:       course.level,
-      category_id: course.category_id,
-      status:      course.status,
+      title:            course.title,
+      description:      course.description,
+      thumbnail:        course.thumbnail,
+      price:            parseFloat(course.price),
+      discount_percent: course.discount_percent ?? 0,
+      level:            course.level,
+      category_id:      course.category_id,
+      status:           course.status,
     });
   }, [course]);
 
-  const handleSave = () => updateCourse.mutate(form);
+  const handleSave = () => updateCourse.mutate({
+    ...form,
+    discount_percent: form.discount_percent > 0 ? form.discount_percent : null,
+  });
 
   return (
     <div className="space-y-4">
@@ -136,16 +141,36 @@ function CourseInfoPanel({
         </div>
       </div>
 
-      <div>
-        <label className={labelCls}>Giá (VND)</label>
-        <input
-          type="number"
-          min={0}
-          step={1000}
-          className={inputCls}
-          value={form.price}
-          onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Giá (VND)</label>
+          <input
+            type="number"
+            min={0}
+            step={1000}
+            className={inputCls}
+            value={form.price}
+            onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Giảm giá (%)</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            step={1}
+            placeholder="0"
+            className={inputCls}
+            value={form.discount_percent || ""}
+            onChange={(e) => setForm((f) => ({ ...f, discount_percent: parseInt(e.target.value) || 0 }))}
+          />
+          {form.discount_percent > 0 && form.price > 0 && (
+            <p className="mt-1 text-xs text-emerald-600">
+              Giá sau giảm: {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(form.price * (1 - form.discount_percent / 100))}
+            </p>
+          )}
+        </div>
       </div>
 
       <button

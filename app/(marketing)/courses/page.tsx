@@ -145,9 +145,20 @@ function CourseCard({
               {course._count.sections} chương
             </span>
           </div>
-          <span className={`text-sm font-semibold ${isFree ? "text-[#006400]" : "text-[#181d26]"}`}>
-            {formatPrice(course.price)}
-          </span>
+          {isFree ? (
+            <span className="text-sm font-semibold text-[#006400]">Miễn phí</span>
+          ) : course.discount_percent ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold text-[#e53e3e]">
+                {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(
+                  parseFloat(course.price) * (1 - course.discount_percent / 100)
+                )}
+              </span>
+              <span className="text-xs text-[rgba(4,14,32,0.4)] line-through">{formatPrice(course.price)}</span>
+            </div>
+          ) : (
+            <span className="text-sm font-semibold text-[#181d26]">{formatPrice(course.price)}</span>
+          )}
         </div>
       </div>
       </Link>

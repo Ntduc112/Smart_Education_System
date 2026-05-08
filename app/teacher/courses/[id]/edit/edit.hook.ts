@@ -29,16 +29,17 @@ export interface BuilderChapter {
 }
 
 export interface BuilderCourse {
-  id:          string;
-  title:       string;
-  description: string;
-  thumbnail:   string;
-  price:       string;
-  level:       string;
-  status:      "DRAFT" | "PUBLISHED";
-  category_id: string;
-  category:    { id: string; name: string };
-  sections:    BuilderChapter[];
+  id:               string;
+  title:            string;
+  description:      string;
+  thumbnail:        string;
+  price:            string;
+  discount_percent: number | null;
+  level:            string;
+  status:           "DRAFT" | "PUBLISHED";
+  category_id:      string;
+  category:         { id: string; name: string };
+  sections:         BuilderChapter[];
 }
 
 // ── Hooks ───────────────────────────────────────────────────────────────────
@@ -57,6 +58,7 @@ export function useUpdateCourse(id: string) {
     mutationFn: async (data: {
       title: string; description: string; thumbnail: string;
       price: number; level: string; status: string; category_id: string;
+      discount_percent?: number | null;
     }) => api.put(`/teacher/courses/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teacher", "course", id] });
