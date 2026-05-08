@@ -23,6 +23,7 @@ model User {
     certificates   Certificate[]
     notifications   Notification[]
     wishlist        Wishlist[]
+    notes           LessonNote[]
     questions       LessonQuestion[]
     questionReplies QuestionReply[]
     questionVotes   QuestionVote[]

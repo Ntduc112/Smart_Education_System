@@ -21,6 +21,7 @@ import {
   QuizQuestion,
 } from "./learn.hook";
 import { QASection } from "./_components/QASection";
+import { NotesSection } from "./_components/NotesSection";
 
 type NavItem =
   | { kind: "lesson"; item: Lesson }
@@ -851,6 +852,8 @@ export default function LearnPage({
                         currentUserId={user.id}
                       />
                     )}
+
+                    <NotesSection lessonId={selectedItem.item.id} />
                   </>
                 ) : (
                   <QuizView quizId={selectedItem.item.id} />
