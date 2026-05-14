@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { createNotification } from "@/lib/notification";
 
 const SubmitAttemptSchema = z.object({
     answers: z.array(z.object({
@@ -89,6 +90,18 @@ export async function POST(
             },
             include: { answers: true },
         });
+
+        // Fire-and-forget notification
+        const quizMessage = score !== null
+            ? `Bạn đạt ${score}/100 — ${isPassed ? "Đạt" : "Chưa đạt"}`
+            : "Bài quiz của bạn đang chờ chấm điểm";
+        createNotification(
+            userId,
+            "QUIZ_RESULT",
+            "Kết quả quiz",
+            quizMessage,
+            "/student/dashboard"
+        ).catch(console.error);
 
         return NextResponse.json({ attempt }, { status: 201 });
     } catch (error) {

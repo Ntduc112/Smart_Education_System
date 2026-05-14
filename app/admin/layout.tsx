@@ -1,4 +1,10 @@
+import { AdminSidebar } from "./_components/AdminSidebar";
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  // TODO: check role ADMIN
-  return <>{children}</>
+  return (
+    <div className="flex min-h-screen bg-[#f8fafc]">
+      <AdminSidebar />
+      <main className="flex-1 ml-60 min-h-screen">{children}</main>
+    </div>
+  );
 }

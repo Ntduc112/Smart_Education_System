@@ -17,7 +17,12 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         const courses = await prisma.course.findMany({
-            where: { instructor_id: userId },
+            where:   { instructor_id: userId },
+            include: {
+                category: { select: { id: true, name: true } },
+                _count:   { select: { enrollments: true } },
+            },
+            orderBy: { created_at: "desc" },
         });
         return NextResponse.json({ courses }, { status: 200 });
     }catch(error){

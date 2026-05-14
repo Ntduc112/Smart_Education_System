@@ -8,7 +8,10 @@ const CategorySchema = z.object({
 export async function GET(_request: NextRequest) {
     try{
 
-        const categories = await prisma.category.findMany();
+        const categories = await prisma.category.findMany({
+            include: { _count: { select: { courses: true } } },
+            orderBy: { name: "asc" }
+        });
         return NextResponse.json({ categories }, { status: 200 });
     }catch(error){
         console.error("Error fetching categories:", error);
@@ -23,12 +26,13 @@ export async function POST(request: NextRequest) {
             data:{
                 name,
                 description
-            }
+            },
+            include: { _count: { select: { courses: true } } }
         })
         return NextResponse.json({ category }, { status: 201 });
     }catch(error){
         if(error instanceof z.ZodError){
-            return NextResponse.json({ errors: error.message }, { status: 400 });
+            return NextResponse.json({ error: error.errors[0]?.message ?? "Dữ liệu không hợp lệ" }, { status: 400 });
         }
         console.error("Error creating category:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });

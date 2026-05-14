@@ -1,0 +1,10 @@
+model LessonNote {
+  id         String   @id @default(uuid())
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  lesson_id  String
+  lesson     Lesson   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  content    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}

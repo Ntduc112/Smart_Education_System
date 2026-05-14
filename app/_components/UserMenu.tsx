@@ -4,8 +4,9 @@ import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { BookOpen, ChevronDown, LogOut, Loader2 } from "lucide-react";
+import { BookOpen, ChevronDown, LogOut, Loader2, KeyRound, User } from "lucide-react";
 import api from "@/lib/axios";
+import { ChangePasswordModal } from "./ChangePasswordModal";
 
 interface User {
   name: string;
@@ -37,9 +38,10 @@ export function UserMenu({ user }: { user: User | null }) {
   const queryClient = useQueryClient();
   const menuRef     = useRef<HTMLDivElement>(null);
 
-  const [userOpen,    setUserOpen]    = useState(false);
-  const [coursesOpen, setCoursesOpen] = useState(false);
-  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [userOpen,          setUserOpen]          = useState(false);
+  const [coursesOpen,       setCoursesOpen]       = useState(false);
+  const [logoutLoading,     setLogoutLoading]     = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const { data: courses, isLoading: coursesLoading } = useEnrolledCourses(coursesOpen);
 
@@ -68,6 +70,7 @@ export function UserMenu({ user }: { user: User | null }) {
   };
 
   return (
+    <>
     <div ref={menuRef} className="flex items-center gap-1">
 
       {/* ── Dropdown: Khóa học đã đăng ký ── */}
@@ -188,6 +191,23 @@ export function UserMenu({ user }: { user: User | null }) {
             </div>
 
             <div className="py-1">
+              <Link
+                href="/student/profile"
+                onClick={() => setUserOpen(false)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#181d26] hover:bg-[#f8fafc] transition-colors"
+              >
+                <User size={15} strokeWidth={2} className="text-[rgba(4,14,32,0.45)]" />
+                Hồ sơ cá nhân
+              </Link>
+
+              <button
+                onClick={() => { setUserOpen(false); setChangePasswordOpen(true); }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#181d26] hover:bg-[#f8fafc] transition-colors"
+              >
+                <KeyRound size={15} strokeWidth={2} className="text-[rgba(4,14,32,0.45)]" />
+                Đổi mật khẩu
+              </button>
+
               <button
                 onClick={handleLogout}
                 disabled={logoutLoading}
@@ -206,5 +226,10 @@ export function UserMenu({ user }: { user: User | null }) {
       </div>
 
     </div>
+
+    {changePasswordOpen && (
+      <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />
+    )}
+    </>
   );
 }

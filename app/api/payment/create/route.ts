@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
         const course = await prisma.course.findFirst({
             where: { id: course_id, status: "PUBLISHED" },
-            select: { id: true, title: true, price: true },
+            select: { id: true, title: true, price: true, discount_percent: true },
         });
         if (!course) {
             return NextResponse.json({ error: "Course not found" }, { status: 404 });
@@ -30,8 +30,12 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Already enrolled in this course" }, { status: 409 });
         }
 
+        const finalPrice = course.discount_percent
+            ? Math.round(Number(course.price) * (1 - course.discount_percent / 100))
+            : Number(course.price);
+
         // Course miễn phí → enroll trực tiếp, không qua PayOS
-        if (Number(course.price) === 0) {
+        if (finalPrice === 0) {
             await prisma.enrollment.create({ data: { user_id: userId, course_id } });
             return NextResponse.json({ enrolled: true }, { status: 201 });
         }
@@ -58,7 +62,7 @@ export async function POST(request: NextRequest) {
             data: {
                 user_id:    userId,
                 course_id,
-                amount:     course.price,
+                amount:     finalPrice,
                 status:     "PENDING",
                 order_code: orderCode,
             },

@@ -9,6 +9,7 @@ export interface CourseInList {
   description: string;
   thumbnail: string;
   price: string;
+  discount_percent: number | null;
   level: string;
   created_at: string;
   instructor: { id: string; name: string; avatar: string | null };
@@ -51,10 +52,17 @@ export interface Pagination {
   totalPages: number;
 }
 
+export type SortOption = "newest" | "popular" | "price_asc" | "price_desc";
+export type PriceType  = "free" | "paid" | "all";
+
 export interface CoursesFilter {
   search?: string;
   category_id?: string;
   level?: string;
+  sort?: SortOption;
+  priceType?: PriceType;
+  minPrice?: number;
+  maxPrice?: number;
   page?: number;
   limit?: number;
 }
@@ -66,6 +74,10 @@ const fetchCourses = async (filter: CoursesFilter) => {
   if (filter.search)      params.set("search",      filter.search);
   if (filter.category_id) params.set("category_id", filter.category_id);
   if (filter.level)       params.set("level",        filter.level);
+  if (filter.sort)        params.set("sort",         filter.sort);
+  if (filter.priceType && filter.priceType !== "all") params.set("priceType", filter.priceType);
+  if (filter.minPrice != null) params.set("minPrice", String(filter.minPrice));
+  if (filter.maxPrice != null) params.set("maxPrice", String(filter.maxPrice));
   params.set("page",  String(filter.page ?? 1));
   params.set("limit", String(filter.limit ?? 9));
 

@@ -13,11 +13,15 @@ import {
   useQuizDetail,
   useQuizAttempts,
   useSubmitQuizAttempt,
+  useCourseCertificate,
+  useIssueCertificate,
   Chapter,
   Lesson,
   QuizSummary,
   QuizQuestion,
 } from "./learn.hook";
+import { QASection } from "./_components/QASection";
+import { NotesSection } from "./_components/NotesSection";
 
 type NavItem =
   | { kind: "lesson"; item: Lesson }
@@ -640,6 +644,8 @@ export default function LearnPage({
   const { data: course, isLoading: courseLoading } = useCourseDetail(courseId);
   const { data: progress } = useCourseProgress(courseId);
   const markComplete = useMarkLessonComplete(courseId);
+  const { data: certificate } = useCourseCertificate(courseId);
+  const issueCertificate = useIssueCertificate(courseId);
 
   const allNavItems: NavItem[] = course?.sections.flatMap(chapterNavItems) ?? [];
 
@@ -766,6 +772,46 @@ export default function LearnPage({
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+            {progress?.percentage === 100 && (
+              <div className="mb-5 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-5 py-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">🎉</span>
+                  <p className="text-sm font-medium text-[#166534]">
+                    Chúc mừng! Bạn đã hoàn thành khóa học.
+                  </p>
+                </div>
+                {certificate ? (
+                  <Link
+                    href={`/student/certificates/${certificate.id}`}
+                    className="shrink-0 flex items-center gap-1.5 text-sm font-medium text-[#1b61c9] hover:text-[#254fad] px-4 py-2 rounded-lg hover:bg-[#1b61c9]/8 transition-colors"
+                  >
+                    Xem chứng chỉ
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => {
+                      issueCertificate.mutate(undefined, {
+                        onSuccess: (res) => {
+                          router.push(`/student/certificates/${res.data.certificate.id}`);
+                        },
+                      });
+                    }}
+                    disabled={issueCertificate.isPending}
+                    className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors disabled:opacity-60"
+                  >
+                    {issueCertificate.isPending ? (
+                      <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+                      </svg>
+                    ) : null}
+                    Nhận chứng chỉ
+                  </button>
+                )}
+              </div>
+            )}
             {selectedItem ? (
               <>
                 <NavControls
@@ -799,6 +845,15 @@ export default function LearnPage({
                         </p>
                       </div>
                     )}
+
+                    {user && (
+                      <QASection
+                        lessonId={selectedItem.item.id}
+                        currentUserId={user.id}
+                      />
+                    )}
+
+                    <NotesSection lessonId={selectedItem.item.id} />
                   </>
                 ) : (
                   <QuizView quizId={selectedItem.item.id} />
