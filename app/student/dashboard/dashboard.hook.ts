@@ -69,6 +69,14 @@ export function useStudentCourses(options?: { enabled?: boolean }) {
   });
 }
 
+export function useStreak() {
+  return useQuery<{ streak: number; today_learned: boolean }>({
+    queryKey: ["student", "streak"],
+    queryFn: async () => (await api.get("/student/streak")).data,
+    staleTime: 60_000,
+  });
+}
+
 export function useCoursesProgress(courseIds: string[]) {
   return useQueries({
     queries: courseIds.map((id) => ({

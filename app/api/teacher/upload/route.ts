@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadFile } from "@/lib/storage/s3";
+import pdfParse from "pdf-parse";
 
 const ALLOWED_TYPES = ["application/pdf"];
 const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_PDF_TEXT   = 8000;             // ký tự tối đa lưu vào DB
 
 export async function POST(request: NextRequest) {
     const userId = request.headers.get("x-user-id");
@@ -32,8 +34,18 @@ export async function POST(request: NextRequest) {
 
     try {
         const buffer = Buffer.from(await file.arrayBuffer());
-        const url = await uploadFile(buffer, file.name, file.type);
-        return NextResponse.json({ url }, { status: 200 });
+
+        // Upload lên S3 và extract text song song
+        const [url, parsed] = await Promise.all([
+            uploadFile(buffer, file.name, file.type),
+            pdfParse(buffer).catch(() => null),
+        ]);
+
+        const pdfText = parsed?.text
+            ? parsed.text.replace(/\s+/g, " ").trim().slice(0, MAX_PDF_TEXT)
+            : null;
+
+        return NextResponse.json({ url, pdfText }, { status: 200 });
     } catch (error) {
         console.error("Upload error:", error);
         return NextResponse.json({ error: "Upload thất bại" }, { status: 500 });

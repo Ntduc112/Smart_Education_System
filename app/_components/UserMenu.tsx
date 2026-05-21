@@ -6,7 +6,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { BookOpen, ChevronDown, LogOut, Loader2, KeyRound, User } from "lucide-react";
 import api from "@/lib/axios";
-import { ChangePasswordModal } from "./ChangePasswordModal";
+import { ChangePasswordModal } from "../(auth)/changePassword/ChangePasswordModal";
 
 interface User {
   name: string;

@@ -10,6 +10,10 @@ const PUBLIC_ROUTES = [
     "/api/auth/login",
     "/api/auth/register",
     "/api/auth/refresh",
+    "/api/auth/forgot-password",
+    "/api/auth/verify-otp",
+    "/api/auth/reset-password",
+    "/forgot-password",
     "/api/payment/webhook",
     "/api/courses",
     "/api/admin/categories",
@@ -28,7 +32,7 @@ const TEACHER_ROUTES = [
 function matchesRoutes(pathName: string, routes: string[]){
     return routes.some(route => pathName === route || pathName.startsWith(route + "/"));
 }
-export async function middleware(request: NextRequest){
+export async function proxy(request: NextRequest){
     const pathName = request.nextUrl.pathname;
     if( pathName.startsWith("/_next")||
         pathName.startsWith("/favicon.ico")){
@@ -68,7 +72,7 @@ export async function middleware(request: NextRequest){
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-user-id", session.userId);
     requestHeaders.set("x-user-role", session.role);
- 
+
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 export const config = {

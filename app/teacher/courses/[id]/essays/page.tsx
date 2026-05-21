@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { ArrowLeft, FileText } from "lucide-react";
-import { useEssays, useGradeAnswer, EssayAnswer } from "./essays.hook";
+import { useEssays, useGradeAnswer, useAIGrade, EssayAnswer } from "./essays.hook";
 import { gradeAnswerSchema, GradeAnswerInput } from "./grade-answer.schema";
 
 function formatDate(dateStr: string) {
@@ -56,6 +56,7 @@ function AnswerCard({
     courseId: string;
 }) {
     const { mutate: gradeAnswer, isPending } = useGradeAnswer(courseId);
+    const aiGrade = useAIGrade();
 
     const isGraded = answer.points_earned !== null;
     const [editing, setEditing] = useState(!isGraded);
@@ -65,6 +66,7 @@ function AnswerCard({
     const {
         register,
         handleSubmit,
+        setValue,
         formState: { errors },
     } = useForm<GradeAnswerInput>({
         resolver: zodResolver(schema),
@@ -73,6 +75,23 @@ function AnswerCard({
             feedback: answer.ai_feedback ?? "",
         },
     });
+
+    const handleAIGrade = () => {
+        aiGrade.mutate(
+            {
+                questionContent: answer.question.content,
+                sampleAnswer: answer.question.sample_answer,
+                studentAnswer: answer.answer,
+                maxPoints,
+            },
+            {
+                onSuccess: (data) => {
+                    setValue("points", data.points);
+                    setValue("feedback", data.feedback);
+                },
+            }
+        );
+    };
 
     const onSubmit = (values: GradeAnswerInput) => {
         gradeAnswer(
@@ -155,6 +174,38 @@ function AnswerCard({
                 </div>
             ) : (
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 pt-1 border-t border-[#f0f2f5]">
+                    {/* AI grading button */}
+                    <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">
+                            Chấm điểm:
+                        </label>
+                        <button
+                            type="button"
+                            onClick={handleAIGrade}
+                            disabled={aiGrade.isPending}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[#1b61c9] bg-[#1b61c9]/8 hover:bg-[#1b61c9]/15 border border-[#1b61c9]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {aiGrade.isPending ? (
+                                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                    <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+                                    <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+                                </svg>
+                            ) : (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                    <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+                                    <path d="M19 3L19.8 5.2L22 6L19.8 6.8L19 9L18.2 6.8L16 6L18.2 5.2L19 3Z" />
+                                </svg>
+                            )}
+                            {aiGrade.isPending ? "Đang phân tích..." : "Gợi ý AI"}
+                        </button>
+                    </div>
+
+                    {aiGrade.isError && (
+                        <p className="text-xs text-red-500">
+                            Không thể kết nối AI. Vui lòng thử lại.
+                        </p>
+                    )}
+
                     <div className="flex items-center gap-3">
                         <label className="text-xs font-semibold text-[rgba(4,14,32,0.55)] shrink-0">
                             Điểm (tối đa {maxPoints}):

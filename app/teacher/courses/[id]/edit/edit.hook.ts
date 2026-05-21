@@ -18,6 +18,7 @@ export interface BuilderLesson {
   content:   string | null;
   video_url: string | null;
   pdf_url:   string | null;
+  pdf_text:  string | null;
   quiz:      BuilderQuiz[];
 }
 
@@ -125,11 +126,12 @@ export function useUpdateLesson(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      id, title, is_free, content, video_url, pdf_url,
+      id, title, is_free, content, video_url, pdf_url, pdf_text,
     }: {
       id: string; title: string; is_free: boolean;
-      content: string | null; video_url: string | null; pdf_url: string | null;
-    }) => api.put(`/teacher/lessons/${id}`, { title, is_free, content, video_url, pdf_url }),
+      content: string | null; video_url: string | null;
+      pdf_url: string | null; pdf_text: string | null;
+    }) => api.put(`/teacher/lessons/${id}`, { title, is_free, content, video_url, pdf_url, pdf_text }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
   });
 }
@@ -147,10 +149,11 @@ export function useUploadPdf() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const { data } = await api.post<{ url: string }>("/teacher/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return data.url;
+      const { data } = await api.post<{ url: string; pdfText: string | null }>(
+        "/teacher/upload", formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return { url: data.url, pdfText: data.pdfText ?? null };
     },
   });
 }
@@ -159,7 +162,65 @@ export function useCreateQuiz(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ lesson_id, title, pass_score }: { lesson_id: string; title: string; pass_score: number }) =>
-      api.post("/teacher/quizzes", { lesson_id, title, pass_score }),
+      (await api.post<{ quiz: BuilderQuiz }>("/teacher/quizzes", { lesson_id, title, pass_score })).data.quiz,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+  });
+}
+
+export interface AIQuestion {
+  content: string;
+  type: "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
+  points: number;
+  sample_answer?: string;
+  options?: { content: string; is_correct: boolean }[];
+}
+
+export function useAIGenerateQuiz() {
+  return useMutation({
+    mutationFn: async ({
+      lessonTitle, lessonContent, questionCount,
+    }: {
+      lessonTitle: string;
+      lessonContent: string | null;
+      questionCount: number;
+    }) => {
+      const res = await api.post<{ questions: AIQuestion[] }>(
+        "/teacher/ai/generate-quiz",
+        { lessonTitle, lessonContent, questionCount }
+      );
+      return res.data.questions;
+    },
+  });
+}
+
+export function useCreateQuizWithQuestions(courseId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      lessonId, title, passScore, questions,
+    }: {
+      lessonId: string;
+      title: string;
+      passScore: number;
+      questions: AIQuestion[];
+    }) => {
+      const quizRes = await api.post<{ quiz: BuilderQuiz }>(
+        "/teacher/quizzes",
+        { lesson_id: lessonId, title, pass_score: passScore }
+      );
+      const quizId = quizRes.data.quiz.id;
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        await api.post(`/teacher/quizzes/${quizId}/questions`, {
+          content:       q.content,
+          type:          q.type,
+          points:        q.points,
+          order:         i + 1,
+          sample_answer: q.sample_answer,
+          options:       q.options?.map((o, idx) => ({ ...o, order: idx + 1 })),
+        });
+      }
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
   });
 }

@@ -13,6 +13,7 @@ import {
   useUploadPdf, useCreateQuiz,
   BuilderChapter, BuilderLesson,
 } from "./edit.hook";
+import { AIQuizModal } from "./_components/AIQuizModal";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
@@ -240,10 +241,12 @@ function LessonPanel({
     content:   lesson.content ?? "",
     video_url: lesson.video_url ?? "",
     pdf_url:   lesson.pdf_url ?? "",
+    pdf_text:  lesson.pdf_text ?? "",
   });
-  const [showQuizForm, setShowQuizForm] = useState(false);
-  const [quizTitle, setQuizTitle]       = useState("");
-  const [quizScore, setQuizScore]       = useState(70);
+  const [showQuizForm, setShowQuizForm]   = useState(false);
+  const [showAIModal, setShowAIModal]     = useState(false);
+  const [quizTitle, setQuizTitle]         = useState("");
+  const [quizScore, setQuizScore]         = useState(70);
 
   useEffect(() => {
     setForm({
@@ -252,6 +255,7 @@ function LessonPanel({
       content:   lesson.content ?? "",
       video_url: lesson.video_url ?? "",
       pdf_url:   lesson.pdf_url ?? "",
+      pdf_text:  lesson.pdf_text ?? "",
     });
   }, [lesson]);
 
@@ -263,11 +267,12 @@ function LessonPanel({
       content:   form.content || null,
       video_url: form.video_url || null,
       pdf_url:   form.pdf_url || null,
+      pdf_text:  form.pdf_text || null,
     });
 
   const handlePdfUpload = async (file: File) => {
-    const url = await uploadPdf.mutateAsync(file);
-    setForm((f) => ({ ...f, pdf_url: url }));
+    const { url, pdfText } = await uploadPdf.mutateAsync(file);
+    setForm((f) => ({ ...f, pdf_url: url, pdf_text: pdfText ?? "" }));
   };
 
   const handleCreateQuiz = () => {
@@ -443,15 +448,37 @@ function LessonPanel({
             </div>
           </div>
         ) : (
-          <button
-            onClick={() => setShowQuizForm(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#c0c8d5] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
-          >
-            <Plus size={14} />
-            Thêm bài kiểm tra
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowQuizForm(true)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#c0c8d5] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+            >
+              <Plus size={14} />
+              Thêm quiz
+            </button>
+            <button
+              onClick={() => setShowAIModal(true)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#1b61c9]/40 rounded-xl text-sm text-[#1b61c9] hover:bg-[#1b61c9]/6 transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
+              </svg>
+              Tạo với AI
+            </button>
+          </div>
         )}
       </div>
+
+      {showAIModal && (
+        <AIQuizModal
+          courseId={courseId}
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+          lessonContent={lesson.content}
+          onClose={() => setShowAIModal(false)}
+          onSuccess={() => setShowAIModal(false)}
+        />
+      )}
     </div>
   );
 }

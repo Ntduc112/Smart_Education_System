@@ -27,6 +27,7 @@ export interface Lesson {
   content: string | null;
   video_url: string | null;
   pdf_url: string | null;
+  pdf_text: string | null;
   is_free: boolean;
   chapter_id: string;
   quiz: QuizSummary[];
@@ -232,7 +233,16 @@ export function useAskQuestion(lessonId: string) {
   return useMutation({
     mutationFn: (content: string) =>
       api.post(`/lessons/${lessonId}/questions`, { content }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["questions", lessonId] }),
+    onSuccess: (res) => {
+      const newQ: QAQuestion = {
+        ...res.data.question,
+        vote_count: 0,
+        reply_count: 0,
+        has_voted: false,
+        replies: [],
+      };
+      qc.setQueryData<QAQuestion[]>(["questions", lessonId], (old = []) => [newQ, ...old]);
+    },
   });
 }
 

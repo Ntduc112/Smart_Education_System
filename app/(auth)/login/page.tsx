@@ -149,7 +149,7 @@ export default function LoginPage() {
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
               <div className="flex justify-end mt-1.5">
-                <Link href="#" className="text-sm text-[#1b61c9] hover:text-[#254fad] tracking-[0.07px] transition-colors">
+                <Link href="/forgot-password" className="text-sm text-[#1b61c9] hover:text-[#254fad] tracking-[0.07px] transition-colors">
                   Quên mật khẩu?
                 </Link>
               </div>

@@ -22,6 +22,8 @@ import {
 } from "./learn.hook";
 import { QASection } from "./_components/QASection";
 import { NotesSection } from "./_components/NotesSection";
+import { AIChatBox } from "./_components/AIChatBox";
+import { AISummary } from "./_components/AISummary";
 
 type NavItem =
   | { kind: "lesson"; item: Lesson }
@@ -846,6 +848,12 @@ export default function LearnPage({
                       </div>
                     )}
 
+                    <AISummary
+                      lessonTitle={selectedItem.item.title}
+                      lessonContent={selectedItem.item.pdf_text ?? selectedItem.item.content}
+                      courseTitle={course.title}
+                    />
+
                     {user && (
                       <QASection
                         lessonId={selectedItem.item.id}
@@ -854,6 +862,20 @@ export default function LearnPage({
                     )}
 
                     <NotesSection lessonId={selectedItem.item.id} />
+
+                    {(() => {
+                      const chapter = course.sections.find((s) =>
+                        s.lessons.some((l) => l.id === selectedItem.item.id)
+                      );
+                      return (
+                        <AIChatBox
+                          lessonTitle={selectedItem.item.title}
+                          lessonContent={selectedItem.item.pdf_text ?? selectedItem.item.content}
+                          courseTitle={course.title}
+                          chapterTitle={chapter?.title ?? ""}
+                        />
+                      );
+                    })()}
                   </>
                 ) : (
                   <QuizView quizId={selectedItem.item.id} />

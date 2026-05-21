@@ -50,6 +50,28 @@ export function useEssays(courseId: string, gradedFilter: "all" | "ungraded") {
     });
 }
 
+export function useAIGrade() {
+    return useMutation({
+        mutationFn: async ({
+            questionContent,
+            sampleAnswer,
+            studentAnswer,
+            maxPoints,
+        }: {
+            questionContent: string;
+            sampleAnswer: string | null;
+            studentAnswer: string;
+            maxPoints: number;
+        }) => {
+            const res = await api.post<{ points: number; feedback: string }>(
+                "/teacher/ai/grade",
+                { questionContent, sampleAnswer, studentAnswer, maxPoints }
+            );
+            return res.data;
+        },
+    });
+}
+
 export function useGradeAnswer(courseId: string) {
     const queryClient = useQueryClient();
     return useMutation({

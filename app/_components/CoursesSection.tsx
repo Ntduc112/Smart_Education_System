@@ -52,14 +52,31 @@ function GradientCard({
       href={isEnrolled ? `/student/courses/${course.id}/learn` : `/courses/${course.id}`}
       className="group block"
     >
-      {/* Gradient thumbnail */}
+      {/* Thumbnail */}
       <div
         className={`relative rounded-2xl overflow-hidden ${isLg ? "aspect-[16/10]" : "aspect-video"}`}
-        style={{ background: gradient }}
+        style={course.thumbnail ? undefined : { background: gradient }}
       >
-        {/* Decorative blobs */}
-        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+        {course.thumbnail ? (
+          <img
+            src={course.thumbnail}
+            alt={course.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <>
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
+            <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+            <div className="absolute inset-0 p-5 flex flex-col justify-end">
+              <span className="text-white/60 text-[10px] uppercase tracking-[0.15em] mb-1">
+                {course.category.name}
+              </span>
+              <h3 className={`text-white font-bold leading-tight ${isLg ? "text-xl" : "text-base"} line-clamp-2`}>
+                {course.title}
+              </h3>
+            </div>
+          </>
+        )}
 
         {/* Enrolled chip */}
         {isEnrolled && (
@@ -70,16 +87,6 @@ function GradientCard({
             Đã đăng ký
           </div>
         )}
-
-        {/* Text overlay */}
-        <div className="absolute inset-0 p-5 flex flex-col justify-end">
-          <span className="text-white/60 text-[10px] uppercase tracking-[0.15em] mb-1">
-            {course.category.name}
-          </span>
-          <h3 className={`text-white font-bold leading-tight ${isLg ? "text-xl" : "text-base"} line-clamp-2`}>
-            {course.title}
-          </h3>
-        </div>
 
         {/* Hover darken */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-200 rounded-2xl" />

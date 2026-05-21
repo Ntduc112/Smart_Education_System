@@ -52,6 +52,7 @@ model Lesson {
     content        String?
     video_url      String?
     pdf_url        String?
+    pdf_text       String?
     quiz           Quiz[]
     is_free        Boolean          @default(false)
     chapter_id     String

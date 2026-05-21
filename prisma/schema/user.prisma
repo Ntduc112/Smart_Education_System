@@ -50,6 +50,17 @@ model Enrollment {
     @@unique([user_id, course_id])
 }
 
+model PasswordReset {
+    id         String   @id @default(uuid())
+    email      String
+    code       String
+    expires_at DateTime
+    used       Boolean  @default(false)
+    created_at DateTime @default(now())
+
+    @@index([email])
+}
+
 model LessonProgress {
     id              String    @id @default(uuid())
     user_id         String

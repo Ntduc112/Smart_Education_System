@@ -5,7 +5,7 @@ import { Logo } from "@/app/_components/Logo";
 import { SearchBar } from "@/app/_components/SearchBar";
 import { UserMenu } from "@/app/_components/UserMenu";
 import { useState } from "react";
-import { useMe, useStudentCourses, useCoursesProgress, StudentCourse, CourseProgress } from "./dashboard.hook";
+import { useMe, useStudentCourses, useCoursesProgress, useStreak, StudentCourse, CourseProgress } from "./dashboard.hook";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -217,6 +217,7 @@ function CourseCardSkeleton() {
 
 export default function StudentDashboardPage() {
   const { data: user } = useMe();
+  const { data: streakData } = useStreak();
   const { data: courses = [], isLoading: coursesLoading } = useStudentCourses();
 
   const courseIds = courses.map((c) => c.id);
@@ -302,7 +303,73 @@ export default function StudentDashboardPage() {
           )}
         </div>
 
+        {/* Streak */}
+        {streakData !== undefined && (
+          <div
+            className={`mb-8 rounded-2xl border px-6 py-4 flex items-center gap-4 ${
+              streakData.today_learned
+                ? "bg-orange-50 border-orange-200"
+                : "bg-white border-[#e0e2e6]"
+            }`}
+            style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
+          >
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
+              streakData.today_learned ? "bg-orange-100" : "bg-[#f8fafc]"
+            }`}>
+              🔥
+            </div>
+            <div className="flex-1">
+              <p className="text-base font-semibold text-[#181d26]">
+                {streakData.streak > 0
+                  ? `${streakData.streak} ngày học liên tiếp!`
+                  : "Bắt đầu streak hôm nay!"}
+              </p>
+              <p className="text-sm text-[rgba(4,14,32,0.55)] mt-0.5">
+                {streakData.today_learned
+                  ? "Bạn đã học hôm nay. Tiếp tục phát huy nhé!"
+                  : "Học ít nhất 1 bài hôm nay để duy trì streak."}
+              </p>
+            </div>
+            {streakData.streak >= 7 && (
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
+                  {streakData.streak >= 30 ? "Huyền thoại" : streakData.streak >= 14 ? "Xuất sắc" : "Tốt lắm"}
+                </p>
+                <p className="text-xs text-[rgba(4,14,32,0.35)] mt-0.5">{streakData.streak} ngày</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Courses */}
+        {/* Quick links */}
+        <div className="flex items-center gap-3 mb-8 flex-wrap">
+          <Link
+            href="/student/flashcards"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
+            style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
+          >
+            <span className="text-base">🃏</span>
+            Flashcard ôn tập
+          </Link>
+          <Link
+            href="/student/notes"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
+            style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
+          >
+            <span className="text-base">📝</span>
+            Ghi chú của tôi
+          </Link>
+          <Link
+            href="/student/certificates"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
+            style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
+          >
+            <span className="text-base">🏆</span>
+            Chứng chỉ
+          </Link>
+        </div>
+
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold text-[#181d26] tracking-[0.12px]">
             Khóa học của tôi

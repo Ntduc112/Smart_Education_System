@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X, Eye, EyeOff, Lock, CheckCircle } from "lucide-react";
-import { useChangePassword } from "../(auth)/changePassword/change-password.hook";
-import { changePasswordSchema, ChangePasswordInput } from "../(auth)/changePassword/change-password.schema";
+import { useChangePassword } from "./change-password.hook";
+import { changePasswordSchema, ChangePasswordInput } from "./change-password.schema";
 import { getApiError } from "@/lib/api/error";
 
 interface ChangePasswordModalProps {
