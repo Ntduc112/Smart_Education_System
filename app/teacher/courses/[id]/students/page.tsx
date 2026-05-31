@@ -4,9 +4,9 @@ import { use, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, ChevronDown, ChevronRight,
-  Users, BookOpen, ClipboardList, CheckCircle2, XCircle, Clock,
+  Users, BookOpen, ClipboardList, CheckCircle2, XCircle, Clock, Lock,
 } from "lucide-react";
-import { useStudentsProgress, StudentProgress, QuizResult } from "./students.hook";
+import { useStudentsProgress, StudentProgress, QuizResult, LessonDetail } from "./students.hook";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +41,47 @@ function ProgressBar({ pct }: { pct: number }) {
         <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
       <span className="text-xs font-semibold text-[rgba(4,14,32,0.55)] w-8 text-right">{pct}%</span>
+    </div>
+  );
+}
+
+// ── Lesson detail row ─────────────────────────────────────────────────────────
+
+function LessonDetailRow({ lesson }: { lesson: LessonDetail }) {
+  const watchColor =
+    lesson.watch_percent >= 80 ? "bg-emerald-500" :
+    lesson.watch_percent > 0   ? "bg-[#1b61c9]"  :
+                                  "bg-[#f0f2f5]";
+  return (
+    <div className="flex items-center gap-4 py-2.5 px-4 rounded-xl hover:bg-[#f8fafc]">
+      <div className="shrink-0">
+        {lesson.is_completed ? (
+          <CheckCircle2 size={18} className="text-emerald-500" />
+        ) : lesson.watch_percent > 0 ? (
+          <div className="w-4 h-4 rounded-full border-2 border-[#1b61c9] flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#1b61c9]" />
+          </div>
+        ) : (
+          <div className="w-4 h-4 rounded-full border-2 border-[#e0e2e6]" />
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-[#181d26] truncate">{lesson.lesson_title}</p>
+        <p className="text-xs text-[rgba(4,14,32,0.4)] truncate">{lesson.chapter_title}</p>
+      </div>
+      <div className="w-36 shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-[#f0f2f5] rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${watchColor}`} style={{ width: `${lesson.watch_percent}%` }} />
+          </div>
+          <span className="text-xs font-semibold text-[rgba(4,14,32,0.55)] w-8 text-right">
+            {lesson.watch_percent}%
+          </span>
+        </div>
+      </div>
+      <span className="text-xs text-[rgba(4,14,32,0.4)] w-28 text-right shrink-0">
+        {lesson.last_watched_at ? timeAgo(lesson.last_watched_at) : "Chưa xem"}
+      </span>
     </div>
   );
 }
@@ -111,6 +152,8 @@ function StudentRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const [tab, setTab] = useState<"lessons" | "quizzes">("lessons");
+
   return (
     <>
       {/* Main row */}
@@ -184,39 +227,79 @@ function StudentRow({
         </td>
       </tr>
 
-      {/* Expanded quiz detail */}
-      {expanded && student.quizzes.length > 0 && (
+      {/* Expanded detail */}
+      {expanded && (
         <tr>
           <td colSpan={6} className="px-6 pb-3 pt-0 bg-[#fafbfc]">
             <div className="border border-[#e0e2e6] rounded-xl overflow-hidden">
-              {/* Quiz table header */}
-              <div className="flex items-center gap-4 px-4 py-2 bg-[#f0f2f5] border-b border-[#e0e2e6]">
-                <div className="w-5 shrink-0" />
-                <p className="flex-1 text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">
+              {/* Tab bar */}
+              <div className="flex border-b border-[#e0e2e6] bg-[#f8fafc]" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => setTab("lessons")}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-colors border-b-2 ${
+                    tab === "lessons"
+                      ? "text-[#1b61c9] border-[#1b61c9]"
+                      : "text-[rgba(4,14,32,0.45)] border-transparent hover:text-[#181d26]"
+                  }`}
+                >
+                  <BookOpen size={12} />
+                  Tiến độ bài học
+                </button>
+                <button
+                  onClick={() => setTab("quizzes")}
+                  className={`flex items-center gap-1.5 px-4 py-2 text-xs font-semibold transition-colors border-b-2 ${
+                    tab === "quizzes"
+                      ? "text-[#7c3aed] border-[#7c3aed]"
+                      : "text-[rgba(4,14,32,0.45)] border-transparent hover:text-[#181d26]"
+                  }`}
+                >
+                  <ClipboardList size={12} />
                   Bài kiểm tra
-                </p>
-                <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-20 text-center">
-                  Số lần thi
-                </p>
-                <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-24 text-right">
-                  Điểm cao nhất
-                </p>
-                <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-28 text-right">
-                  Lần thi cuối
-                </p>
+                  {student.quiz_total > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full bg-[#f0f2f5] text-[rgba(4,14,32,0.55)] text-[10px]">
+                      {student.quiz_total}
+                    </span>
+                  )}
+                </button>
               </div>
-              {student.quizzes.map((q) => (
-                <QuizRow key={q.quiz_id} q={q} />
-              ))}
-            </div>
-          </td>
-        </tr>
-      )}
 
-      {expanded && student.quizzes.length === 0 && (
-        <tr>
-          <td colSpan={6} className="px-8 py-3 bg-[#fafbfc]">
-            <p className="text-xs text-[rgba(4,14,32,0.4)]">Khóa học này chưa có bài kiểm tra nào.</p>
+              {/* Lessons tab */}
+              {tab === "lessons" && (
+                <>
+                  <div className="flex items-center gap-4 px-4 py-2 bg-[#f0f2f5] border-b border-[#e0e2e6]">
+                    <div className="w-4 shrink-0" />
+                    <p className="flex-1 text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">Bài học</p>
+                    <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-36">Đã xem</p>
+                    <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-28 text-right">Xem lần cuối</p>
+                  </div>
+                  {student.lessons_detail.length === 0 ? (
+                    <p className="px-4 py-3 text-xs text-[rgba(4,14,32,0.4)]">Chưa có bài học nào.</p>
+                  ) : (
+                    student.lessons_detail.map((l) => <LessonDetailRow key={l.lesson_id} lesson={l} />)
+                  )}
+                </>
+              )}
+
+              {/* Quizzes tab */}
+              {tab === "quizzes" && (
+                <>
+                  {student.quizzes.length === 0 ? (
+                    <p className="px-4 py-3 text-xs text-[rgba(4,14,32,0.4)]">Khóa học này chưa có bài kiểm tra nào.</p>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-4 px-4 py-2 bg-[#f0f2f5] border-b border-[#e0e2e6]">
+                        <div className="w-5 shrink-0" />
+                        <p className="flex-1 text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">Bài kiểm tra</p>
+                        <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-20 text-center">Số lần thi</p>
+                        <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-24 text-right">Điểm cao nhất</p>
+                        <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-28 text-right">Lần thi cuối</p>
+                      </div>
+                      {student.quizzes.map((q) => <QuizRow key={q.quiz_id} q={q} />)}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
           </td>
         </tr>
       )}

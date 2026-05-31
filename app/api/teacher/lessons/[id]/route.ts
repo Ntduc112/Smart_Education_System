@@ -6,7 +6,7 @@ const UpdateLessonSchema = z.object({
     title:     z.string().min(1, "Title is required").optional(),
     order:     z.number().int().min(1, "Order must be a positive integer").optional(),
     content:   z.string().nullable().optional(),
-    video_url: z.string().url("Video URL must be a valid URL").nullable().optional(),
+    video_url: z.string().refine(v => v.startsWith("hls:") || z.string().url().safeParse(v).success, "Video URL không hợp lệ").nullable().optional(),
     pdf_url:   z.string().url("PDF URL must be a valid URL").nullable().optional(),
     pdf_text:  z.string().nullable().optional(),
     is_free:   z.boolean().optional(),

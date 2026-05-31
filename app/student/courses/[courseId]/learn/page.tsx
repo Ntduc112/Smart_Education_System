@@ -1,6 +1,7 @@
 "use client";
 
-import { use, useState, useCallback } from "react";
+import { use, useState, useCallback, useEffect, useRef, useMemo } from "react";
+import Hls from "hls.js";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
@@ -10,6 +11,7 @@ import {
   useCourseDetail,
   useCourseProgress,
   useMarkLessonComplete,
+  useReportWatchProgress,
   useQuizDetail,
   useQuizAttempts,
   useSubmitQuizAttempt,
@@ -52,12 +54,14 @@ function chapterNavItems(chapter: Chapter): NavItem[] {
 function ChapterItem({
   chapter,
   completedIds,
+  lockedIds,
   selectedId,
   onSelectLesson,
   onSelectQuiz,
 }: {
   chapter: Chapter;
   completedIds: Set<string>;
+  lockedIds: Set<string>;
   selectedId: string | null;
   onSelectLesson: (lesson: Lesson) => void;
   onSelectQuiz: (quiz: QuizSummary) => void;
@@ -97,17 +101,29 @@ function ChapterItem({
 
             if (navItem.kind === "lesson") {
               const lesson = navItem.item;
-              const done = completedIds.has(lesson.id);
+              const done   = completedIds.has(lesson.id);
+              const locked = lockedIds.has(lesson.id);
               return (
                 <li key={`lesson-${id}`}>
                   <button
-                    onClick={() => onSelectLesson(lesson)}
+                    onClick={() => !locked && onSelectLesson(lesson)}
+                    title={locked ? "Hoàn thành bài trước để mở khóa" : undefined}
                     className={`w-full flex items-start gap-3 px-4 py-2.5 text-left transition-colors ${
-                      active ? "bg-[#1b61c9]/8 border-r-2 border-[#1b61c9]" : "hover:bg-[#f8fafc]"
+                      locked
+                        ? "opacity-50 cursor-not-allowed"
+                        : active
+                          ? "bg-[#1b61c9]/8 border-r-2 border-[#1b61c9]"
+                          : "hover:bg-[#f8fafc]"
                     }`}
                   >
                     <div className="shrink-0 mt-0.5">
-                      {done ? (
+                      {locked ? (
+                        <div className="w-4 h-4 rounded-full border-2 border-[#d0d5dd] flex items-center justify-center">
+                          <svg width="7" height="7" viewBox="0 0 24 24" fill="currentColor" className="text-[#9ca3af]">
+                            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+                          </svg>
+                        </div>
+                      ) : done ? (
                         <div className="w-4 h-4 rounded-full bg-[#006400] flex items-center justify-center">
                           <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
@@ -118,7 +134,13 @@ function ChapterItem({
                       )}
                     </div>
                     <span className={`text-sm leading-snug tracking-[0.07px] line-clamp-2 ${
-                      active ? "text-[#1b61c9] font-medium" : done ? "text-[rgba(4,14,32,0.55)]" : "text-[#181d26]"
+                      locked
+                        ? "text-[rgba(4,14,32,0.35)]"
+                        : active
+                          ? "text-[#1b61c9] font-medium"
+                          : done
+                            ? "text-[rgba(4,14,32,0.55)]"
+                            : "text-[#181d26]"
                     }`}>
                       {lesson.title}
                     </span>
@@ -165,9 +187,65 @@ function ChapterItem({
 
 // ── Video Player ───────────────────────────────────────────────────────────
 
-function VideoPlayer({ url }: { url: string }) {
-  const ytId = extractYouTubeId(url);
+function HlsPlayer({ lessonId, onWatchPercent }: { lessonId: string; onWatchPercent: (pct: number) => void }) {
+  const videoRef    = useRef<HTMLVideoElement>(null);
+  const lastPctRef  = useRef(0);
 
+  // Reset khi chuyển bài
+  useEffect(() => { lastPctRef.current = 0; }, [lessonId]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const reportProgress = () => {
+      if (!video.duration) return;
+      const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+      // Báo cáo mỗi khi tăng >= 5%
+      if (pct - lastPctRef.current >= 5) {
+        lastPctRef.current = pct;
+        onWatchPercent(pct);
+      }
+    };
+    const handleEnded = () => {
+      lastPctRef.current = 100;
+      onWatchPercent(100);
+    };
+
+    video.addEventListener("timeupdate", reportProgress);
+    video.addEventListener("ended", handleEnded);
+
+    const playlistUrl = `/api/student/lessons/${lessonId}/playlist`;
+    let hlsInstance: Hls | null = null;
+
+    if (Hls.isSupported()) {
+      hlsInstance = new Hls({ xhrSetup: (xhr) => { xhr.withCredentials = true; } });
+      hlsInstance.loadSource(playlistUrl);
+      hlsInstance.attachMedia(video);
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = playlistUrl;
+    }
+
+    return () => {
+      video.removeEventListener("timeupdate", reportProgress);
+      video.removeEventListener("ended", handleEnded);
+      hlsInstance?.destroy();
+    };
+  }, [lessonId, onWatchPercent]);
+
+  return (
+    <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style={{ paddingBottom: "62%" }}>
+      <video ref={videoRef} controls className="absolute inset-0 w-full h-full" />
+    </div>
+  );
+}
+
+function VideoPlayer({ url, lessonId, onWatchPercent }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void }) {
+  if (url.startsWith("hls:")) {
+    return <HlsPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} />;
+  }
+
+  const ytId = extractYouTubeId(url);
   if (ytId) {
     return (
       <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style={{ paddingBottom: "62%" }}>
@@ -183,8 +261,40 @@ function VideoPlayer({ url }: { url: string }) {
   }
 
   return (
+    <NativePlayer src={url} onWatchPercent={onWatchPercent} />
+  );
+}
+
+function NativePlayer({ src, onWatchPercent }: { src: string; onWatchPercent: (pct: number) => void }) {
+  const videoRef   = useRef<HTMLVideoElement>(null);
+  const lastPctRef = useRef(0);
+
+  useEffect(() => {
+    lastPctRef.current = 0;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const reportProgress = () => {
+      if (!video.duration) return;
+      const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+      if (pct - lastPctRef.current >= 5) {
+        lastPctRef.current = pct;
+        onWatchPercent(pct);
+      }
+    };
+    const handleEnded = () => { lastPctRef.current = 100; onWatchPercent(100); };
+
+    video.addEventListener("timeupdate", reportProgress);
+    video.addEventListener("ended", handleEnded);
+    return () => {
+      video.removeEventListener("timeupdate", reportProgress);
+      video.removeEventListener("ended", handleEnded);
+    };
+  }, [src, onWatchPercent]);
+
+  return (
     <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style={{ paddingBottom: "62%" }}>
-      <video src={url} controls className="absolute inset-0 w-full h-full" />
+      <video ref={videoRef} src={src} controls className="absolute inset-0 w-full h-full" />
     </div>
   );
 }
@@ -645,7 +755,8 @@ export default function LearnPage({
   const { data: user } = useMe();
   const { data: course, isLoading: courseLoading } = useCourseDetail(courseId);
   const { data: progress } = useCourseProgress(courseId);
-  const markComplete = useMarkLessonComplete(courseId);
+  const markComplete         = useMarkLessonComplete(courseId);
+  const reportWatchProgress  = useReportWatchProgress(courseId);
   const { data: certificate } = useCourseCertificate(courseId);
   const issueCertificate = useIssueCertificate(courseId);
 
@@ -673,6 +784,29 @@ export default function LearnPage({
   const completedIds = new Set(progress?.completed_lesson_ids ?? []);
   const isLesson = selectedItem?.kind === "lesson";
   const isCurrentDone = isLesson && selectedItem ? completedIds.has(selectedItem.item.id) : false;
+
+  // Tính lockedIds: bài N bị khóa nếu bài N-1 chưa hoàn thành
+  const lockedIds = useMemo(() => {
+    const locked = new Set<string>();
+    const lessonItems = allNavItems.filter((n) => n.kind === "lesson");
+    for (let i = 1; i < lessonItems.length; i++) {
+      const prev = lessonItems[i - 1].item;
+      if (!completedIds.has(prev.id) || locked.has(prev.id)) {
+        locked.add(lessonItems[i].item.id);
+      }
+    }
+    return locked;
+  }, [allNavItems, completedIds]);
+
+  // Stable callback để tránh re-register event listeners mỗi render
+  const handleWatchPercent = useCallback(
+    (pct: number) => {
+      if (!selectedItem || selectedItem.kind !== "lesson") return;
+      reportWatchProgress.mutate({ lessonId: selectedItem.item.id, watchPercent: pct });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedItem?.item.id]
+  );
 
   const navigateToItem = useCallback(
     (navItem: NavItem) => {
@@ -764,6 +898,7 @@ export default function LearnPage({
               key={chapter.id}
               chapter={chapter}
               completedIds={completedIds}
+              lockedIds={lockedIds}
               selectedId={selectedItem?.item.id ?? null}
               onSelectLesson={(lesson) => navigateToItem({ kind: "lesson", item: lesson })}
               onSelectQuiz={(quiz) => navigateToItem({ kind: "quiz", item: quiz })}
@@ -831,7 +966,7 @@ export default function LearnPage({
                 {selectedItem.kind === "lesson" ? (
                   <>
                     {selectedItem.item.video_url ? (
-                      <VideoPlayer url={selectedItem.item.video_url} />
+                      <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} />
                     ) : (
                       <NoVideoPlaceholder content={selectedItem.item.content} />
                     )}

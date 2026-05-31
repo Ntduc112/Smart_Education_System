@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Plus, Pencil, Eye, MoreHorizontal, Trash2, Globe, Lock, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Eye, MoreHorizontal, Trash2, Globe, Lock, Users } from "lucide-react";
 import {
   useTeacherCourses,
   useToggleCourseStatus,
@@ -50,9 +51,13 @@ function CourseRow({
   setMenuOpenId:  (id: string | null) => void;
 }) {
   const isOpen = menuOpenId === course.id;
+  const router = useRouter();
 
   return (
-    <tr className="hover:bg-[#fafbfc] transition-colors group">
+    <tr
+      className="hover:bg-[#fafbfc] transition-colors group cursor-pointer"
+      onClick={() => router.push(`/teacher/courses/${course.id}/edit`)}
+    >
       {/* Course info */}
       <td className="px-6 py-4">
         <div className="flex items-center gap-4">
@@ -95,7 +100,7 @@ function CourseRow({
       <td className="px-4 py-4 text-xs text-[rgba(4,14,32,0.45)]">{timeAgo(course.updated_at)}</td>
 
       {/* Actions */}
-      <td className="px-4 py-4">
+      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
           <Link
             href={`/teacher/courses/${course.id}/students`}
@@ -103,13 +108,6 @@ function CourseRow({
             title="Tiến độ học viên"
           >
             <Users size={14} />
-          </Link>
-          <Link
-            href={`/teacher/courses/${course.id}/edit`}
-            className="p-2 rounded-lg hover:bg-[#f0f4fb] text-[rgba(4,14,32,0.45)] hover:text-[#1b61c9] transition-colors opacity-0 group-hover:opacity-100"
-            title="Chỉnh sửa"
-          >
-            <Pencil size={14} />
           </Link>
           <div className="relative">
             <button

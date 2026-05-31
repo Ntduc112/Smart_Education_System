@@ -16,6 +16,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         sections: {
           orderBy: { order: "asc" },
           select: {
+            title: true,
+            order: true,
             lessons: {
               orderBy: { order: "asc" },
               select: {
@@ -39,7 +41,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
 
-    const allLessons = course.sections.flatMap((s) => s.lessons);
+    const allLessons = course.sections.flatMap((s) =>
+      s.lessons.map((l) => ({ ...l, chapter_title: s.title }))
+    );
     const allQuizzes = allLessons.flatMap((l) =>
       l.quiz.map((q) => ({ ...q, lesson_title: l.title }))
     );
@@ -65,6 +69,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           user_id:        true,
           lesson_id:      true,
           is_completed:   true,
+          watch_percent:  true,
           last_watched_at: true,
         },
       }),
@@ -135,6 +140,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         };
       });
 
+      const lessons_detail = allLessons.map((lesson) => {
+        const prog = userProgress.find((p) => p.lesson_id === lesson.id);
+        return {
+          lesson_id:       lesson.id,
+          lesson_title:    lesson.title,
+          chapter_title:   lesson.chapter_title,
+          watch_percent:   prog?.watch_percent ?? 0,
+          is_completed:    prog?.is_completed ?? false,
+          last_watched_at: prog?.last_watched_at ?? null,
+        };
+      });
+
       return {
         user:              enrollment.user,
         enrolled_at:       enrollment.enrolled_at,
@@ -146,6 +163,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
             : 0,
         last_active_at:    lastActive ?? null,
         current_lesson:    currentLesson,
+        lessons_detail,
         quizzes,
         quiz_passed:       quizzes.filter((q) => q.is_passed).length,
         quiz_total:        allQuizzes.length,

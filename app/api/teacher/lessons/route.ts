@@ -6,7 +6,7 @@ const CreateLessonSchema = z.object({
     chapter_id: z.string().uuid("Chapter ID must be a valid UUID"),
     title: z.string().min(1, "Title is required"),
     order: z.number().int().min(1, "Order must be a positive integer"),
-    video_url: z.string().url("Video URL must be a valid URL").optional(),
+    video_url: z.string().refine(v => v.startsWith("hls:") || z.string().url().safeParse(v).success, "Video URL không hợp lệ").optional(),
     pdf_url: z.string().url("PDF URL must be a valid URL").optional(),
     is_free: z.boolean().default(false),
 });

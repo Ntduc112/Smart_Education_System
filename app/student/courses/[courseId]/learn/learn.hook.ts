@@ -136,6 +136,20 @@ export function useMarkLessonComplete(courseId: string) {
   });
 }
 
+export function useReportWatchProgress(courseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lessonId, watchPercent }: { lessonId: string; watchPercent: number }) =>
+      api.patch(`/student/lessons/${lessonId}/progress`, { watch_percent: watchPercent }),
+    onSuccess: (_, vars) => {
+      // Invalidate progress khi đã đủ điều kiện hoàn thành (>= 80%)
+      if (vars.watchPercent >= 80) {
+        qc.invalidateQueries({ queryKey: ["course-progress", courseId] });
+      }
+    },
+  });
+}
+
 export function useQuizDetail(quizId: string | null) {
   return useQuery<QuizDetail>({
     queryKey: ["quiz-detail", quizId],
