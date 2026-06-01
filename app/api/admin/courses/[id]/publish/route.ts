@@ -24,7 +24,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         return NextResponse.json({ course: updated }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ errors: error.errors }, { status: 400 });
+            return NextResponse.json({ errors: error.issues }, { status: 400 });
         }
         console.error("Error publishing course:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
