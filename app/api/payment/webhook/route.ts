@@ -10,9 +10,9 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        let webhookData: ReturnType<typeof verifyWebhook>;
+        let webhookData: Awaited<ReturnType<typeof verifyWebhook>>;
         try {
-            webhookData = verifyWebhook(body);
+            webhookData = await verifyWebhook(body);
         } catch {
             return NextResponse.json({ code: "97", message: "Invalid signature" }, { status: 200 });
         }
