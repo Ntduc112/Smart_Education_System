@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pdf-parse"],
   experimental: {
     // Proxy buffer toàn bộ body trước khi vào route handler.
     // Tăng lên 600MB để đủ cho upload video 500MB.
