@@ -20,7 +20,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "pdf-parse": ["./types/pdf-parse"]
     }
   },
   "include": [

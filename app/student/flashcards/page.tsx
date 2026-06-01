@@ -37,7 +37,7 @@ function FlashcardView({ cards }: { cards: Flashcard[] }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: [0.34, 1.26, 0.64, 1] }}
+        transition={{ duration: 0.4, ease: [0.34, 1.26, 0.64, 1] as const }}
         className="flex flex-col items-center gap-4 py-20"
       >
         <motion.div
@@ -95,7 +95,7 @@ function FlashcardView({ cards }: { cards: Flashcard[] }) {
             className="h-full bg-[#1b61c9] rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const }}
           />
         </div>
       </motion.div>
@@ -114,7 +114,7 @@ function FlashcardView({ cards }: { cards: Flashcard[] }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        transition={{ delay: 0.2, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
         onClick={() => setFlipped((v) => !v)}
         className="cursor-pointer select-none"
         style={{ perspective: "1000px" }}
@@ -223,13 +223,13 @@ export default function FlashcardsPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
             className="bg-white border border-[#e0e2e6] rounded-2xl py-20 flex flex-col items-center gap-4"
           >
             <motion.div
               initial={{ scale: 0.5 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
               className="text-4xl"
             >
               ✅

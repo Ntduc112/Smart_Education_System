@@ -16,7 +16,7 @@ const fadeUp = {
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.38, delay: i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.38, delay: i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] as const },
   }),
 };
 
@@ -76,7 +76,7 @@ export default function ProfilePage() {
         <motion.div
           initial={{ opacity: 0, y: 24, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as const }}
           className="bg-white rounded-2xl border border-[#e0e2e6] p-8"
         >
           <motion.div

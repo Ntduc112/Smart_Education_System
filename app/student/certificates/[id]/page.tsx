@@ -26,7 +26,7 @@ function useCertificate(id: string) {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
 
 const stagger = {
@@ -98,7 +98,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
       <motion.div
         initial={{ opacity: 0, scale: 0.93, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
+        transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] as const }}
         className="w-full max-w-2xl bg-white rounded-2xl ring-4 ring-[#1b61c9]/20 outline outline-8 outline-[#f0f4fc] shadow-lg px-10 py-12 flex flex-col items-center text-center"
       >
         <motion.div

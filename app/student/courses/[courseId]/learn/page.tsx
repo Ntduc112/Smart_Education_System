@@ -889,7 +889,7 @@ export default function LearnPage({
                   className="h-full bg-[#1b61c9] rounded-full"
                   initial={{ width: 0 }}
                   animate={{ width: `${progress.percentage}%` }}
-                  transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const }}
                 />
               </div>
               <span className="text-xs text-[rgba(4,14,32,0.55)] tracking-[0.07px]">
@@ -908,7 +908,7 @@ export default function LearnPage({
         <motion.aside
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
           className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] overflow-y-auto hidden lg:block"
         >
           <div className="px-4 py-4 border-b border-[#e0e2e6]">
@@ -941,7 +941,7 @@ export default function LearnPage({
             key={selectedItem?.item.id ?? "empty"}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] as const }}
             className="max-w-5xl mx-auto px-4 sm:px-6 py-6"
           >
             {progress?.percentage === 100 && (

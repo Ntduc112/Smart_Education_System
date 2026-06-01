@@ -178,7 +178,7 @@ function CourseGroup({ courseId, courseTitle, thumbnail, notes, index }: {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.07, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.4, delay: index * 0.07, ease: [0.25, 0.46, 0.45, 0.94] as const }}
       whileHover={{ boxShadow: "rgba(15,48,106,0.1) 0px 8px 24px", transition: { duration: 0.2 } }}
       className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
@@ -218,7 +218,7 @@ function CourseGroup({ courseId, courseTitle, thumbnail, notes, index }: {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const }}
             className="overflow-hidden"
           >
             <div className="px-5 pb-2">
@@ -333,7 +333,7 @@ export default function NotesPage() {
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
               className="w-16 h-16 rounded-2xl bg-[#1b61c9]/8 flex items-center justify-center"
             >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

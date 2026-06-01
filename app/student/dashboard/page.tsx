@@ -29,7 +29,7 @@ const fadeUp = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
 };
 
@@ -37,7 +37,7 @@ const fadeIn = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { duration: 0.4, ease: "easeOut" },
+    transition: { duration: 0.4, ease: "easeOut" as const },
   },
 };
 
@@ -46,7 +46,7 @@ const slideLeft = {
   show: {
     opacity: 1,
     x: 0,
-    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as const },
   },
 };
 
@@ -60,7 +60,7 @@ const scaleIn = {
   show: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.35, ease: [0.34, 1.26, 0.64, 1] },
+    transition: { duration: 0.35, ease: [0.34, 1.26, 0.64, 1] as const },
   },
 };
 
@@ -112,7 +112,7 @@ function CourseCard({
       whileHover={{
         y: -6,
         boxShadow: "rgba(15,48,106,0.14) 0px 16px 40px",
-        transition: { duration: 0.22, ease: "easeOut" },
+        transition: { duration: 0.22, ease: "easeOut" as const },
       }}
       className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
@@ -123,7 +123,7 @@ function CourseCard({
           src={course.thumbnail}
           alt={course.title}
           className="w-full h-full object-cover"
-          whileHover={{ scale: 1.04, transition: { duration: 0.4, ease: "easeOut" } }}
+          whileHover={{ scale: 1.04, transition: { duration: 0.4, ease: "easeOut" as const } }}
         />
         {isDone && (
           <motion.div
@@ -197,7 +197,7 @@ function CourseCard({
                   className={`h-full rounded-full ${isDone ? "bg-[#006400]" : "bg-[#1b61c9]"}`}
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 + index * 0.06 }}
+                  transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94] as const, delay: 0.1 + index * 0.06 }}
                 />
               </div>
             </>
@@ -303,7 +303,7 @@ export default function StudentDashboardPage() {
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" }}
+        transition={{ duration: 0.35, ease: "easeOut" as const }}
         className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10"
       >
         <div className="w-full px-6 h-16 flex items-center">
@@ -411,7 +411,7 @@ export default function StudentDashboardPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.7 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.4, duration: 0.35, ease: [0.34, 1.26, 0.64, 1] }}
+                transition={{ delay: 0.4, duration: 0.35, ease: [0.34, 1.26, 0.64, 1] as const }}
                 className="shrink-0 text-right"
               >
                 <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
@@ -487,13 +487,13 @@ export default function StudentDashboardPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
             className="bg-white border border-[#e0e2e6] rounded-2xl py-16 flex flex-col items-center gap-4"
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
               className="w-14 h-14 bg-[#1b61c9]/8 rounded-2xl flex items-center justify-center"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

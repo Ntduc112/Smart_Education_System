@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -19,7 +19,16 @@ const schema = z.object({
   category_id: z.string().min(1, "Vui lòng chọn danh mục"),
 });
 
-type FormInput = z.infer<typeof schema>;
+// z.coerce infers input as unknown in Zod v4; define output type explicitly
+type FormInput = {
+  title: string;
+  description: string;
+  thumbnail: string;
+  price: number;
+  level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED";
+  status: "DRAFT" | "PUBLISHED";
+  category_id: string;
+};
 
 interface Category { id: string; name: string }
 
@@ -55,7 +64,7 @@ export default function NewCoursePage() {
     handleSubmit,
     formState: { errors },
   } = useForm<FormInput>({
-    resolver:      zodResolver(schema),
+    resolver:      zodResolver(schema) as unknown as Resolver<FormInput>,
     defaultValues: { status: "DRAFT", level: "BEGINNER", price: 0 },
   });
 

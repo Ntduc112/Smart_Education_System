@@ -28,7 +28,7 @@ function useCertificates() {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
 
 const stagger = (delay = 0.07) => ({
@@ -66,13 +66,13 @@ export default function CertificatesPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
             className="flex flex-col items-center justify-center py-20 gap-4"
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
               className="w-16 h-16 bg-[#1b61c9]/8 rounded-2xl flex items-center justify-center"
             >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -116,7 +116,7 @@ export default function CertificatesPage() {
                 whileHover={{
                   y: -5,
                   boxShadow: "rgba(15,48,106,0.14) 0px 12px 32px",
-                  transition: { duration: 0.2, ease: "easeOut" },
+                  transition: { duration: 0.2, ease: "easeOut" as const },
                 }}
                 className="bg-white rounded-xl border border-[#e0e2e6] overflow-hidden"
               >

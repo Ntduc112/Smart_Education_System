@@ -22,7 +22,7 @@ function formatPrice(price: string) {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.42, ease: [0.25, 0.46, 0.45, 0.94] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.42, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
 
 const stagger = {
@@ -40,7 +40,7 @@ function WishlistCard({ item }: { item: WishlistItem }) {
       whileHover={{
         y: -6,
         boxShadow: "rgba(15,48,106,0.14) 0px 16px 40px",
-        transition: { duration: 0.2, ease: "easeOut" },
+        transition: { duration: 0.2, ease: "easeOut" as const },
       }}
       className="group bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col relative"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
@@ -57,7 +57,7 @@ function WishlistCard({ item }: { item: WishlistItem }) {
             src={course.thumbnail}
             alt={course.title}
             className="w-full h-full object-cover"
-            whileHover={{ scale: 1.04, transition: { duration: 0.4, ease: "easeOut" } }}
+            whileHover={{ scale: 1.04, transition: { duration: 0.4, ease: "easeOut" as const } }}
           />
           {isFree && (
             <div className="absolute top-3 left-3 bg-[#006400] text-white text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -204,7 +204,7 @@ export default function WishlistPage() {
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
               className="w-16 h-16 rounded-2xl bg-[#fffbeb] flex items-center justify-center"
             >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
