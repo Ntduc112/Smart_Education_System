@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { XCircle } from "lucide-react";
 
-export default function PaymentCancelPage() {
+function PaymentCancelContent() {
     const searchParams = useSearchParams();
     const orderCode = searchParams.get("orderCode");
 
@@ -49,4 +50,8 @@ export default function PaymentCancelPage() {
             </div>
         </div>
     );
+}
+
+export default function PaymentCancelPage() {
+    return <Suspense><PaymentCancelContent /></Suspense>;
 }

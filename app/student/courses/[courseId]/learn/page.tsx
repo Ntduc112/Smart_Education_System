@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { use, useState, useCallback, useEffect, useRef, useMemo, Suspense } from "react";
 import Hls from "hls.js";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -746,7 +746,7 @@ function NavControls({
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default function LearnPage({
+function LearnContent({
   params,
 }: {
   params: Promise<{ courseId: string }>;
@@ -1079,5 +1079,17 @@ export default function LearnPage({
         </main>
       </div>
     </div>
+  );
+}
+
+export default function LearnPage({
+  params,
+}: {
+  params: Promise<{ courseId: string }>;
+}) {
+  return (
+    <Suspense>
+      <LearnContent params={params} />
+    </Suspense>
   );
 }

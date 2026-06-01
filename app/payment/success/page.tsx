@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
@@ -14,7 +14,7 @@ interface PaymentInfo {
     amount: string;
 }
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const orderCode = searchParams.get("orderCode");
@@ -195,4 +195,8 @@ export default function PaymentSuccessPage() {
             </div>
         </div>
     );
+}
+
+export default function PaymentSuccessPage() {
+    return <Suspense><PaymentSuccessContent /></Suspense>;
 }
