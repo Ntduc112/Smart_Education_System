@@ -8,7 +8,7 @@ import { promises as fs, createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
 import os from "os";
 import { Worker, Job } from "bullmq";
-import { redisConnection, VideoJobData, VideoJobResult } from "../lib/queue/video.js";
+import { createRedisConnection, VideoJobData, VideoJobResult } from "../lib/queue/video.js";
 import { getObjectStream, deleteObject } from "../lib/storage/s3.js";
 import { processHLSFromFile } from "../lib/video/hls.js";
 
@@ -44,7 +44,7 @@ const worker = new Worker<VideoJobData, VideoJobResult>(
     "video-hls",
     processJob,
     {
-        connection: redisConnection,
+        connection: createRedisConnection(),
         concurrency: CONCURRENCY,
     },
 );

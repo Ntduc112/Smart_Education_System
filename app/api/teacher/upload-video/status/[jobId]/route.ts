@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { videoQueue } from "@/lib/queue/video";
+import { getVideoQueue } from "@/lib/queue/video";
 
 export type JobStatus = "waiting" | "active" | "completed" | "failed" | "unknown";
 
@@ -25,7 +25,7 @@ export async function GET(
     }
 
     const { jobId } = await params;
-    const job = await videoQueue.getJob(jobId);
+    const job = await getVideoQueue().getJob(jobId);
 
     if (!job) {
         return NextResponse.json<StatusResponse>({ status: "unknown", progress: 0 });

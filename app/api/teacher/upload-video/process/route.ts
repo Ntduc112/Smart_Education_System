@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { videoQueue } from "@/lib/queue/video";
+import { getVideoQueue } from "@/lib/queue/video";
 
 /**
  * POST /api/teacher/upload-video/process
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     const keyPrefix = `videos/${randomUUID()}/`;
 
-    const job = await videoQueue.add("convert", {
+    const job = await getVideoQueue().add("convert", {
         rawKey: body.rawKey,
         keyPrefix,
     });
