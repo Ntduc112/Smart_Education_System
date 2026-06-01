@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import {
   useCourseDetail,
@@ -187,8 +188,9 @@ function ChapterItem({
 
 // ── Video Player ───────────────────────────────────────────────────────────
 
-function HlsPlayer({ lessonId, onWatchPercent }: { lessonId: string; onWatchPercent: (pct: number) => void }) {
-  const videoRef    = useRef<HTMLVideoElement>(null);
+function HlsPlayer({ lessonId, onWatchPercent, videoRef: externalRef }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+  const internalRef = useRef<HTMLVideoElement>(null);
+  const videoRef    = externalRef ?? internalRef;
   const lastPctRef  = useRef(0);
 
   // Reset khi chuyển bài
@@ -240,9 +242,9 @@ function HlsPlayer({ lessonId, onWatchPercent }: { lessonId: string; onWatchPerc
   );
 }
 
-function VideoPlayer({ url, lessonId, onWatchPercent }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void }) {
+function VideoPlayer({ url, lessonId, onWatchPercent, videoRef }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
   if (url.startsWith("hls:")) {
-    return <HlsPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} />;
+    return <HlsPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
   }
 
   const ytId = extractYouTubeId(url);
@@ -261,12 +263,13 @@ function VideoPlayer({ url, lessonId, onWatchPercent }: { url: string; lessonId:
   }
 
   return (
-    <NativePlayer src={url} onWatchPercent={onWatchPercent} />
+    <NativePlayer src={url} onWatchPercent={onWatchPercent} videoRef={videoRef} />
   );
 }
 
-function NativePlayer({ src, onWatchPercent }: { src: string; onWatchPercent: (pct: number) => void }) {
-  const videoRef   = useRef<HTMLVideoElement>(null);
+function NativePlayer({ src, onWatchPercent, videoRef: externalRef }: { src: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+  const internalRef = useRef<HTMLVideoElement>(null);
+  const videoRef    = externalRef ?? internalRef;
   const lastPctRef = useRef(0);
 
   useEffect(() => {
@@ -752,6 +755,8 @@ export default function LearnPage({
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const { data: user } = useMe();
   const { data: course, isLoading: courseLoading } = useCourseDetail(courseId);
   const { data: progress } = useCourseProgress(courseId);
@@ -797,6 +802,18 @@ export default function LearnPage({
     }
     return locked;
   }, [allNavItems, completedIds]);
+
+  const getVideoTime = useCallback((): number | null => {
+    const t = videoRef.current?.currentTime;
+    return t != null ? Math.floor(t) : null;
+  }, []);
+
+  const seekTo = useCallback((seconds: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = seconds;
+      videoRef.current.play().catch(() => {});
+    }
+  }, []);
 
   // Stable callback để tránh re-register event listeners mỗi render
   const handleWatchPercent = useCallback(
@@ -847,7 +864,12 @@ export default function LearnPage({
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
       {/* Navbar */}
-      <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-20">
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-20"
+      >
         <div className="h-14 px-4 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Logo size={28} />
@@ -863,9 +885,11 @@ export default function LearnPage({
           {progress && (
             <div className="hidden md:flex items-center gap-2 shrink-0">
               <div className="w-24 h-1.5 bg-[#f0f2f5] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#1b61c9] rounded-full transition-all"
-                  style={{ width: `${progress.percentage}%` }}
+                <motion.div
+                  className="h-full bg-[#1b61c9] rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress.percentage}%` }}
+                  transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
                 />
               </div>
               <span className="text-xs text-[rgba(4,14,32,0.55)] tracking-[0.07px]">
@@ -876,12 +900,17 @@ export default function LearnPage({
 
           <UserMenu user={user ?? null} />
         </div>
-      </header>
+      </motion.header>
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] overflow-y-auto hidden lg:block">
+        <motion.aside
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] overflow-y-auto hidden lg:block"
+        >
           <div className="px-4 py-4 border-b border-[#e0e2e6]">
             <p className="text-xs font-semibold uppercase tracking-widest text-[rgba(4,14,32,0.45)]">
               Nội dung khóa học
@@ -904,13 +933,24 @@ export default function LearnPage({
               onSelectQuiz={(quiz) => navigateToItem({ kind: "quiz", item: quiz })}
             />
           ))}
-        </aside>
+        </motion.aside>
 
         {/* Main content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+          <motion.div
+            key={selectedItem?.item.id ?? "empty"}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="max-w-5xl mx-auto px-4 sm:px-6 py-6"
+          >
             {progress?.percentage === 100 && (
-              <div className="mb-5 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-5 py-4 flex items-center justify-between gap-4">
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="mb-5 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-5 py-4 flex items-center justify-between gap-4"
+              >
                 <div className="flex items-center gap-3">
                   <span className="text-xl">🎉</span>
                   <p className="text-sm font-medium text-[#166534]">
@@ -947,7 +987,7 @@ export default function LearnPage({
                     Nhận chứng chỉ
                   </button>
                 )}
-              </div>
+              </motion.div>
             )}
             {selectedItem ? (
               <>
@@ -965,23 +1005,34 @@ export default function LearnPage({
 
                 {selectedItem.kind === "lesson" ? (
                   <>
-                    {selectedItem.item.video_url ? (
-                      <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} />
-                    ) : (
-                      <NoVideoPlaceholder content={selectedItem.item.content} />
-                    )}
+                    {/* Video + Notes side by side */}
+                    <div className="flex flex-col lg:flex-row gap-4 lg:items-stretch">
+                      {/* Left column: video, pdf, content */}
+                      <div className="flex-1 min-w-0">
+                        {selectedItem.item.video_url ? (
+                          <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} videoRef={videoRef} />
+                        ) : (
+                          <NoVideoPlaceholder content={selectedItem.item.content} />
+                        )}
 
-                    {selectedItem.item.pdf_url && (
-                      <PdfViewer url={selectedItem.item.pdf_url} />
-                    )}
+                        {selectedItem.item.pdf_url && (
+                          <PdfViewer url={selectedItem.item.pdf_url} />
+                        )}
 
-                    {selectedItem.item.content && selectedItem.item.video_url && (
-                      <div className="mt-5">
-                        <p className="text-sm text-[rgba(4,14,32,0.55)] leading-relaxed tracking-[0.07px]">
-                          {selectedItem.item.content}
-                        </p>
+                        {selectedItem.item.content && selectedItem.item.video_url && (
+                          <div className="mt-4">
+                            <p className="text-sm text-[rgba(4,14,32,0.55)] leading-relaxed tracking-[0.07px]">
+                              {selectedItem.item.content}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                    )}
+
+                      {/* Right column: notes panel */}
+                      <div className="w-full lg:w-72 lg:shrink-0 lg:flex lg:flex-col">
+                        <NotesSection lessonId={selectedItem.item.id} getVideoTime={getVideoTime} seekTo={seekTo} />
+                      </div>
+                    </div>
 
                     <AISummary
                       lessonTitle={selectedItem.item.title}
@@ -995,8 +1046,6 @@ export default function LearnPage({
                         currentUserId={user.id}
                       />
                     )}
-
-                    <NotesSection lessonId={selectedItem.item.id} />
 
                     {(() => {
                       const chapter = course.sections.find((s) =>
@@ -1026,7 +1075,7 @@ export default function LearnPage({
                 <p className="text-[rgba(4,14,32,0.55)] text-sm">Chọn một bài học để bắt đầu</p>
               </div>
             )}
-          </div>
+          </motion.div>
         </main>
       </div>
     </div>

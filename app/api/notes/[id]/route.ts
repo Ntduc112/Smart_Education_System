@@ -25,7 +25,7 @@ export async function PATCH(
         const updated = await prisma.lessonNote.update({
             where: { id },
             data: { content },
-            select: { id: true, content: true, created_at: true, updated_at: true },
+            select: { id: true, content: true, video_time: true, created_at: true, updated_at: true },
         });
 
         return NextResponse.json({ note: updated });

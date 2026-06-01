@@ -5,10 +5,20 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { Loader2, ArrowLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { useUpdateProfile } from "./profile.hook";
 import { profileSchema, ProfileInput } from "./profile.schema";
 import { getApiError } from "@/lib/api/error";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.38, delay: i * 0.06, ease: [0.25, 0.46, 0.45, 0.94] },
+  }),
+};
 
 export default function ProfilePage() {
   const { data: me, isLoading } = useMe();
@@ -48,19 +58,36 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] py-10 px-4">
       <div className="max-w-lg mx-auto">
-        <Link
-          href="/student/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-[rgba(4,14,32,0.55)] hover:text-[#1b61c9] transition-colors mb-6"
+        <motion.div
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.35 }}
+          whileHover={{ x: -2 }}
         >
-          <ArrowLeft size={15} strokeWidth={2} />
-          Quay lại
-        </Link>
+          <Link
+            href="/student/dashboard"
+            className="inline-flex items-center gap-1.5 text-sm text-[rgba(4,14,32,0.55)] hover:text-[#1b61c9] transition-colors mb-6"
+          >
+            <ArrowLeft size={15} strokeWidth={2} />
+            Quay lại
+          </Link>
+        </motion.div>
 
-        <div className="bg-white rounded-2xl border border-[#e0e2e6] p-8">
-          <div className="mb-7">
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="bg-white rounded-2xl border border-[#e0e2e6] p-8"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-7"
+          >
             <h1 className="text-xl font-semibold text-[#181d26]">Hồ sơ cá nhân</h1>
             <p className="text-sm text-[rgba(4,14,32,0.45)] mt-1">Cập nhật thông tin của bạn</p>
-          </div>
+          </motion.div>
 
           {isLoading ? (
             <div className="flex justify-center py-10">
@@ -68,23 +95,35 @@ export default function ProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <div className="flex justify-center mb-2">
-                {displayAvatar ? (
-                  <img
-                    src={displayAvatar}
-                    alt={me?.name ?? "Avatar"}
-                    className="w-20 h-20 rounded-full object-cover border-2 border-[#e0e2e6]"
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-[#1b61c9]/15 flex items-center justify-center border-2 border-[#e0e2e6]">
-                    <span className="text-2xl font-semibold text-[#1b61c9]">
-                      {me?.name?.charAt(0) ?? "?"}
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* Avatar */}
+              <motion.div
+                custom={0}
+                initial="hidden"
+                animate="show"
+                variants={fadeUp}
+                className="flex justify-center mb-2"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {displayAvatar ? (
+                    <img
+                      src={displayAvatar}
+                      alt={me?.name ?? "Avatar"}
+                      className="w-20 h-20 rounded-full object-cover border-2 border-[#e0e2e6]"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-[#1b61c9]/15 flex items-center justify-center border-2 border-[#e0e2e6]">
+                      <span className="text-2xl font-semibold text-[#1b61c9]">
+                        {me?.name?.charAt(0) ?? "?"}
+                      </span>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
 
-              <div className="space-y-1.5">
+              <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp} className="space-y-1.5">
                 <label className="block text-sm font-medium text-[#181d26]">Họ tên</label>
                 <input
                   {...register("name")}
@@ -92,12 +131,10 @@ export default function ProfilePage() {
                   placeholder="Nhập họ tên của bạn"
                   className="w-full border border-[#e0e2e6] rounded-xl px-4 py-3 text-sm text-[#181d26] placeholder-[rgba(4,14,32,0.35)] focus:outline-none focus:ring-2 focus:ring-[#1b61c9]/15 focus:border-[#1b61c9] transition"
                 />
-                {errors.name && (
-                  <p className="text-xs text-red-500">{errors.name.message}</p>
-                )}
-              </div>
+                {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
+              </motion.div>
 
-              <div className="space-y-1.5">
+              <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp} className="space-y-1.5">
                 <label className="block text-sm font-medium text-[#181d26]">Avatar URL</label>
                 <input
                   {...register("avatar")}
@@ -105,12 +142,10 @@ export default function ProfilePage() {
                   placeholder="https://... (dán URL ảnh vào đây)"
                   className="w-full border border-[#e0e2e6] rounded-xl px-4 py-3 text-sm text-[#181d26] placeholder-[rgba(4,14,32,0.35)] focus:outline-none focus:ring-2 focus:ring-[#1b61c9]/15 focus:border-[#1b61c9] transition"
                 />
-                {errors.avatar && (
-                  <p className="text-xs text-red-500">{errors.avatar.message}</p>
-                )}
-              </div>
+                {errors.avatar && <p className="text-xs text-red-500">{errors.avatar.message}</p>}
+              </motion.div>
 
-              <div className="space-y-1.5">
+              <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp} className="space-y-1.5">
                 <label className="block text-sm font-medium text-[#181d26]">Email</label>
                 <input
                   type="email"
@@ -119,31 +154,46 @@ export default function ProfilePage() {
                   className="w-full border border-[#e0e2e6] rounded-xl px-4 py-3 text-sm text-[rgba(4,14,32,0.45)] bg-[#f8fafc] cursor-not-allowed"
                 />
                 <p className="text-xs text-[rgba(4,14,32,0.35)]">Email không thể thay đổi</p>
-              </div>
+              </motion.div>
 
-              {errors.root && (
-                <p className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3">
-                  {errors.root.message}
-                </p>
-              )}
+              <AnimatePresence>
+                {errors.root && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="text-sm text-red-500 bg-red-50 rounded-xl px-4 py-3"
+                  >
+                    {errors.root.message}
+                  </motion.p>
+                )}
+                {saved && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="text-sm text-green-600 bg-green-50 rounded-xl px-4 py-3 font-medium"
+                  >
+                    Đã lưu!
+                  </motion.p>
+                )}
+              </AnimatePresence>
 
-              {saved && (
-                <p className="text-sm text-green-600 bg-green-50 rounded-xl px-4 py-3 font-medium">
-                  Đã lưu!
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isPending}
-                className="w-full flex items-center justify-center gap-2 bg-[#1b61c9] hover:bg-[#1550aa] text-white rounded-xl px-4 py-3 text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isPending && <Loader2 size={16} className="animate-spin" />}
-                {isPending ? "Đang lưu..." : "Lưu thay đổi"}
-              </button>
+              <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
+                <motion.button
+                  type="submit"
+                  disabled={isPending}
+                  whileHover={{ scale: isPending ? 1 : 1.02 }}
+                  whileTap={{ scale: isPending ? 1 : 0.98 }}
+                  className="w-full flex items-center justify-center gap-2 bg-[#1b61c9] hover:bg-[#1550aa] text-white rounded-xl px-4 py-3 text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isPending && <Loader2 size={16} className="animate-spin" />}
+                  {isPending ? "Đang lưu..." : "Lưu thay đổi"}
+                </motion.button>
+              </motion.div>
             </form>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
   );
