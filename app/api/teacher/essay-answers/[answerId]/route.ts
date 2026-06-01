@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
         return NextResponse.json({ answer }, { status: 200 });
     } catch (error) {
-        if (error instanceof z.ZodError) return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
+        if (error instanceof z.ZodError) return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
 }

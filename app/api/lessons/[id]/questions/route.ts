@@ -118,7 +118,7 @@ export async function POST(
         return NextResponse.json({ question }, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ error: error.errors[0]?.message ?? "Dữ liệu không hợp lệ" }, { status: 400 });
+            return NextResponse.json({ error: error.issues[0]?.message ?? "Dữ liệu không hợp lệ" }, { status: 400 });
         }
         console.error("Error creating question:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
