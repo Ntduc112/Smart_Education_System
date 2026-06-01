@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
+export interface LessonDetail {
+  lesson_id:       string;
+  lesson_title:    string;
+  chapter_title:   string;
+  watch_percent:   number;
+  is_completed:    boolean;
+  last_watched_at: string | null;
+}
+
 export interface QuizResult {
   quiz_id:      string;
   quiz_title:   string;
@@ -25,6 +34,7 @@ export interface StudentProgress {
   completion_pct:    number;
   last_active_at:    string | null;
   current_lesson:    string | null;
+  lessons_detail:    LessonDetail[];
   quizzes:           QuizResult[];
   quiz_passed:       number;
   quiz_total:        number;

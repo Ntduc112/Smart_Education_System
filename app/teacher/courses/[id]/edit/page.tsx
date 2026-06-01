@@ -4,13 +4,13 @@ import Link from "next/link";
 import { useState, useEffect, useRef, use } from "react";
 import {
   ChevronDown, ChevronRight, Plus, Trash2, Save,
-  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ArrowLeft,
+  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ArrowLeft, ImageIcon,
 } from "lucide-react";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
   useCreateChapter, useUpdateChapter, useDeleteChapter,
   useCreateLesson, useUpdateLesson, useDeleteLesson,
-  useUploadPdf, useCreateQuiz,
+  useUploadPdf, useUploadVideo, useUploadThumbnail, useCreateQuiz,
   BuilderChapter, BuilderLesson,
 } from "./edit.hook";
 import { AIQuizModal } from "./_components/AIQuizModal";
@@ -36,6 +36,99 @@ const LEVEL_OPTIONS = [
 
 const inputCls = "w-full px-3 py-2 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all bg-white";
 const labelCls = "block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5";
+
+// ── ThumbnailUploadSection ───────────────────────────────────────────────────
+
+function ThumbnailUploadSection({
+  value,
+  onChange,
+}: {
+  value:    string;
+  onChange: (url: string) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState(0);
+  const uploadThumbnail = useUploadThumbnail((pct) => setProgress(pct));
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setProgress(0);
+    try {
+      const url = await uploadThumbnail.mutateAsync(file);
+      onChange(url);
+    } catch {
+      // error handled by mutation
+    }
+    setProgress(0);
+  };
+
+  // Uploading
+  if (uploadThumbnail.isPending || (progress > 0 && progress < 100)) {
+    return (
+      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+        <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
+          <span>Đang tải ảnh lên...</span>
+          <span className="font-medium text-[#1b61c9]">{progress}%</span>
+        </div>
+        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[#1b61c9] rounded-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Has image
+  if (value) {
+    return (
+      <div className="space-y-2">
+        <img
+          src={value}
+          alt="thumbnail preview"
+          className="w-full h-40 object-cover rounded-xl border border-[#e0e2e6]"
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 py-1.5 text-xs font-medium border border-[#e0e2e6] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+          >
+            Thay thế ảnh
+          </button>
+          <button
+            onClick={() => onChange("")}
+            className="flex-1 py-1.5 text-xs font-medium border border-[#e0e2e6] rounded-lg text-red-400 hover:bg-red-50 hover:border-red-300 transition-colors"
+          >
+            Xóa ảnh
+          </button>
+        </div>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      </div>
+    );
+  }
+
+  // Empty
+  return (
+    <>
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="w-full flex flex-col items-center gap-2 py-6 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
+      >
+        <div className="w-10 h-10 rounded-xl bg-[#1b61c9]/8 flex items-center justify-center">
+          <ImageIcon size={18} className="text-[#1b61c9]" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium">Tải lên ảnh bìa</p>
+          <p className="text-xs text-[rgba(4,14,32,0.4)] mt-0.5">JPG · PNG · WebP · GIF (tối đa 10MB)</p>
+        </div>
+      </button>
+    </>
+  );
+}
 
 // ── CourseInfoPanel ──────────────────────────────────────────────────────────
 
@@ -100,19 +193,13 @@ function CourseInfoPanel({
       </div>
 
       <div>
-        <label className={labelCls}>URL ảnh bìa</label>
-        <input
-          className={inputCls}
+        <label className={labelCls} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <ImageIcon size={12} /> Ảnh bìa
+        </label>
+        <ThumbnailUploadSection
           value={form.thumbnail}
-          onChange={(e) => setForm((f) => ({ ...f, thumbnail: e.target.value }))}
+          onChange={(url) => setForm((f) => ({ ...f, thumbnail: url }))}
         />
-        {form.thumbnail && (
-          <img
-            src={form.thumbnail}
-            alt="preview"
-            className="mt-2 w-full h-36 object-cover rounded-xl border border-[#e0e2e6]"
-          />
-        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -222,6 +309,231 @@ function ChapterPanel({
   );
 }
 
+// ── VideoUploadSection ────────────────────────────────────────────────────────
+
+type VideoMode = "hls" | "url" | "empty";
+
+function videoMode(url: string): VideoMode {
+  if (url.startsWith("hls:")) return "hls";
+  if (url.length > 0) return "url";
+  return "empty";
+}
+
+function VideoUploadSection({
+  value,
+  onChange,
+}: {
+  value:    string;
+  onChange: (url: string) => void;
+}) {
+  const fileInputRef        = useRef<HTMLInputElement>(null);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const { phase, uploadPct, processPct, errorMsg, upload, reset } = useUploadVideo();
+  const mode = videoMode(value);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    upload(file, (url) => onChange(url));
+  };
+
+  // ── Đang upload lên MinIO ──
+  if (phase === "uploading") {
+    return (
+      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+        <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
+          <span>Đang tải lên MinIO...</span>
+          <span className="font-medium text-[#1b61c9]">{uploadPct}%</span>
+        </div>
+        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+          <div className="h-full bg-[#1b61c9] rounded-full transition-all duration-300"
+               style={{ width: `${uploadPct}%` }} />
+        </div>
+        <p className="text-[10px] text-[rgba(4,14,32,0.4)]">
+          File đang được truyền thẳng đến MinIO, không qua server.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Đang chờ worker ──
+  if (phase === "queued") {
+    return (
+      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+        <div className="flex items-center gap-2 text-xs text-[rgba(4,14,32,0.55)]">
+          <svg className="animate-spin shrink-0" width="13" height="13" viewBox="0 0 24 24"
+               fill="none" stroke="#1b61c9" strokeWidth="2.5">
+            <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+          </svg>
+          <span>Đang chờ worker xử lý...</span>
+        </div>
+        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+          <div className="h-full bg-[#1b61c9]/40 rounded-full animate-pulse w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Worker đang chạy ffmpeg ──
+  if (phase === "processing") {
+    return (
+      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+        <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
+          <span>Đang mã hóa HLS + AES-128...</span>
+          <span className="font-medium text-[#1b61c9]">{processPct}%</span>
+        </div>
+        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+          <div className="h-full bg-[#1b61c9] rounded-full transition-all duration-500"
+               style={{ width: `${processPct}%` }} />
+        </div>
+        <p className="text-[10px] text-[rgba(4,14,32,0.4)]">
+          Worker đang cắt video thành segments và mã hóa. Có thể mất vài phút.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Lỗi ──
+  if (phase === "error") {
+    return (
+      <div className="px-4 py-3 border border-red-200 rounded-xl bg-red-50 flex items-center justify-between gap-3">
+        <p className="text-xs text-red-600">{errorMsg}</p>
+        <button
+          onClick={() => { reset(); fileInputRef.current?.click(); }}
+          className="shrink-0 text-xs font-medium text-red-600 hover:text-red-700 px-3 py-1.5 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+        >
+          Thử lại
+        </button>
+        <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileChange} />
+      </div>
+    );
+  }
+
+  // ── Đã có HLS video ──
+  if (mode === "hls") {
+    return (
+      <div className="flex items-center gap-3 px-3 py-2.5 border border-[#e0e2e6] rounded-xl bg-[#f8fafc]">
+        <div className="w-8 h-8 rounded-lg bg-[#1b61c9]/10 flex items-center justify-center shrink-0">
+          <Video size={15} className="text-[#1b61c9]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-[#181d26]">Video HLS đã mã hóa</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+              AES-128
+            </span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#1b61c9]/8 text-[#1b61c9] border border-[#1b61c9]/20">
+              HLS
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={() => { onChange(""); fileInputRef.current?.click(); }}
+          className="shrink-0 text-xs text-[rgba(4,14,32,0.45)] hover:text-[#1b61c9] px-2 py-1 rounded-lg hover:bg-[#1b61c9]/6 transition-colors"
+        >
+          Thay thế
+        </button>
+        <button
+          onClick={() => onChange("")}
+          className="shrink-0 text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          Xóa
+        </button>
+        <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileChange} />
+      </div>
+    );
+  }
+
+  // ── Đã có URL (YouTube / khác) ──
+  if (mode === "url" && !showUrlInput) {
+    return (
+      <div className="flex items-center gap-3 px-3 py-2.5 border border-[#e0e2e6] rounded-xl bg-[#f8fafc]">
+        <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+          <Video size={15} className="text-red-500" />
+        </div>
+        <p className="text-sm text-[#181d26] flex-1 truncate">{value}</p>
+        <button
+          onClick={() => setShowUrlInput(true)}
+          className="shrink-0 text-xs text-[rgba(4,14,32,0.45)] hover:text-[#1b61c9] px-2 py-1 rounded-lg hover:bg-[#1b61c9]/6 transition-colors"
+        >
+          Sửa
+        </button>
+        <button
+          onClick={() => onChange("")}
+          className="shrink-0 text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          Xóa
+        </button>
+      </div>
+    );
+  }
+
+  // ── URL input mode ──
+  if (showUrlInput) {
+    return (
+      <div className="space-y-2">
+        <input
+          autoFocus
+          className={inputCls}
+          placeholder="https://youtube.com/embed/..."
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowUrlInput(false)}
+            className="text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26] px-3 py-1.5 border border-[#e0e2e6] rounded-lg transition-colors"
+          >
+            Xong
+          </button>
+          <button
+            onClick={() => { onChange(""); setShowUrlInput(false); }}
+            className="text-xs text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+          >
+            Xóa
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Empty state: 2 lựa chọn ──
+  return (
+    <>
+      <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileChange} />
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex flex-col items-center gap-2 py-4 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#1b61c9]/8 flex items-center justify-center">
+            <Video size={16} className="text-[#1b61c9]" />
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-medium">Upload video</p>
+            <p className="text-[10px] text-[rgba(4,14,32,0.4)] mt-0.5">MP4 · MOV · AVI · WebM</p>
+          </div>
+        </button>
+        <button
+          onClick={() => setShowUrlInput(true)}
+          className="flex flex-col items-center gap-2 py-4 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#e55] hover:text-red-500 hover:bg-red-50/40 transition-colors"
+        >
+          <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#dc2626">
+              <path d="M21.8 8s-.2-1.4-.8-2c-.8-.8-1.6-.8-2-.9C16.8 5 12 5 12 5s-4.8 0-7 .1c-.4.1-1.2.1-2 .9-.6.6-.8 2-.8 2S2 9.6 2 11.2v1.5c0 1.6.2 3.2.2 3.2s.2 1.4.8 2c.8.8 1.8.8 2.3.9C6.8 19 12 19 12 19s4.8 0 7-.1c.4-.1 1.2-.1 2-.9.6-.6.8-2 .8-2s.2-1.6.2-3.2v-1.5C22 9.6 21.8 8 21.8 8zM9.7 14.5V9l5.7 2.8-5.7 2.7z"/>
+            </svg>
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-medium">URL YouTube</p>
+            <p className="text-[10px] text-[rgba(4,14,32,0.4)] mt-0.5">Dán link embed</p>
+          </div>
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ── LessonPanel ──────────────────────────────────────────────────────────────
 
 function LessonPanel({
@@ -247,6 +559,7 @@ function LessonPanel({
   const [showAIModal, setShowAIModal]     = useState(false);
   const [quizTitle, setQuizTitle]         = useState("");
   const [quizScore, setQuizScore]         = useState(70);
+  const [saveStatus, setSaveStatus]       = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
     setForm({
@@ -259,16 +572,30 @@ function LessonPanel({
     });
   }, [lesson]);
 
-  const handleSave = () =>
-    updateLesson.mutate({
-      id:        lesson.id,
-      title:     form.title,
-      is_free:   form.is_free,
-      content:   form.content || null,
-      video_url: form.video_url || null,
-      pdf_url:   form.pdf_url || null,
-      pdf_text:  form.pdf_text || null,
-    });
+  const handleSave = () => {
+    setSaveStatus("idle");
+    updateLesson.mutate(
+      {
+        id:        lesson.id,
+        title:     form.title,
+        is_free:   form.is_free,
+        content:   form.content || null,
+        video_url: form.video_url || null,
+        pdf_url:   form.pdf_url || null,
+        pdf_text:  form.pdf_text || null,
+      },
+      {
+        onSuccess: () => {
+          setSaveStatus("success");
+          setTimeout(() => setSaveStatus("idle"), 2500);
+        },
+        onError: () => {
+          setSaveStatus("error");
+          setTimeout(() => setSaveStatus("idle"), 3000);
+        },
+      }
+    );
+  };
 
   const handlePdfUpload = async (file: File) => {
     const { url, pdfText } = await uploadPdf.mutateAsync(file);
@@ -323,16 +650,14 @@ function LessonPanel({
         />
       </div>
 
-      {/* Video URL */}
+      {/* Video */}
       <div>
         <label className={labelCls} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Video size={12} /> Video URL
+          <Video size={12} /> Video bài học
         </label>
-        <input
-          className={inputCls}
-          placeholder="https://..."
+        <VideoUploadSection
           value={form.video_url}
-          onChange={(e) => setForm((f) => ({ ...f, video_url: e.target.value }))}
+          onChange={(url) => setForm((f) => ({ ...f, video_url: url }))}
         />
       </div>
 
@@ -385,10 +710,41 @@ function LessonPanel({
       <button
         onClick={handleSave}
         disabled={updateLesson.isPending}
-        className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
+        className={`w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-60 ${
+          saveStatus === "success"
+            ? "bg-emerald-500 hover:bg-emerald-600"
+            : saveStatus === "error"
+            ? "bg-red-500 hover:bg-red-600"
+            : "bg-[#1b61c9] hover:bg-[#254fad]"
+        }`}
       >
-        <Save size={14} />
-        {updateLesson.isPending ? "Đang lưu..." : "Lưu bài học"}
+        {updateLesson.isPending ? (
+          <>
+            <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+            </svg>
+            Đang lưu...
+          </>
+        ) : saveStatus === "success" ? (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Đã lưu thành công
+          </>
+        ) : saveStatus === "error" ? (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            Lưu thất bại — thử lại
+          </>
+        ) : (
+          <>
+            <Save size={14} />
+            Lưu bài học
+          </>
+        )}
       </button>
 
       {/* Quiz section */}
