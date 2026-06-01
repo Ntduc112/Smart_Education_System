@@ -1,10 +1,11 @@
 import { Queue, type ConnectionOptions } from "bullmq";
 import IORedis from "ioredis";
 
+// lazyConnect: true prevents IORedis from connecting at module import time (e.g. during Next.js build)
 // BullMQ bundles its own ioredis — cast needed to avoid duplicate-package type conflict
 export const redisConnection = new IORedis(
     process.env.REDIS_URL ?? "redis://localhost:6379",
-    { maxRetriesPerRequest: null },
+    { maxRetriesPerRequest: null, lazyConnect: true },
 ) as unknown as ConnectionOptions;
 
 export interface VideoJobData {
