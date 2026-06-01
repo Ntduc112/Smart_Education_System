@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ code: "97", message: "Invalid signature" }, { status: 200 });
         }
 
-        const orderCode = webhookData.data?.orderCode;
+        const orderCode = webhookData.orderCode;
         if (!orderCode) return OK;
 
         const payment = await prisma.payment.findUnique({
