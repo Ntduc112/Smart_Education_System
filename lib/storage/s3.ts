@@ -30,11 +30,12 @@ export async function uploadFile(
         ContentType: contentType,
     }));
 
-    return `${process.env.S3_ENDPOINT}/${BUCKET}/${key}`;
+    return `${process.env.S3_PUBLIC_URL}/${key}`;
 }
 
 export async function deleteFile(url: string): Promise<void> {
-    const key = url.split(`/${BUCKET}/`)[1];
+    const urlObj = new URL(url);
+    const key = urlObj.pathname.replace(/^\//, "");
     if (!key) return;
 
     await client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));

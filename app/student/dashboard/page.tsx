@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { SearchBar } from "@/app/_components/SearchBar";
 import { UserMenu } from "@/app/_components/UserMenu";
-import { useState } from "react";
+import { motion } from "framer-motion";
 import { useMe, useStudentCourses, useCoursesProgress, useStreak, StudentCourse, CourseProgress } from "./dashboard.hook";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -22,24 +22,63 @@ function getGreeting() {
   return "Chào buổi tối";
 }
 
-function formatPrice(price: string) {
-  const n = parseFloat(price);
-  if (n === 0) return "Miễn phí";
-  return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
-}
+// ── Animation variants ─────────────────────────────────────────────────────
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 22 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+};
+
+const fadeIn = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { duration: 0.4, ease: "easeOut" },
+  },
+};
+
+const slideLeft = {
+  hidden: { opacity: 0, x: -24 },
+  show: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
+  },
+};
+
+const stagger = (delayChildren = 0.05) => ({
+  hidden: {},
+  show: { transition: { staggerChildren: delayChildren } },
+});
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.92 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.35, ease: [0.34, 1.26, 0.64, 1] },
+  },
+};
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <div
-      className="bg-white rounded-2xl px-6 py-5 border border-[#e0e2e6]"
+    <motion.div
+      variants={fadeUp}
+      whileHover={{ y: -3, boxShadow: "rgba(15,48,106,0.12) 0px 8px 24px" }}
+      transition={{ duration: 0.2 }}
+      className="bg-white rounded-2xl px-6 py-5 border border-[#e0e2e6] cursor-default"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
     >
       <p className="text-sm text-[rgba(4,14,32,0.55)] tracking-[0.07px] mb-1">{label}</p>
       <p className="text-3xl font-semibold text-[#181d26]">{value}</p>
       {sub && <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1 tracking-[0.07px]">{sub}</p>}
-    </div>
+    </motion.div>
   );
 }
 
@@ -56,31 +95,44 @@ function CourseCard({
   course,
   progress,
   progressLoading,
+  index,
 }: {
   course: StudentCourse;
   progress?: CourseProgress;
   progressLoading: boolean;
+  index: number;
 }) {
   const pct = progress?.percentage ?? 0;
   const isDone = pct === 100;
   const isStarted = pct > 0;
 
   return (
-    <div
-      className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col transition-shadow hover:shadow-md"
+    <motion.div
+      variants={fadeUp}
+      whileHover={{
+        y: -6,
+        boxShadow: "rgba(15,48,106,0.14) 0px 16px 40px",
+        transition: { duration: 0.22, ease: "easeOut" },
+      }}
+      className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
     >
       {/* Thumbnail */}
       <div className="relative aspect-video overflow-hidden bg-[#f8fafc]">
-        <img
+        <motion.img
           src={course.thumbnail}
           alt={course.title}
           className="w-full h-full object-cover"
+          whileHover={{ scale: 1.04, transition: { duration: 0.4, ease: "easeOut" } }}
         />
         {isDone && (
-          <div className="absolute top-3 right-3 bg-[#006400] text-white text-xs font-medium px-2.5 py-1 rounded-full">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="absolute top-3 right-3 bg-[#006400] text-white text-xs font-medium px-2.5 py-1 rounded-full"
+          >
             Hoàn thành
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -141,56 +193,60 @@ function CourseCard({
                 </span>
               </div>
               <div className="w-full h-1.5 bg-[#f0f2f5] rounded-full overflow-hidden mb-4">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${isDone ? "bg-[#006400]" : "bg-[#1b61c9]"}`}
-                  style={{ width: `${pct}%` }}
+                <motion.div
+                  className={`h-full rounded-full ${isDone ? "bg-[#006400]" : "bg-[#1b61c9]"}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.9, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 + index * 0.06 }}
                 />
               </div>
             </>
           )}
 
-          <Link
-            href={
-              progress?.current_lesson_id
-                ? `/student/courses/${course.id}/learn?lesson=${progress.current_lesson_id}`
-                : `/student/courses/${course.id}/learn`
-            }
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${isDone
-              ? "bg-[#f8fafc] text-[#181d26] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
-              : "bg-[#1b61c9] text-white hover:bg-[#254fad]"
-              }`}
-            style={
-              !isDone
-                ? { boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }
-                : undefined
-            }
-          >
-            {isDone ? (
-              <>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Xem lại
-              </>
-            ) : isStarted ? (
-              <>
-                Tiếp tục học
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
-              </>
-            ) : (
-              <>
-                Bắt đầu học
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                </svg>
-              </>
-            )}
-          </Link>
+          <motion.div whileTap={{ scale: 0.97 }}>
+            <Link
+              href={
+                progress?.current_lesson_id
+                  ? `/student/courses/${course.id}/learn?lesson=${progress.current_lesson_id}`
+                  : `/student/courses/${course.id}/learn`
+              }
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium tracking-[0.08px] transition-all ${isDone
+                ? "bg-[#f8fafc] text-[#181d26] border border-[#e0e2e6] hover:border-[#1b61c9]/40"
+                : "bg-[#1b61c9] text-white hover:bg-[#254fad]"
+                }`}
+              style={
+                !isDone
+                  ? { boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }
+                  : undefined
+              }
+            >
+              {isDone ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Xem lại
+                </>
+              ) : isStarted ? (
+                <>
+                  Tiếp tục học
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </>
+              ) : (
+                <>
+                  Bắt đầu học
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                  </svg>
+                </>
+              )}
+            </Link>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -212,7 +268,6 @@ function CourseCardSkeleton() {
   );
 }
 
-
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function StudentDashboardPage() {
@@ -230,7 +285,6 @@ export default function StudentDashboardPage() {
     courseIds.map((id, i) => [id, progressResults[i]?.isLoading ?? true])
   );
 
-  // Stats
   const totalCourses = courses.length;
   const completedCourses = courseIds.filter((id) => (progressMap[id]?.percentage ?? 0) === 100).length;
   const inProgressCourses = courseIds.filter((id) => {
@@ -246,78 +300,101 @@ export default function StudentDashboardPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* ── Navbar ── */}
-      <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10"
+      >
         <div className="w-full px-6 h-16 flex items-center">
-          {/* Logo — flex-1 để cân bằng với auth */}
           <div className="flex-1 min-w-0">
             <Link href="/" className="flex items-center gap-2 w-fit">
               <Logo size={32} />
               <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
             </Link>
           </div>
-
-          {/* Search — cố định giữa */}
           <div style={{ width: 520, flexShrink: 0, transform: "translateX(-10px)" }}>
             <SearchBar />
           </div>
-
-          {/* Auth — flex-1, căn phải */}
           <div className="flex-1 min-w-0 flex justify-end">
             <UserMenu user={user ?? null} />
           </div>
         </div>
-      </header>
+      </motion.header>
 
       {/* ── Main ── */}
       <main className="max-w-6xl mx-auto px-6 py-10">
+
         {/* Welcome */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-light text-[#181d26]">
+        <motion.div
+          className="mb-8"
+          initial="hidden"
+          animate="show"
+          variants={stagger(0.08)}
+        >
+          <motion.h1
+            variants={fadeUp}
+            className="text-3xl font-light text-[#181d26]"
+          >
             {getGreeting()},{" "}
             <span className="font-semibold">{user?.name?.split(" ").pop() ?? "bạn"}!</span>
-          </h1>
-          <p className="text-[rgba(4,14,32,0.55)] mt-1.5 tracking-[0.18px]">
+          </motion.h1>
+          <motion.p
+            variants={fadeUp}
+            className="text-[rgba(4,14,32,0.55)] mt-1.5 tracking-[0.18px]"
+          >
             Tiếp tục hành trình học tập của bạn hôm nay.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {coursesLoading ? (
-            <>
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </>
-          ) : (
-            <>
-              <StatCard label="Khóa học đã đăng ký" value={totalCourses} />
-              <StatCard label="Đang học" value={inProgressCourses} />
-              <StatCard label="Đã hoàn thành" value={completedCourses} />
-              <StatCard
-                label="Tiến độ trung bình"
-                value={avgProgress !== null ? `${avgProgress}%` : "—"}
-              />
-            </>
-          )}
-        </div>
+        {coursesLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </div>
+        ) : (
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10"
+            initial="hidden"
+            animate="show"
+            variants={stagger(0.09)}
+          >
+            <StatCard label="Khóa học đã đăng ký" value={totalCourses} />
+            <StatCard label="Đang học" value={inProgressCourses} />
+            <StatCard label="Đã hoàn thành" value={completedCourses} />
+            <StatCard
+              label="Tiến độ trung bình"
+              value={avgProgress !== null ? `${avgProgress}%` : "—"}
+            />
+          </motion.div>
+        )}
 
         {/* Streak */}
         {streakData !== undefined && (
-          <div
-            className={`mb-8 rounded-2xl border px-6 py-4 flex items-center gap-4 ${
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={slideLeft}
+            whileHover={{ scale: 1.008, transition: { duration: 0.2 } }}
+            className={`mb-8 rounded-2xl border px-6 py-4 flex items-center gap-4 cursor-default ${
               streakData.today_learned
                 ? "bg-orange-50 border-orange-200"
                 : "bg-white border-[#e0e2e6]"
             }`}
             style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
           >
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
-              streakData.today_learned ? "bg-orange-100" : "bg-[#f8fafc]"
-            }`}>
+            <motion.div
+              animate={streakData.today_learned ? { rotate: [0, -10, 10, -6, 6, 0] } : {}}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
+                streakData.today_learned ? "bg-orange-100" : "bg-[#f8fafc]"
+              }`}
+            >
               🔥
-            </div>
+            </motion.div>
             <div className="flex-1">
               <p className="text-base font-semibold text-[#181d26]">
                 {streakData.streak > 0
@@ -331,46 +408,58 @@ export default function StudentDashboardPage() {
               </p>
             </div>
             {streakData.streak >= 7 && (
-              <div className="shrink-0 text-right">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.35, ease: [0.34, 1.26, 0.64, 1] }}
+                className="shrink-0 text-right"
+              >
                 <p className="text-xs font-semibold text-orange-500 uppercase tracking-wide">
                   {streakData.streak >= 30 ? "Huyền thoại" : streakData.streak >= 14 ? "Xuất sắc" : "Tốt lắm"}
                 </p>
                 <p className="text-xs text-[rgba(4,14,32,0.35)] mt-0.5">{streakData.streak} ngày</p>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
         )}
 
-        {/* Courses */}
         {/* Quick links */}
-        <div className="flex items-center gap-3 mb-8 flex-wrap">
-          <Link
-            href="/student/flashcards"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
-            style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
-          >
-            <span className="text-base">🃏</span>
-            Flashcard ôn tập
-          </Link>
-          <Link
-            href="/student/notes"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
-            style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
-          >
-            <span className="text-base">📝</span>
-            Ghi chú của tôi
-          </Link>
-          <Link
-            href="/student/certificates"
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
-            style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
-          >
-            <span className="text-base">🏆</span>
-            Chứng chỉ
-          </Link>
-        </div>
+        <motion.div
+          className="flex items-center gap-3 mb-8 flex-wrap"
+          initial="hidden"
+          animate="show"
+          variants={stagger(0.07)}
+        >
+          {[
+            { href: "/student/flashcards", icon: "🃏", label: "Flashcard ôn tập" },
+            { href: "/student/notes", icon: "📝", label: "Ghi chú của tôi" },
+            { href: "/student/certificates", icon: "🏆", label: "Chứng chỉ" },
+          ].map((item) => (
+            <motion.div
+              key={item.href}
+              variants={scaleIn}
+              whileHover={{ y: -2, boxShadow: "rgba(27,97,201,0.12) 0px 6px 20px", transition: { duration: 0.18 } }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <Link
+                href={item.href}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors"
+                style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 12px" }}
+              >
+                <span className="text-base">{item.icon}</span>
+                {item.label}
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
 
-        <div className="flex items-center justify-between mb-5">
+        {/* Section header */}
+        <motion.div
+          className="flex items-center justify-between mb-5"
+          initial="hidden"
+          animate="show"
+          variants={fadeIn}
+        >
           <h2 className="text-xl font-semibold text-[#181d26] tracking-[0.12px]">
             Khóa học của tôi
             {!coursesLoading && (
@@ -385,8 +474,9 @@ export default function StudentDashboardPage() {
           >
             Khám phá thêm →
           </Link>
-        </div>
+        </motion.div>
 
+        {/* Course grid */}
         {coursesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <CourseCardSkeleton />
@@ -394,37 +484,66 @@ export default function StudentDashboardPage() {
             <CourseCardSkeleton />
           </div>
         ) : courses.length === 0 ? (
-          <div className="bg-white border border-[#e0e2e6] rounded-2xl py-16 flex flex-col items-center gap-4">
-            <div className="w-14 h-14 bg-[#1b61c9]/8 rounded-2xl flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="bg-white border border-[#e0e2e6] rounded-2xl py-16 flex flex-col items-center gap-4"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              className="w-14 h-14 bg-[#1b61c9]/8 rounded-2xl flex items-center justify-center"
+            >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
               </svg>
-            </div>
-            <div className="text-center">
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.35 }}
+              className="text-center"
+            >
               <p className="text-[#181d26] font-medium mb-1">Bạn chưa đăng ký khóa học nào</p>
               <p className="text-sm text-[rgba(4,14,32,0.55)] tracking-[0.07px]">
                 Khám phá hàng trăm khóa học chất lượng cao
               </p>
-            </div>
-            <Link
-              href="/courses"
-              className="px-5 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors tracking-[0.08px]"
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.35 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
             >
-              Xem khóa học
-            </Link>
-          </div>
+              <Link
+                href="/courses"
+                className="px-5 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors tracking-[0.08px]"
+              >
+                Xem khóa học
+              </Link>
+            </motion.div>
+          </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            initial="hidden"
+            animate="show"
+            variants={stagger(0.08)}
+          >
             {courses.map((course, i) => (
               <CourseCard
                 key={course.id}
                 course={course}
                 progress={progressMap[course.id]}
                 progressLoading={progressLoadingMap[course.id]}
+                index={i}
               />
             ))}
-          </div>
+          </motion.div>
         )}
       </main>
     </div>

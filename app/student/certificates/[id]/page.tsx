@@ -3,6 +3,7 @@
 import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import api from "@/lib/axios";
 
 interface Certificate {
@@ -22,6 +23,16 @@ function useCertificate(id: string) {
     },
   });
 }
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] } },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.2 } },
+};
 
 export default function CertificatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -54,7 +65,12 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center px-4 py-12">
-      <div className="print:hidden mb-6 flex items-center gap-4">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="print:hidden mb-6 flex items-center gap-4"
+      >
         <Link
           href="/student/certificates"
           className="text-sm text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors flex items-center gap-1.5"
@@ -64,7 +80,9 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
           </svg>
           Danh sách chứng chỉ
         </Link>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => window.print()}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
         >
@@ -74,53 +92,77 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
             <rect x="6" y="14" width="12" height="8" />
           </svg>
           In chứng chỉ
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
-      <div className="w-full max-w-2xl bg-white rounded-2xl ring-4 ring-[#1b61c9]/20 outline outline-8 outline-[#f0f4fc] shadow-lg px-10 py-12 flex flex-col items-center text-center">
-        <div className="mb-6">
-          <span className="text-2xl font-extrabold text-[#1b61c9] tracking-tight">SmartEdu</span>
-        </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 24 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="w-full max-w-2xl bg-white rounded-2xl ring-4 ring-[#1b61c9]/20 outline outline-8 outline-[#f0f4fc] shadow-lg px-10 py-12 flex flex-col items-center text-center"
+      >
+        <motion.div
+          initial="hidden"
+          animate="show"
+          variants={stagger}
+          className="w-full flex flex-col items-center"
+        >
+          <motion.div variants={fadeUp} className="mb-6">
+            <span className="text-2xl font-extrabold text-[#1b61c9] tracking-tight">SmartEdu</span>
+          </motion.div>
 
-        <div className="w-16 h-px bg-[#e0e2e6] mb-6" />
+          <motion.div variants={fadeUp} className="w-16 h-px bg-[#e0e2e6] mb-6" />
 
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgba(4,14,32,0.45)] mb-3">
-          Chứng nhận
-        </p>
+          <motion.p variants={fadeUp} className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgba(4,14,32,0.45)] mb-3">
+            Chứng nhận
+          </motion.p>
 
-        <h1 className="text-2xl font-bold text-[#181d26] tracking-tight mb-6">
-          CHỨNG CHỈ HOÀN THÀNH
-        </h1>
+          <motion.h1 variants={fadeUp} className="text-2xl font-bold text-[#181d26] tracking-tight mb-6">
+            CHỨNG CHỈ HOÀN THÀNH
+          </motion.h1>
 
-        <p className="text-sm text-[rgba(4,14,32,0.55)] mb-3">Chứng nhận rằng</p>
+          <motion.p variants={fadeUp} className="text-sm text-[rgba(4,14,32,0.55)] mb-3">
+            Chứng nhận rằng
+          </motion.p>
 
-        <p className="text-3xl font-bold text-[#181d26] mb-4 tracking-tight">
-          {cert.user.name}
-        </p>
+          <motion.p
+            variants={fadeUp}
+            className="text-3xl font-bold text-[#181d26] mb-4 tracking-tight"
+          >
+            {cert.user.name}
+          </motion.p>
 
-        <p className="text-sm text-[rgba(4,14,32,0.55)] mb-3">
-          đã hoàn thành xuất sắc khóa học
-        </p>
+          <motion.p variants={fadeUp} className="text-sm text-[rgba(4,14,32,0.55)] mb-3">
+            đã hoàn thành xuất sắc khóa học
+          </motion.p>
 
-        <p className="text-xl font-semibold text-[#1b61c9] mb-4 leading-snug px-4">
-          {cert.course.title}
-        </p>
+          <motion.p
+            variants={fadeUp}
+            className="text-xl font-semibold text-[#1b61c9] mb-4 leading-snug px-4"
+          >
+            {cert.course.title}
+          </motion.p>
 
-        <p className="text-sm text-[rgba(4,14,32,0.55)] mb-8">
-          Giảng viên: <span className="font-medium text-[#181d26]">{cert.course.instructor.name}</span>
-        </p>
+          <motion.p variants={fadeUp} className="text-sm text-[rgba(4,14,32,0.55)] mb-8">
+            Giảng viên: <span className="font-medium text-[#181d26]">{cert.course.instructor.name}</span>
+          </motion.p>
 
-        <div className="w-16 h-px bg-[#e0e2e6] mb-6" />
+          <motion.div variants={fadeUp} className="w-16 h-px bg-[#e0e2e6] mb-6" />
 
-        <p className="text-sm text-[rgba(4,14,32,0.55)] mb-1">Ngày cấp</p>
-        <p className="text-sm font-medium text-[#181d26] mb-8">{issuedDate}</p>
+          <motion.p variants={fadeUp} className="text-sm text-[rgba(4,14,32,0.55)] mb-1">
+            Ngày cấp
+          </motion.p>
+          <motion.p variants={fadeUp} className="text-sm font-medium text-[#181d26] mb-8">
+            {issuedDate}
+          </motion.p>
 
-        <div className="w-full flex justify-center">
-          <span className="text-xs text-[rgba(4,14,32,0.35)] tracking-widest font-mono">
-            {cert.certificate_no}
-          </span>
-        </div>
-      </div>
+          <motion.div variants={fadeUp} className="w-full flex justify-center">
+            <span className="text-xs text-[rgba(4,14,32,0.35)] tracking-widest font-mono">
+              {cert.certificate_no}
+            </span>
+          </motion.div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import api from "@/lib/axios";
 export interface LessonNote {
   id: string;
   content: string;
+  video_time: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,8 +34,8 @@ export function useNotes(lessonId: string) {
 export function useAddNote(lessonId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (content: string) =>
-      api.post(`/lessons/${lessonId}/notes`, { content }),
+    mutationFn: ({ content, video_time }: { content: string; video_time: number | null }) =>
+      api.post(`/lessons/${lessonId}/notes`, { content, video_time }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", lessonId] }),
   });
 }

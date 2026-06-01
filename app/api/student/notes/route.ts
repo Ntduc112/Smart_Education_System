@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
             select: {
                 id: true,
                 content: true,
+                video_time: true,
                 created_at: true,
                 updated_at: true,
                 lesson: {

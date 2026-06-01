@@ -4,6 +4,7 @@ import { z } from "zod";
 
 const NoteSchema = z.object({
     content: z.string().min(1, "Nội dung không được trống").max(5000),
+    video_time: z.number().int().nonnegative().nullable().optional(),
 });
 
 async function checkEnrollment(userId: string, lessonId: string) {
@@ -33,7 +34,7 @@ export async function GET(
         const notes = await prisma.lessonNote.findMany({
             where: { lesson_id: lessonId, user_id: userId },
             orderBy: { created_at: "desc" },
-            select: { id: true, content: true, created_at: true, updated_at: true },
+            select: { id: true, content: true, video_time: true, created_at: true, updated_at: true },
         });
 
         return NextResponse.json({ notes });
@@ -56,11 +57,11 @@ export async function POST(
         if (!lesson) return NextResponse.json({ error: "Access denied" }, { status: 403 });
 
         const body = await request.json();
-        const { content } = NoteSchema.parse(body);
+        const { content, video_time } = NoteSchema.parse(body);
 
         const note = await prisma.lessonNote.create({
-            data: { user_id: userId, lesson_id: lessonId, content },
-            select: { id: true, content: true, created_at: true, updated_at: true },
+            data: { user_id: userId, lesson_id: lessonId, content, video_time: video_time ?? null },
+            select: { id: true, content: true, video_time: true, created_at: true, updated_at: true },
         });
 
         return NextResponse.json({ note }, { status: 201 });

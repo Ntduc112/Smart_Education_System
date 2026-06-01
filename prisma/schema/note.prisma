@@ -5,6 +5,7 @@ model LessonNote {
   lesson_id  String
   lesson     Lesson   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
   content    String
+  video_time Int?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
 import { WishlistButton } from "@/app/_components/WishlistButton";
+import { motion } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { useWishlist, WishlistItem } from "./wishlist.hook";
 
@@ -19,12 +20,29 @@ function formatPrice(price: string) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(n);
 }
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.42, ease: [0.25, 0.46, 0.45, 0.94] } },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
 function WishlistCard({ item }: { item: WishlistItem }) {
   const { course } = item;
   const isFree = parseFloat(course.price) === 0;
 
   return (
-    <div className="group bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col transition-all hover:-translate-y-0.5 hover:shadow-lg relative"
+    <motion.div
+      variants={fadeUp}
+      whileHover={{
+        y: -6,
+        boxShadow: "rgba(15,48,106,0.14) 0px 16px 40px",
+        transition: { duration: 0.2, ease: "easeOut" },
+      }}
+      className="group bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden flex flex-col relative"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
     >
       {/* WishlistButton overlay */}
@@ -35,10 +53,11 @@ function WishlistCard({ item }: { item: WishlistItem }) {
       <Link href={`/courses/${course.id}`} className="flex flex-col flex-1">
         {/* Thumbnail */}
         <div className="relative aspect-video overflow-hidden bg-[#f8fafc]">
-          <img
+          <motion.img
             src={course.thumbnail}
             alt={course.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover"
+            whileHover={{ scale: 1.04, transition: { duration: 0.4, ease: "easeOut" } }}
           />
           {isFree && (
             <div className="absolute top-3 left-3 bg-[#006400] text-white text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -87,7 +106,7 @@ function WishlistCard({ item }: { item: WishlistItem }) {
           </div>
         </div>
       </Link>
-    </div>
+    </motion.div>
   );
 }
 
@@ -119,7 +138,12 @@ export default function WishlistPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10"
+      >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
@@ -133,10 +157,15 @@ export default function WishlistPage() {
           </div>
           <UserMenu user={user ?? null} />
         </div>
-      </header>
+      </motion.header>
 
       <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-center gap-3 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
+          className="flex items-center gap-3 mb-8"
+        >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
@@ -148,37 +177,65 @@ export default function WishlistPage() {
               </span>
             )}
           </h1>
-        </div>
+        </motion.div>
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, i) => <CardSkeleton key={i} />)}
           </div>
         ) : wishlist && wishlist.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            initial="hidden"
+            animate="show"
+            variants={stagger}
+          >
             {wishlist.map((item) => (
               <WishlistCard key={item.course_id} item={item} />
             ))}
-          </div>
+          </motion.div>
         ) : (
-          <div className="flex flex-col items-center py-20 gap-4 bg-white rounded-2xl border border-[#e0e2e6]">
-            <div className="w-16 h-16 rounded-2xl bg-[#fffbeb] flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center py-20 gap-4 bg-white rounded-2xl border border-[#e0e2e6]"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              className="w-16 h-16 rounded-2xl bg-[#fffbeb] flex items-center justify-center"
+            >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
-            </div>
-            <div className="text-center">
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="text-center"
+            >
               <p className="text-[#181d26] font-medium mb-1">Bạn chưa lưu khóa học nào</p>
               <p className="text-sm text-[rgba(4,14,32,0.55)]">Khám phá các khóa học và nhấn ★ để lưu lại</p>
-            </div>
-            <Link
-              href="/courses"
-              className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
-              style={{ boxShadow: "rgba(45,127,249,0.28) 0px 1px 4px" }}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
             >
-              Khám phá khóa học
-            </Link>
-          </div>
+              <Link
+                href="/courses"
+                className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
+                style={{ boxShadow: "rgba(45,127,249,0.28) 0px 1px 4px" }}
+              >
+                Khám phá khóa học
+              </Link>
+            </motion.div>
+          </motion.div>
         )}
       </main>
     </div>

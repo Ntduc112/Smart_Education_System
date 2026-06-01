@@ -4,8 +4,17 @@ import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { useAllNotes, useUpdateNote, useDeleteNote, AllNote } from "../courses/[courseId]/learn/_components/notes.hook";
+
+function formatTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -35,7 +44,14 @@ function NoteRow({ note }: { note: AllNote }) {
   };
 
   return (
-    <div className="py-3 border-b border-[#f0f2f5] last:border-0">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.3 }}
+      className="py-3 border-b border-[#f0f2f5] last:border-0"
+    >
       <div className="flex items-start justify-between gap-3 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(4,14,32,0.35)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
@@ -48,90 +64,123 @@ function NoteRow({ note }: { note: AllNote }) {
         </span>
       </div>
 
-      {editing ? (
-        <div className="space-y-2 mt-2">
-          <textarea
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            rows={3}
-            autoFocus
-            className="w-full px-3 py-2 rounded-lg border border-[#e0e2e6] text-sm text-[#181d26] focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/30 resize-none"
-          />
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={!editText.trim() || updateNote.isPending}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors disabled:opacity-50"
-            >
-              {updateNote.isPending ? "Đang lưu..." : "Lưu"}
-            </button>
-            <button
-              onClick={() => { setEditing(false); setEditText(note.content); }}
-              className="px-3 py-1.5 rounded-lg text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
-            >
-              Hủy
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-start gap-2">
-          <p className="text-sm text-[#181d26] leading-relaxed whitespace-pre-wrap flex-1">{note.content}</p>
-          <div className="flex items-center gap-1 shrink-0 mt-0.5">
-            <button
-              onClick={() => { setEditing(true); setEditText(note.content); }}
-              className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-[#1b61c9] hover:bg-[#1b61c9]/8 transition-colors"
-              title="Sửa"
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-            {confirming ? (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => deleteNote.mutate(note.id, { onSuccess: () => setConfirming(false) })}
-                  disabled={deleteNote.isPending}
-                  className="px-2 py-1 rounded text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
-                >
-                  Xóa
-                </button>
-                <button
-                  onClick={() => setConfirming(false)}
-                  className="px-2 py-1 rounded text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26]"
-                >
-                  Hủy
-                </button>
-              </div>
-            ) : (
+      {note.video_time != null && (
+        <Link
+          href={`/student/courses/${note.lesson.chapter.course.id}/learn?lesson=${note.lesson.id}`}
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1b61c9]/8 text-[#1b61c9] text-xs font-medium mb-2 hover:bg-[#1b61c9]/15 transition-colors"
+        >
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+          {formatTime(note.video_time)}
+        </Link>
+      )}
+
+      <AnimatePresence mode="wait">
+        {editing ? (
+          <motion.div
+            key="editing"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-2 mt-2 overflow-hidden"
+          >
+            <textarea
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              rows={3}
+              autoFocus
+              className="w-full px-3 py-2 rounded-lg border border-[#e0e2e6] text-sm text-[#181d26] focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/30 resize-none"
+            />
+            <div className="flex gap-2">
               <button
-                onClick={() => setConfirming(true)}
-                className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-red-500 hover:bg-red-50 transition-colors"
-                title="Xóa"
+                onClick={handleSave}
+                disabled={!editText.trim() || updateNote.isPending}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors disabled:opacity-50"
+              >
+                {updateNote.isPending ? "Đang lưu..." : "Lưu"}
+              </button>
+              <button
+                onClick={() => { setEditing(false); setEditText(note.content); }}
+                className="px-3 py-1.5 rounded-lg text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
+              >
+                Hủy
+              </button>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="viewing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-start gap-2"
+          >
+            <p className="text-sm text-[#181d26] leading-relaxed whitespace-pre-wrap flex-1">{note.content}</p>
+            <div className="flex items-center gap-1 shrink-0 mt-0.5">
+              <button
+                onClick={() => { setEditing(true); setEditText(note.content); }}
+                className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-[#1b61c9] hover:bg-[#1b61c9]/8 transition-colors"
+                title="Sửa"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                  <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+              {confirming ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => deleteNote.mutate(note.id, { onSuccess: () => setConfirming(false) })}
+                    disabled={deleteNote.isPending}
+                    className="px-2 py-1 rounded text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                  >
+                    Xóa
+                  </button>
+                  <button
+                    onClick={() => setConfirming(false)}
+                    className="px-2 py-1 rounded text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26]"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirming(true)}
+                  className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                  title="Xóa"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
-function CourseGroup({ courseId, courseTitle, thumbnail, notes }: {
+function CourseGroup({ courseId, courseTitle, thumbnail, notes, index }: {
   courseId: string;
   courseTitle: string;
   thumbnail: string;
   notes: AllNote[];
+  index: number;
 }) {
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden"
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.07, ease: [0.25, 0.46, 0.45, 0.94] }}
+      whileHover={{ boxShadow: "rgba(15,48,106,0.1) 0px 8px 24px", transition: { duration: 0.2 } }}
+      className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden"
       style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
     >
       <button
@@ -151,23 +200,36 @@ function CourseGroup({ courseId, courseTitle, thumbnail, notes }: {
           >
             Học tiếp
           </Link>
-          <svg
+          <motion.svg
             width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            className={`text-[rgba(4,14,32,0.35)] transition-transform ${open ? "rotate-180" : ""}`}
+            className="text-[rgba(4,14,32,0.35)]"
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.25 }}
           >
             <polyline points="6 9 12 15 18 9" />
-          </svg>
+          </motion.svg>
         </div>
       </button>
 
-      {open && (
-        <div className="px-5 pb-2">
-          {notes.map((note) => (
-            <NoteRow key={note.id} note={note} />
-          ))}
-        </div>
-      )}
-    </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-2">
+              {notes.map((note) => (
+                <NoteRow key={note.id} note={note} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -187,7 +249,12 @@ export default function NotesPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
+      <motion.header
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10"
+      >
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
@@ -201,10 +268,15 @@ export default function NotesPage() {
           </div>
           <UserMenu user={user ?? null} />
         </div>
-      </header>
+      </motion.header>
 
       <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="flex items-center gap-3 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05 }}
+          className="flex items-center gap-3 mb-8"
+        >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
@@ -218,7 +290,7 @@ export default function NotesPage() {
               <span className="ml-2 text-base font-normal text-[rgba(4,14,32,0.45)]">({notes.length})</span>
             )}
           </h1>
-        </div>
+        </motion.div>
 
         {isLoading ? (
           <div className="space-y-4">
@@ -240,19 +312,30 @@ export default function NotesPage() {
           </div>
         ) : Object.keys(grouped).length > 0 ? (
           <div className="flex flex-col gap-4">
-            {Object.entries(grouped).map(([courseId, { courseTitle, thumbnail, notes: courseNotes }]) => (
+            {Object.entries(grouped).map(([courseId, { courseTitle, thumbnail, notes: courseNotes }], i) => (
               <CourseGroup
                 key={courseId}
                 courseId={courseId}
                 courseTitle={courseTitle}
                 thumbnail={thumbnail}
                 notes={courseNotes}
+                index={i}
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center py-20 gap-4 bg-white rounded-2xl border border-[#e0e2e6]">
-            <div className="w-16 h-16 rounded-2xl bg-[#1b61c9]/8 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center py-20 gap-4 bg-white rounded-2xl border border-[#e0e2e6]"
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] }}
+              className="w-16 h-16 rounded-2xl bg-[#1b61c9]/8 flex items-center justify-center"
+            >
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                 <polyline points="14 2 14 8 20 8" />
@@ -260,19 +343,32 @@ export default function NotesPage() {
                 <line x1="16" y1="17" x2="8" y2="17" />
                 <polyline points="10 9 9 9 8 9" />
               </svg>
-            </div>
-            <div className="text-center">
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+              className="text-center"
+            >
               <p className="text-[#181d26] font-medium mb-1">Chưa có ghi chú nào</p>
               <p className="text-sm text-[rgba(4,14,32,0.55)]">Bắt đầu ghi chú khi học bài để ôn tập sau!</p>
-            </div>
-            <Link
-              href="/student/dashboard"
-              className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
-              style={{ boxShadow: "rgba(45,127,249,0.28) 0px 1px 4px" }}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
             >
-              Vào học ngay
-            </Link>
-          </div>
+              <Link
+                href="/student/dashboard"
+                className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
+                style={{ boxShadow: "rgba(45,127,249,0.28) 0px 1px 4px" }}
+              >
+                Vào học ngay
+              </Link>
+            </motion.div>
+          </motion.div>
         )}
       </main>
     </div>
