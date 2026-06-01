@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
 import { useCourses, useCategories, CourseInList, SortOption, PriceType } from "./courses.hook";
@@ -191,7 +191,7 @@ function CourseCardSkeleton() {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default function CoursesPage() {
+function CoursesContent() {
   const { data: user, isLoading: userLoading } = useMe();
   const isLoggedIn = !userLoading && !!user;
   const { data: enrolledCourses = [] } = useStudentCourses({ enabled: isLoggedIn });
@@ -541,5 +541,13 @@ export default function CoursesPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function CoursesPage() {
+  return (
+    <Suspense>
+      <CoursesContent />
+    </Suspense>
   );
 }
