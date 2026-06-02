@@ -41,7 +41,9 @@ export async function proxy(request: NextRequest){
     if(matchesRoutes(pathName, PUBLIC_ROUTES)){
         return NextResponse.next();
     }
-    const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+    const authHeader = request.headers.get("authorization");
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const accessToken = bearerToken ?? request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
     if(!accessToken){
         if(pathName.startsWith("/api")){
             return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });

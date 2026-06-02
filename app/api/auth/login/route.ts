@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
             }
         })
         const { password_hash: _, ...safeUser } = user;
-        return NextResponse.json({ user: safeUser }, { status: 200 });
+        return NextResponse.json({ user: safeUser, accessToken }, { status: 200 });
 
     } catch (error) {
         if (error instanceof z.ZodError) {
