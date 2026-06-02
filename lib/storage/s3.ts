@@ -5,12 +5,17 @@ import { Readable } from "stream";
 
 const client = new S3Client({
     endpoint: process.env.S3_ENDPOINT!,
-    region: process.env.S3_REGION ?? "us-east-1",
+    region: process.env.S3_REGION ?? "auto",
     credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY!,
         secretAccessKey: process.env.S3_SECRET_KEY!,
     },
-    forcePathStyle: true, // bắt buộc với MinIO
+    forcePathStyle: true,
+    // AWS SDK v3 >=3.525 adds CRC32 checksums to presigned PUT URLs by default.
+    // Cloudflare R2 does not support these checksum headers — setting this to
+    // WHEN_REQUIRED disables them so direct-browser uploads to R2 work.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 const BUCKET = process.env.S3_BUCKET!;

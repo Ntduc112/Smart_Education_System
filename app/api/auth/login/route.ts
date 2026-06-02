@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return NextResponse.json({ errors: error.message }, { status: 400 });
+            return NextResponse.json({ error: "Email hoặc mật khẩu không hợp lệ" }, { status: 400 });
         }
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
