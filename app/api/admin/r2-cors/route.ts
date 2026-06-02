@@ -1,48 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, GetBucketCorsCommand } from "@aws-sdk/client-s3";
 import { setupR2Cors } from "@/lib/storage/s3";
 
-// Dùng client riêng để tránh conflict với client singleton trong s3.ts
-const client = new S3Client({
-    endpoint: process.env.S3_ENDPOINT!,
-    region: process.env.S3_REGION ?? "auto",
-    credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY!,
-        secretAccessKey: process.env.S3_SECRET_KEY!,
-    },
-    forcePathStyle: true,
-    requestChecksumCalculation: "WHEN_REQUIRED",
-    responseChecksumValidation: "WHEN_REQUIRED",
-});
-
-const BUCKET = process.env.S3_BUCKET!;
-
-/** GET /api/admin/r2-cors — đọc CORS policy hiện tại */
+/** GET /api/admin/r2-cors — kiểm tra CORS hiện tại qua Cloudflare API */
 export async function GET(request: NextRequest) {
     const role = request.headers.get("x-user-role");
-    if (role !== "ADMIN") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const cfToken = process.env.CF_API_TOKEN;
+    if (!cfToken) return NextResponse.json({ error: "CF_API_TOKEN not set" }, { status: 500 });
+
+    const endpoint = process.env.S3_ENDPOINT!;
+    const accountId = new URL(endpoint).hostname.split(".")[0];
+    const bucket = process.env.S3_BUCKET!;
+
     try {
-        const res = await client.send(new GetBucketCorsCommand({ Bucket: BUCKET }));
-        return NextResponse.json({ rules: res.CORSRules ?? [] });
+        const res = await fetch(
+            `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${bucket}/cors`,
+            { headers: { "Authorization": `Bearer ${cfToken}` } }
+        );
+        const data = await res.json();
+        return NextResponse.json(data);
     } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return NextResponse.json({ rules: [], error: msg }, { status: 200 });
+        return NextResponse.json({ error: String(err) }, { status: 500 });
     }
 }
 
-/** POST /api/admin/r2-cors — (re)apply CORS policy */
+/** POST /api/admin/r2-cors — apply CORS policy */
 export async function POST(request: NextRequest) {
     const role = request.headers.get("x-user-role");
-    if (role !== "ADMIN") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    if (role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
     try {
         await setupR2Cors();
         return NextResponse.json({ ok: true, message: "CORS applied" });
     } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+        return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
     }
 }

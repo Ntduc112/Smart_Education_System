@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
@@ -91,24 +91,45 @@ export async function deleteObject(key: string): Promise<void> {
     await client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 
-// Gọi một lần khi server khởi động để đảm bảo R2 bucket cho phép browser PUT trực tiếp.
+// Dùng Cloudflare API (không phải S3 API) vì R2 token thông thường
+// không có quyền PutBucketCors qua S3 — chỉ Cloudflare API token mới được.
 export async function setupR2Cors(): Promise<void> {
+    const cfToken = process.env.CF_API_TOKEN;
+    if (!cfToken) throw new Error("CF_API_TOKEN not set");
+
+    // account id nằm trong subdomain của S3_ENDPOINT
+    // vd: https://4bf5e3624e6076e18bfaeba8d41aca3e.r2.cloudflarestorage.com
+    const endpoint = process.env.S3_ENDPOINT!;
+    const accountId = new URL(endpoint).hostname.split(".")[0];
+
     const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
         ? process.env.CORS_ALLOWED_ORIGINS.split(",").map((o) => o.trim())
         : ["*"];
 
-    await client.send(new PutBucketCorsCommand({
-        Bucket: BUCKET,
-        CORSConfiguration: {
-            CORSRules: [
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/r2/buckets/${BUCKET}/cors`;
+    const res = await fetch(url, {
+        method: "PUT",
+        headers: {
+            "Authorization": `Bearer ${cfToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            rules: [
                 {
-                    AllowedOrigins: allowedOrigins,
-                    AllowedMethods: ["GET", "PUT", "HEAD", "DELETE"],
-                    AllowedHeaders: ["*"],
-                    ExposeHeaders: ["ETag"],
-                    MaxAgeSeconds: 3000,
+                    allowed: {
+                        origins: allowedOrigins,
+                        methods: ["GET", "PUT", "HEAD", "DELETE"],
+                        headers: ["*"],
+                    },
+                    exposeHeaders: ["ETag"],
+                    maxAgeSeconds: 3000,
                 },
             ],
-        },
-    }));
+        }),
+    });
+
+    if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Cloudflare API ${res.status}: ${body}`);
+    }
 }
