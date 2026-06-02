@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
@@ -89,4 +89,26 @@ export async function getObjectStream(key: string): Promise<Readable> {
 
 export async function deleteObject(key: string): Promise<void> {
     await client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+}
+
+// Gọi một lần khi server khởi động để đảm bảo R2 bucket cho phép browser PUT trực tiếp.
+export async function setupR2Cors(): Promise<void> {
+    const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
+        ? process.env.CORS_ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+        : ["*"];
+
+    await client.send(new PutBucketCorsCommand({
+        Bucket: BUCKET,
+        CORSConfiguration: {
+            CORSRules: [
+                {
+                    AllowedOrigins: allowedOrigins,
+                    AllowedMethods: ["GET", "PUT", "HEAD", "DELETE"],
+                    AllowedHeaders: ["*"],
+                    ExposeHeaders: ["ETag"],
+                    MaxAgeSeconds: 3000,
+                },
+            ],
+        },
+    }));
 }
