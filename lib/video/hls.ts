@@ -9,6 +9,9 @@ import { uploadBuffer, deleteObject } from "@/lib/storage/s3";
 
 // ffmpeg-static bị Next.js bundler làm sai path → dùng process.cwd() thay thế
 const ffmpegBin = path.join(process.cwd(), "node_modules/ffmpeg-static/ffmpeg");
+console.log(`[hls] ffmpeg binary path: ${ffmpegBin}`);
+import { existsSync } from "fs";
+console.log(`[hls] ffmpeg binary exists: ${existsSync(ffmpegBin)}`);
 ffmpeg.setFfmpegPath(ffmpegBin);
 
 const HLS_SEGMENT_DURATION = 10;

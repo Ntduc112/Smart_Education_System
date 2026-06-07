@@ -22,10 +22,15 @@ export async function POST(request: NextRequest) {
 
     const keyPrefix = `videos/${randomUUID()}/`;
 
-    const job = await getVideoQueue().add("convert", {
-        rawKey: body.rawKey,
-        keyPrefix,
-    });
+    console.log(`[process] Enqueuing job — rawKey: ${body.rawKey}, keyPrefix: ${keyPrefix}`);
+    let job;
+    try {
+        job = await getVideoQueue().add("convert", { rawKey: body.rawKey, keyPrefix });
+        console.log(`[process] Job enqueued — jobId: ${job.id}`);
+    } catch (err) {
+        console.error("[process] Failed to enqueue job (Redis error?):", err);
+        return NextResponse.json({ error: "Không thể kết nối queue" }, { status: 500 });
+    }
 
     return NextResponse.json({ jobId: job.id });
 }

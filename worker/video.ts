@@ -16,27 +16,36 @@ const CONCURRENCY = 1; // chỉ xử lý 1 video tại một thời điểm đ�
 
 async function processJob(job: Job<VideoJobData, VideoJobResult>) {
     const { rawKey, keyPrefix } = job.data;
+    console.log(`[job:${job.id}] Start — rawKey: ${rawKey}, keyPrefix: ${keyPrefix}`);
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "hls-worker-"));
+    console.log(`[job:${job.id}] tmpDir: ${tmpDir}`);
 
     try {
-        // Bước 1: Download video gốc từ MinIO ra ổ cứng (stream, không load vào RAM)
+        // Bước 1: Download video gốc từ R2
         await job.updateProgress(1);
         const inputPath = path.join(tmpDir, "input.mp4");
+        console.log(`[job:${job.id}] Downloading from R2: ${rawKey}`);
         const readStream = await getObjectStream(rawKey);
         await pipeline(readStream, createWriteStream(inputPath));
+        const stat = await fs.stat(inputPath);
+        console.log(`[job:${job.id}] Downloaded — size: ${(stat.size / 1024 / 1024).toFixed(1)}MB`);
 
-        // Bước 2: Chạy ffmpeg → cắt thành HLS segments mã hóa AES-128
-        // onProgress nhận % từ ffmpeg và cập nhật lên Redis để frontend poll
+        // Bước 2: ffmpeg → HLS
+        console.log(`[job:${job.id}] Starting ffmpeg...`);
         await processHLSFromFile(inputPath, keyPrefix, tmpDir, async (percent) => {
+            console.log(`[job:${job.id}] ffmpeg: ${percent}%`);
             await job.updateProgress(percent);
         });
+        console.log(`[job:${job.id}] ffmpeg done, uploading HLS to R2...`);
 
-        // Bước 3: Xóa video gốc khỏi MinIO sau khi xử lý xong
+        // Bước 3: Xóa video gốc
         await deleteObject(rawKey);
+        console.log(`[job:${job.id}] Raw video deleted from R2`);
 
         return { videoUrl: `hls:${keyPrefix}` };
     } finally {
         await fs.rm(tmpDir, { recursive: true, force: true });
+        console.log(`[job:${job.id}] tmpDir cleaned up`);
     }
 }
 
