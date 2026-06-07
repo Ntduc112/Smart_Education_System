@@ -14,9 +14,16 @@ export interface VideoJobResult {
 export function createRedisConnection(): ConnectionOptions {
     const url = process.env.REDIS_URL ?? "redis://localhost:6379";
     const isTls = url.startsWith("rediss://");
+    console.log(`[redis] Connecting — TLS: ${isTls}, URL prefix: ${url.slice(0, 30)}...`);
     return new IORedis(url, {
         maxRetriesPerRequest: null,
-        ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
+        enableOfflineQueue: false,
+        ...(isTls ? { tls: {} } : {}),
+        retryStrategy: (times) => {
+            const delay = Math.min(times * 500, 5000);
+            console.log(`[redis] Retry #${times} in ${delay}ms`);
+            return delay;
+        },
     }) as unknown as ConnectionOptions;
 }
 
