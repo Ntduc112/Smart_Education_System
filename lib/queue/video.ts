@@ -12,10 +12,12 @@ export interface VideoJobResult {
 
 // BullMQ bundles its own ioredis — cast needed to avoid duplicate-package type conflict
 export function createRedisConnection(): ConnectionOptions {
-    return new IORedis(
-        process.env.REDIS_URL ?? "redis://localhost:6379",
-        { maxRetriesPerRequest: null },
-    ) as unknown as ConnectionOptions;
+    const url = process.env.REDIS_URL ?? "redis://localhost:6379";
+    const isTls = url.startsWith("rediss://");
+    return new IORedis(url, {
+        maxRetriesPerRequest: null,
+        ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
+    }) as unknown as ConnectionOptions;
 }
 
 // Lazy singleton — Queue is created on first request, not at module import time.
