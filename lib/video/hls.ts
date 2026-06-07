@@ -103,7 +103,11 @@ function runFfmpeg(
         const cmd = ffmpeg(inputPath)
             .outputOptions([
                 "-c:v libx264",
+                "-preset veryfast",   // giảm CPU/RAM, tăng tốc encode
+                "-crf 28",            // chất lượng vừa đủ, giảm bitrate → nhỏ hơn
+                "-threads 1",         // giới hạn 1 thread → tránh OOM trên Railway free tier
                 "-c:a aac",
+                "-b:a 128k",
                 `-hls_time ${HLS_SEGMENT_DURATION}`,
                 "-hls_playlist_type vod",
                 `-hls_key_info_file ${keyinfoPath}`,
