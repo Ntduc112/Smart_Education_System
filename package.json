@@ -41,6 +41,7 @@
     "nextjs-toploader": "^3.9.17",
     "pdf-parse": "^2.4.5",
     "pg": "^8.20.0",
+    "tsx": "^4.21.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.73.1",
@@ -65,7 +66,6 @@
     "prisma": "^7.6.0",
     "puppeteer": "^25.0.4",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
