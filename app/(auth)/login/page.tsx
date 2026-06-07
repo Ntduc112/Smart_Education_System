@@ -9,6 +9,83 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLogin } from "./login.hook";
 import { loginSchema, LoginInput } from "./login.schema";
 import { getApiError } from "@/lib/api/error";
+import { motion, type Variants } from "framer-motion";
+
+const orbs = [
+  { w: 600, h: 600, top: "-20%", left: "-12%", color: "rgba(59,130,246,0.10)", blur: 130, duration: 18 },
+  { w: 480, h: 480, top: "55%",  left: "62%",  color: "rgba(99,102,241,0.08)", blur: 110, duration: 22 },
+  { w: 340, h: 340, top: "28%",  left: "42%",  color: "rgba(14,165,233,0.06)", blur: 90,  duration: 15 },
+];
+
+// Education icons scattered in background
+const BG_ICONS = [
+  { top: "8%",  left: "6%",  size: 36, rotate: -15, delay: 0,   duration: 6,  icon: "book" },
+  { top: "15%", left: "88%", size: 28, rotate: 12,  delay: 1.2, duration: 7,  icon: "graduation" },
+  { top: "72%", left: "5%",  size: 32, rotate: 8,   delay: 0.5, duration: 8,  icon: "pencil" },
+  { top: "80%", left: "88%", size: 30, rotate: -10, delay: 2,   duration: 6,  icon: "laptop" },
+  { top: "45%", left: "3%",  size: 24, rotate: 20,  delay: 1.5, duration: 9,  icon: "star" },
+  { top: "38%", left: "91%", size: 26, rotate: -8,  delay: 0.8, duration: 7,  icon: "award" },
+  { top: "60%", left: "92%", size: 22, rotate: 15,  delay: 2.5, duration: 8,  icon: "pencil" },
+  { top: "90%", left: "45%", size: 26, rotate: -5,  delay: 1,   duration: 6,  icon: "book" },
+];
+
+function BgIcon({ type, size }: { type: string; size: number }) {
+  const color = "rgba(99,132,246,0.18)";
+  const s = size;
+  if (type === "book") return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+  );
+  if (type === "graduation") return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+    </svg>
+  );
+  if (type === "pencil") return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  );
+  if (type === "laptop") return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/>
+    </svg>
+  );
+  if (type === "star") return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  );
+  // award
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+    </svg>
+  );
+}
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 32, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+};
+
+const fieldVariants: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: 0.15 + i * 0.07, duration: 0.4, ease: "easeOut" },
+  }),
+};
+
+const inputCls = (hasError: boolean) =>
+  `w-full px-4 py-3 text-sm text-[#181d26] bg-white border rounded-xl outline-none transition-all placeholder:text-[rgba(4,14,32,0.3)] ${
+    hasError
+      ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10"
+      : "border-[#dde3f0] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+  }`;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,112 +112,102 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex">
-      {/* ── Left panel — branding ── */}
-      <div className="hidden lg:flex lg:w-[480px] xl:w-[560px] bg-[#1b61c9] flex-col justify-between p-12 relative overflow-hidden shrink-0">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-8 w-72 h-72 bg-white rounded-full" style={{ filter: "blur(80px)", opacity: 0.08 }} />
-          <div className="absolute bottom-24 right-8 w-52 h-52 bg-white rounded-full" style={{ filter: "blur(60px)", opacity: 0.08 }} />
-        </div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
+      style={{ background: "linear-gradient(135deg, #eef4ff 0%, #f4f7ff 50%, #f0f5ff 100%)" }}
+    >
+      {/* Ambient orbs */}
+      {orbs.map((orb, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full pointer-events-none"
+          style={{ width: orb.w, height: orb.h, top: orb.top, left: orb.left, background: orb.color, filter: `blur(${orb.blur}px)` }}
+          animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
+          transition={{ duration: orb.duration, repeat: Infinity, ease: "easeInOut" }}
+        />
+      ))}
 
-        <div className="relative">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo size={36} />
-            <span className="text-white font-semibold text-lg tracking-[0.08px]">SmartEdu</span>
-          </Link>
-        </div>
+      {/* Floating education icons */}
+      {BG_ICONS.map((ic, i) => (
+        <motion.div
+          key={i}
+          className="absolute pointer-events-none"
+          style={{ top: ic.top, left: ic.left, rotate: ic.rotate }}
+          animate={{ y: [0, -10, 0], rotate: [ic.rotate, ic.rotate + 5, ic.rotate] }}
+          transition={{ duration: ic.duration, delay: ic.delay, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <BgIcon type={ic.icon} size={ic.size} />
+        </motion.div>
+      ))}
 
-        <div className="relative">
-          <h2 className="text-3xl font-light text-white leading-snug mb-4">
-            Chào mừng trở lại,
-            <br />
-            <span className="font-bold">học viên!</span>
-          </h2>
-          <p className="text-white/70 text-base leading-relaxed tracking-[0.18px]">
-            Tiếp tục hành trình học tập của bạn. Hàng ngàn bài học đang chờ.
-          </p>
-        </div>
+      {/* Dot grid */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(99,132,246,0.12) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
 
-        <div className="relative flex gap-4">
-          {[
-            { number: "500+", label: "Khóa học" },
-            { number: "10K+", label: "Học viên" },
-          ].map((s) => (
-            <div key={s.label} className="flex-1 bg-white/10 rounded-2xl px-5 py-4 border border-white/20">
-              <div className="text-2xl font-semibold text-white">{s.number}</div>
-              <div className="text-sm text-white/70 tracking-[0.07px] mt-0.5">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Card */}
+      <motion.div variants={cardVariants} initial="hidden" animate="visible" className="relative z-10 w-full max-w-md mx-4">
+        <div
+          className="bg-white rounded-3xl p-8 border border-[#e4eaf5]"
+          style={{ boxShadow: "0 4px 6px rgba(59,130,246,0.04), 0 20px 60px rgba(59,130,246,0.08), 0 0 0 1px rgba(99,132,246,0.06)" }}
+        >
+          {/* Logo */}
+          <motion.div custom={0} variants={fieldVariants} initial="hidden" animate="visible" className="flex items-center gap-2.5 mb-8">
+            <Logo size={34} />
+            <span className="text-[#181d26] font-semibold text-lg tracking-wide">SmartEdu</span>
+          </motion.div>
 
-      {/* ── Right panel — form ── */}
-      <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-20 xl:px-24">
-        <div className="max-w-md w-full mx-auto">
-          <Link href="/" className="flex items-center gap-2 mb-10 lg:hidden">
-            <Logo size={32} />
-            <span className="font-semibold text-[#181d26]">SmartEdu</span>
-          </Link>
+          {/* Heading */}
+          <motion.div custom={1} variants={fieldVariants} initial="hidden" animate="visible" className="mb-7">
+            <h1 className="text-2xl font-semibold text-[#181d26] mb-1.5">Đăng nhập</h1>
+            <p className="text-[rgba(4,14,32,0.55)] text-sm">
+              Chưa có tài khoản?{" "}
+              <Link href="/register" className="text-blue-600 hover:text-blue-700 transition-colors font-medium">
+                Đăng ký ngay
+              </Link>
+            </p>
+          </motion.div>
 
-          <h1 className="text-3xl font-light text-[#181d26] mb-2">Đăng nhập</h1>
-          <p className="text-[rgba(4,14,32,0.69)] text-base tracking-[0.18px] mb-8">
-            Chưa có tài khoản?{" "}
-            <Link href="/register" className="text-[#1b61c9] font-medium hover:text-[#254fad] transition-colors">
-              Đăng ký ngay
-            </Link>
-          </p>
-
+          {/* Error */}
           {errors.root && (
-            <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mb-5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm"
+            >
               {errors.root.message}
-            </div>
+            </motion.div>
           )}
 
-          <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#181d26] mb-1.5 tracking-[0.08px]">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="name@example.com"
-                {...register("email")}
-                className={`w-full px-4 py-3 text-base text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] tracking-[0.08px] ${errors.email ? "border-red-400 focus:border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
-              />
+            <motion.div custom={2} variants={fieldVariants} initial="hidden" animate="visible">
+              <label htmlFor="email" className="block text-sm font-medium text-[rgba(4,14,32,0.7)] mb-1.5">Email</label>
+              <input id="email" type="email" autoComplete="email" placeholder="name@example.com"
+                {...register("email")} className={inputCls(!!errors.email)} />
               {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
-            </div>
+            </motion.div>
 
             {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#181d26] mb-1.5 tracking-[0.08px]">
-                Mật khẩu
-              </label>
+            <motion.div custom={3} variants={fieldVariants} initial="hidden" animate="visible">
+              <label htmlFor="password" className="block text-sm font-medium text-[rgba(4,14,32,0.7)] mb-1.5">Mật khẩu</label>
               <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  {...register("password")}
-                  className={`w-full px-4 py-3 pr-12 text-base text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] tracking-[0.08px] ${errors.password ? "border-red-400 focus:border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26] transition-colors"
-                >
+                <input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password"
+                  placeholder="••••••••" {...register("password")}
+                  className={inputCls(!!errors.password) + " pr-12"} />
+                <button type="button" aria-label={showPassword ? "Ẩn" : "Hiện"} onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.3)] hover:text-[rgba(4,14,32,0.65)] transition-colors">
                   {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
                       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
                       <line x1="1" y1="1" x2="23" y2="23" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -148,43 +215,48 @@ export default function LoginPage() {
                 </button>
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-              <div className="flex justify-end mt-1.5">
-                <Link href="/forgot-password" className="text-sm text-[#1b61c9] hover:text-[#254fad] tracking-[0.07px] transition-colors">
+              <div className="flex justify-end mt-2">
+                <Link href="/forgot-password" className="text-xs text-[rgba(4,14,32,0.4)] hover:text-blue-600 transition-colors">
                   Quên mật khẩu?
                 </Link>
               </div>
-            </div>
+            </motion.div>
 
-            <button
-              type="submit"
-              disabled={isPending}
-              className="w-full bg-[#1b61c9] text-white font-medium text-base py-3 rounded-xl tracking-[0.08px] hover:bg-[#254fad] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 0px 2px, rgba(45,127,249,0.28) 0px 1px 3px, rgba(0,0,0,0.06) 0px 0px 0px 0.5px inset" }}
-            >
-              {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
-            </button>
+            {/* Submit */}
+            <motion.div custom={4} variants={fieldVariants} initial="hidden" animate="visible">
+              <motion.button type="submit" disabled={isPending}
+                whileHover={{ scale: isPending ? 1 : 1.01 }} whileTap={{ scale: isPending ? 1 : 0.98 }}
+                className="w-full bg-blue-600 text-white font-medium text-sm py-3 rounded-xl transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                style={{ boxShadow: "0 4px 14px rgba(59,130,246,0.35)" }}
+              >
+                {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
+              </motion.button>
+            </motion.div>
           </form>
 
-          <div className="flex items-center gap-4 my-6">
-            <div className="h-px bg-[#e0e2e6] flex-1" />
-            <span className="text-sm text-[rgba(4,14,32,0.35)] tracking-[0.07px]">hoặc</span>
-            <div className="h-px bg-[#e0e2e6] flex-1" />
-          </div>
+          {/* Divider */}
+          <motion.div custom={5} variants={fieldVariants} initial="hidden" animate="visible" className="flex items-center gap-3 my-5">
+            <div className="h-px bg-[#e8edf5] flex-1" />
+            <span className="text-xs text-[rgba(4,14,32,0.35)]">hoặc</span>
+            <div className="h-px bg-[#e8edf5] flex-1" />
+          </motion.div>
 
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-3 bg-white border border-[#e0e2e6] text-[#181d26] font-medium text-base py-3 rounded-xl hover:border-[#1b61c9]/40 hover:bg-[#f8fafc] transition-all tracking-[0.08px]"
-          >
-            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-            </svg>
-            Tiếp tục với Google
-          </button>
+          {/* Google */}
+          <motion.div custom={6} variants={fieldVariants} initial="hidden" animate="visible">
+            <motion.button type="button" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
+              className="w-full flex items-center justify-center gap-3 bg-white border border-[#dde3f0] text-[rgba(4,14,32,0.75)] font-medium text-sm py-3 rounded-xl hover:bg-[#f8faff] hover:border-blue-200 transition-all"
+            >
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              </svg>
+              Tiếp tục với Google
+            </motion.button>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

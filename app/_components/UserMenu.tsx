@@ -33,7 +33,7 @@ function useEnrolledCourses(enabled: boolean) {
   });
 }
 
-export function UserMenu({ user }: { user: User | null }) {
+export function UserMenu({ user, dark = false }: { user: User | null; dark?: boolean }) {
   const router      = useRouter();
   const queryClient = useQueryClient();
   const menuRef     = useRef<HTMLDivElement>(null);
@@ -77,7 +77,7 @@ export function UserMenu({ user }: { user: User | null }) {
       <div className="relative">
         <button
           onClick={() => { setCoursesOpen((v) => !v); setUserOpen(false); }}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-[#f0f4fb] text-[#1b61c9] transition-colors"
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl transition-colors ${dark ? "hover:bg-white/[0.06] text-blue-400" : "hover:bg-[#f0f4fb] text-[#1b61c9]"}`}
         >
           <BookOpen size={16} strokeWidth={2} />
           <span className="hidden sm:block text-sm font-medium">Khóa học của tôi</span>
@@ -161,7 +161,7 @@ export function UserMenu({ user }: { user: User | null }) {
       <div className="relative">
         <button
           onClick={() => { setUserOpen((v) => !v); setCoursesOpen(false); }}
-          className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-[#f8fafc] transition-colors"
+          className={`flex items-center gap-2.5 px-2 py-1.5 rounded-xl transition-colors ${dark ? "hover:bg-white/[0.06]" : "hover:bg-[#f8fafc]"}`}
         >
           {user?.avatar ? (
             <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full object-cover" />
@@ -170,13 +170,13 @@ export function UserMenu({ user }: { user: User | null }) {
               <span className="text-sm font-semibold text-[#1b61c9]">{user?.name?.charAt(0) ?? "?"}</span>
             </div>
           )}
-          <span className="hidden sm:block text-sm font-medium text-[#181d26] tracking-[0.08px]">
+          <span className={`hidden sm:block text-sm font-medium tracking-[0.08px] ${dark ? "text-white/75" : "text-[#181d26]"}`}>
             {user?.name ?? ""}
           </span>
           <ChevronDown
             size={13}
             strokeWidth={2.5}
-            className={`text-[rgba(4,14,32,0.35)] transition-transform duration-200 ${userOpen ? "rotate-180" : ""}`}
+            className={`transition-transform duration-200 ${dark ? "text-white/30" : "text-[rgba(4,14,32,0.35)]"} ${userOpen ? "rotate-180" : ""}`}
           />
         </button>
 

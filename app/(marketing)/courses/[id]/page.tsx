@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Logo } from "@/app/_components/Logo";
-import { UserMenu } from "@/app/_components/UserMenu";
+import { DarkNavbar } from "@/app/_components/DarkNavbar";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
@@ -422,35 +421,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* ── Navbar ── */}
-      <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo size={32} />
-            <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-1">
-            {[
-              { href: "/student/dashboard", label: "Dashboard" },
-              { href: "/courses",           label: "Khóa học", active: true },
-              { href: "/student/ai-tutor",  label: "AI Tutor" },
-            ].map((item) => (
-              <Link key={item.href} href={item.href}
-                className={`px-4 py-2 rounded-xl text-sm font-medium tracking-[0.08px] transition-colors ${
-                  item.active
-                    ? "bg-[#1b61c9]/8 text-[#1b61c9]"
-                    : "text-[rgba(4,14,32,0.69)] hover:text-[#181d26] hover:bg-[#f8fafc]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          <UserMenu user={user ?? null} />
-        </div>
-      </header>
+      <DarkNavbar />
 
       <main className="max-w-6xl mx-auto px-6 py-10">
         {/* Breadcrumb */}

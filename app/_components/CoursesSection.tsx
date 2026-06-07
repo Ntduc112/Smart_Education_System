@@ -54,7 +54,7 @@ function GradientCard({
     >
       {/* Thumbnail */}
       <div
-        className={`relative rounded-2xl overflow-hidden ${isLg ? "aspect-[16/10]" : "aspect-video"}`}
+        className={`relative rounded-2xl overflow-hidden ring-1 ring-black/[0.08] group-hover:ring-black/[0.15] transition-all ${isLg ? "aspect-[16/10]" : "aspect-video"}`}
         style={course.thumbnail ? undefined : { background: gradient }}
       >
         {course.thumbnail ? (
@@ -132,12 +132,12 @@ function GradientCard({
 function CardSkeleton({ variant = "sm" }: { variant?: "sm" | "lg" }) {
   return (
     <div className="animate-pulse">
-      <div className={`rounded-2xl bg-gray-200 ${variant === "lg" ? "aspect-[16/10]" : "aspect-video"}`} />
+      <div className={`rounded-2xl bg-[#e8edf5] ${variant === "lg" ? "aspect-[16/10]" : "aspect-video"}`} />
       <div className="mt-3 space-y-2 px-0.5">
-        <div className="h-3.5 bg-gray-200 rounded w-full" />
-        <div className="h-3.5 bg-gray-200 rounded w-2/3" />
-        <div className="h-3 bg-gray-200 rounded w-1/3" />
-        <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div className="h-3.5 bg-[#e8edf5] rounded w-full" />
+        <div className="h-3.5 bg-[#e8edf5] rounded w-2/3" />
+        <div className="h-3 bg-[#e8edf5] rounded w-1/3" />
+        <div className="h-3 bg-[#e8edf5] rounded w-1/2" />
       </div>
     </div>
   );
@@ -188,7 +188,7 @@ export function CoursesSection() {
   const paid = all.filter((c) => parseFloat(c.price) > 0);
 
   return (
-    <section className="max-w-7xl mx-auto px-6 py-16 border-t border-[#e0e2e6]">
+    <section className="max-w-7xl mx-auto px-6 py-16 border-t border-[#e8edf5]">
       {/* Free courses */}
       <Section
         title="Khóa học miễn phí"
