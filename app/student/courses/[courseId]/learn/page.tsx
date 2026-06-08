@@ -242,9 +242,33 @@ function HlsPlayer({ lessonId, onWatchPercent, videoRef: externalRef }: { lesson
   );
 }
 
+function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+  const [src, setSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get<{ token: string; workerUrl: string; videoKey: string }>(
+      `/student/lessons/${lessonId}/video-token`
+    ).then(({ data }) => {
+      setSrc(`${data.workerUrl}/${data.videoKey}?token=${data.token}`);
+    }).catch(() => setSrc(null));
+  }, [lessonId]);
+
+  if (!src) return (
+    <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg flex items-center justify-center" style={{ paddingBottom: "62%" }}>
+      <span className="absolute text-white/50 text-sm">Đang tải video...</span>
+    </div>
+  );
+
+  return <NativePlayer src={src} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
+}
+
 function VideoPlayer({ url, lessonId, onWatchPercent, videoRef }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
   if (url.startsWith("hls:")) {
     return <HlsPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
+  }
+
+  if (url.startsWith("r2:")) {
+    return <CFWorkerPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
   }
 
   const ytId = extractYouTubeId(url);

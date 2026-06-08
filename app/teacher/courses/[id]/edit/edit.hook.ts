@@ -179,27 +179,21 @@ export function useUploadThumbnail(onProgress?: (pct: number) => void) {
   });
 }
 
-export type UploadPhase = "idle" | "uploading" | "queued" | "processing" | "done" | "error";
+export type UploadPhase = "idle" | "uploading" | "done" | "error";
 
 /**
- * Hook upload video 3 phase:
- *   1. uploading  — browser PUT thẳng lên MinIO qua presigned URL (0-100%)
- *   2. queued     — job đã vào queue, chờ worker
- *   3. processing — worker đang chạy ffmpeg (0-100%)
- *   4. done       — videoUrl sẵn sàng
+ * Hook upload video 2 phase:
+ *   1. uploading — browser PUT thẳng lên R2 qua presigned URL (0-100%)
+ *   2. done      — videoUrl sẵn sàng (r2:videos/uuid.mp4)
  */
 export function useUploadVideo() {
-  const [phase, setPhase]           = useState<UploadPhase>("idle");
-  const [uploadPct, setUploadPct]   = useState(0);
-  const [processPct, setProcessPct] = useState(0);
-  const [errorMsg, setErrorMsg]     = useState<string | null>(null);
-  const pollingRef                  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [phase, setPhase]       = useState<UploadPhase>("idle");
+  const [uploadPct, setUploadPct] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const reset = useCallback(() => {
-    if (pollingRef.current) clearInterval(pollingRef.current);
     setPhase("idle");
     setUploadPct(0);
-    setProcessPct(0);
     setErrorMsg(null);
   }, []);
 
@@ -209,11 +203,11 @@ export function useUploadVideo() {
 
       // Bước 1: lấy presigned URL từ server
       setPhase("uploading");
-      const { data: { uploadUrl, rawKey } } = await api.get<{ uploadUrl: string; rawKey: string }>(
+      const { data: { uploadUrl, videoKey } } = await api.get<{ uploadUrl: string; videoKey: string }>(
         `/teacher/upload-video/presigned?contentType=${encodeURIComponent(file.type)}`
       );
 
-      // Bước 2: browser upload thẳng lên MinIO (không qua server)
+      // Bước 2: browser PUT thẳng lên R2 (không qua server)
       await axios.put(uploadUrl, file, {
         headers: { "Content-Type": file.type },
         onUploadProgress: (e) => {
@@ -221,44 +215,15 @@ export function useUploadVideo() {
         },
       });
 
-      // Bước 3: kích hoạt job xử lý HLS
-      setPhase("queued");
-      const { data: { jobId } } = await api.post<{ jobId: string }>(
-        "/teacher/upload-video/process", { rawKey }
-      );
-
-      // Bước 4: poll trạng thái job mỗi 2 giây
-      pollingRef.current = setInterval(async () => {
-        try {
-          const { data } = await api.get<{
-            status: string; progress: number; videoUrl?: string; error?: string;
-          }>(`/teacher/upload-video/status/${jobId}`);
-
-          if (data.status === "active") {
-            setPhase("processing");
-            setProcessPct(data.progress);
-          } else if (data.status === "completed" && data.videoUrl) {
-            clearInterval(pollingRef.current!);
-            pollingRef.current = null;
-            setPhase("done");
-            onComplete(data.videoUrl);
-          } else if (data.status === "failed") {
-            clearInterval(pollingRef.current!);
-            pollingRef.current = null;
-            setPhase("error");
-            setErrorMsg(data.error ?? "Xử lý video thất bại");
-          }
-        } catch {
-          // lỗi tạm thời khi poll → thử lại lần sau
-        }
-      }, 2000);
+      setPhase("done");
+      onComplete(`r2:${videoKey}`);
     } catch {
       setPhase("error");
       setErrorMsg("Upload thất bại, vui lòng thử lại.");
     }
   }, [reset]);
 
-  return { phase, uploadPct, processPct, errorMsg, upload, reset };
+  return { phase, uploadPct, processPct: 0, errorMsg, upload, reset };
 }
 
 export function useCreateQuiz(courseId: string) {

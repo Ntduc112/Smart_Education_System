@@ -26,9 +26,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Loại file không hợp lệ" }, { status: 400 });
     }
 
-    // raw/ prefix để phân biệt với HLS segments đã xử lý
-    const rawKey = `raw/${randomUUID()}.mp4`;
-    const uploadUrl = await getPresignedPutUrl(rawKey, 3600);
+    const videoKey = `videos/${randomUUID()}.mp4`;
+    const uploadUrl = await getPresignedPutUrl(videoKey, 3600);
 
-    return NextResponse.json({ uploadUrl, rawKey });
+    return NextResponse.json({ uploadUrl, videoKey });
 }

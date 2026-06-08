@@ -1,0 +1,105 @@
+/**
+ * Cloudflare Worker — Video Token Gate
+ *
+ * Setup:
+ *   1. wrangler deploy
+ *   2. Set secrets: wrangler secret put VIDEO_TOKEN_SECRET
+ *   3. Bind R2 bucket: wrangler.toml → [[r2_buckets]] binding = "BUCKET"
+ *
+ * URL format: GET /{videoKey}?token={jwt}
+ *   videoKey: e.g. "videos/uuid.mp4"
+ *   token: signed JWT từ /api/student/lessons/[id]/video-token
+ */
+
+async function verifyJWT(token, secret) {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const [headerB64, payloadB64, sigB64] = parts;
+
+    const key = await crypto.subtle.importKey(
+        "raw",
+        new TextEncoder().encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["verify"],
+    );
+
+    const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+    const sig = Uint8Array.from(atob(sigB64.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+
+    const valid = await crypto.subtle.verify("HMAC", key, sig, data);
+    if (!valid) return null;
+
+    const payload = JSON.parse(atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/")));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
+
+    return payload;
+}
+
+export default {
+    async fetch(request, env) {
+        // CORS preflight
+        if (request.method === "OPTIONS") {
+            return new Response(null, {
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
+                    "Access-Control-Allow-Headers": "Range",
+                },
+            });
+        }
+
+        if (request.method !== "GET") {
+            return new Response("Method Not Allowed", { status: 405 });
+        }
+
+        const url = new URL(request.url);
+
+        // videoKey = path bỏ dấu "/" đầu, e.g. "videos/uuid.mp4"
+        const videoKey = url.pathname.slice(1);
+        if (!videoKey) return new Response("Not Found", { status: 404 });
+
+        const token = url.searchParams.get("token");
+        if (!token) return new Response("Unauthorized", { status: 401 });
+
+        const payload = await verifyJWT(token, env.VIDEO_TOKEN_SECRET);
+        if (!payload) return new Response("Forbidden — invalid or expired token", { status: 403 });
+
+        // Token phải chứa đúng videoKey
+        if (payload.videoKey !== videoKey) {
+            return new Response("Forbidden — token mismatch", { status: 403 });
+        }
+
+        // Hỗ trợ Range request để browser seek được
+        const rangeHeader = request.headers.get("Range");
+        const options = rangeHeader ? { range: { suffix: undefined, offset: undefined, length: undefined } } : {};
+
+        if (rangeHeader) {
+            const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+            if (match) {
+                const offset = parseInt(match[1]);
+                const end = match[2] ? parseInt(match[2]) : undefined;
+                options.range = { offset, length: end !== undefined ? end - offset + 1 : undefined };
+            }
+        }
+
+        const object = await env.BUCKET.get(videoKey, rangeHeader ? { range: options.range } : {});
+
+        if (!object) return new Response("Not Found", { status: 404 });
+
+        const headers = {
+            "Content-Type": "video/mp4",
+            "Accept-Ranges": "bytes",
+            "Cache-Control": "private, no-store",
+            "Access-Control-Allow-Origin": "*",
+        };
+
+        if (object.size) headers["Content-Length"] = String(object.size);
+
+        return new Response(object.body, {
+            status: rangeHeader ? 206 : 200,
+            headers,
+        });
+    },
+};
