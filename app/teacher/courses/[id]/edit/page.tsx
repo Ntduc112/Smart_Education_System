@@ -328,7 +328,7 @@ function VideoUploadSection({
 }) {
   const fileInputRef        = useRef<HTMLInputElement>(null);
   const [showUrlInput, setShowUrlInput] = useState(false);
-  const { phase, uploadPct, processPct, errorMsg, upload, reset } = useUploadVideo();
+  const { phase, uploadPct, errorMsg, upload, reset } = useUploadVideo();
   const mode = videoMode(value);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -352,43 +352,6 @@ function VideoUploadSection({
         </div>
         <p className="text-[10px] text-[rgba(4,14,32,0.4)]">
           File đang được truyền thẳng đến MinIO, không qua server.
-        </p>
-      </div>
-    );
-  }
-
-  // ── Đang chờ worker ──
-  if (phase === "queued") {
-    return (
-      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
-        <div className="flex items-center gap-2 text-xs text-[rgba(4,14,32,0.55)]">
-          <svg className="animate-spin shrink-0" width="13" height="13" viewBox="0 0 24 24"
-               fill="none" stroke="#1b61c9" strokeWidth="2.5">
-            <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
-          </svg>
-          <span>Đang chờ worker xử lý...</span>
-        </div>
-        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
-          <div className="h-full bg-[#1b61c9]/40 rounded-full animate-pulse w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  // ── Worker đang chạy ffmpeg ──
-  if (phase === "processing") {
-    return (
-      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
-        <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
-          <span>Đang mã hóa HLS + AES-128...</span>
-          <span className="font-medium text-[#1b61c9]">{processPct}%</span>
-        </div>
-        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
-          <div className="h-full bg-[#1b61c9] rounded-full transition-all duration-500"
-               style={{ width: `${processPct}%` }} />
-        </div>
-        <p className="text-[10px] text-[rgba(4,14,32,0.4)]">
-          Worker đang cắt video thành segments và mã hóa. Có thể mất vài phút.
         </p>
       </div>
     );
