@@ -8,6 +8,7 @@ import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
+import api from "@/lib/axios";
 import {
   useCourseDetail,
   useCourseProgress,
