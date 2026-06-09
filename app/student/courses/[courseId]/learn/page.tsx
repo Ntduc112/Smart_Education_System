@@ -222,7 +222,7 @@ function HlsPlayer({ lessonId, onWatchPercent, videoRef: externalRef }: { lesson
     let hlsInstance: Hls | null = null;
 
     if (Hls.isSupported()) {
-      hlsInstance = new Hls({ xhrSetup: (xhr) => { xhr.withCredentials = true; } });
+      hlsInstance = new Hls({ xhrSetup: (xhr) => { xhr.withCredentials = false; } });
       hlsInstance.loadSource(playlistUrl);
       hlsInstance.attachMedia(video);
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
