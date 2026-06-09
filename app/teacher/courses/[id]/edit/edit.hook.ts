@@ -215,6 +215,9 @@ export function useUploadVideo() {
         },
       });
 
+      // Bước 3: enqueue faststart job trên Railway (fire-and-forget)
+      api.post("/teacher/upload-video/confirm", { videoKey }).catch(() => {});
+
       setPhase("done");
       onComplete(`r2:${videoKey}`);
     } catch {

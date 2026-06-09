@@ -91,6 +91,21 @@ export async function deleteObject(key: string): Promise<void> {
     await client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 
+export async function uploadStream(
+    stream: Readable,
+    key: string,
+    contentType: string,
+    contentLength: number,
+): Promise<void> {
+    await client.send(new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+        Body: stream,
+        ContentType: contentType,
+        ContentLength: contentLength,
+    }));
+}
+
 // Dùng Cloudflare API (không phải S3 API) vì R2 token thông thường
 // không có quyền PutBucketCors qua S3 — chỉ Cloudflare API token mới được.
 export async function setupR2Cors(): Promise<void> {

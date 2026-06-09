@@ -10,6 +10,14 @@ export interface VideoJobResult {
     videoUrl: string;  // e.g. "hls:videos/uuid/"
 }
 
+export interface FaststartJobData {
+    videoKey: string;  // R2 key, e.g. "videos/uuid.mp4"
+}
+
+export interface FaststartJobResult {
+    videoKey: string;
+}
+
 // BullMQ bundles its own ioredis — cast needed to avoid duplicate-package type conflict
 export function createRedisConnection(): ConnectionOptions {
     const url = process.env.REDIS_URL ?? "redis://localhost:6379";
@@ -44,4 +52,21 @@ export function getVideoQueue(): Queue<VideoJobData, VideoJobResult, string> {
         });
     }
     return _videoQueue;
+}
+
+let _faststartQueue: Queue<FaststartJobData, FaststartJobResult, string> | null = null;
+
+export function getFaststartQueue(): Queue<FaststartJobData, FaststartJobResult, string> {
+    if (!_faststartQueue) {
+        _faststartQueue = new Queue<FaststartJobData, FaststartJobResult, string>("video-faststart", {
+            connection: createRedisConnection(),
+            defaultJobOptions: {
+                attempts: 2,
+                backoff: { type: "fixed", delay: 5000 },
+                removeOnComplete: { age: 3600 },
+                removeOnFail:    { age: 86400 },
+            },
+        });
+    }
+    return _faststartQueue;
 }
