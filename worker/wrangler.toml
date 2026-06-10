@@ -4,4 +4,4 @@ compatibility_date = "2024-01-01"
 
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "YOUR_R2_BUCKET_NAME"
+bucket_name = "education-system"

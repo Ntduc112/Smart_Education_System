@@ -71,21 +71,28 @@ export default {
             return new Response("Forbidden — token mismatch", { status: 403 });
         }
 
-        // Hỗ trợ Range request để browser seek được
         const rangeHeader = request.headers.get("Range");
-        const options = rangeHeader ? { range: { suffix: undefined, offset: undefined, length: undefined } } : {};
 
+        // Parse range: bytes=start-[end]
+        let rangeOpts = undefined;
         if (rangeHeader) {
             const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
             if (match) {
                 const offset = parseInt(match[1]);
-                const end = match[2] ? parseInt(match[2]) : undefined;
-                options.range = { offset, length: end !== undefined ? end - offset + 1 : undefined };
+                const end = match[2] !== "" ? parseInt(match[2]) : undefined;
+                rangeOpts = { offset, length: end !== undefined ? end - offset + 1 : undefined };
             }
         }
 
-        const object = await env.BUCKET.get(videoKey, rangeHeader ? { range: options.range } : {});
+        // Need total file size for Content-Range — HEAD is a cheap R2 Class B op
+        let totalSize = null;
+        if (rangeOpts) {
+            const head = await env.BUCKET.head(videoKey);
+            if (!head) return new Response("Not Found", { status: 404 });
+            totalSize = head.size;
+        }
 
+        const object = await env.BUCKET.get(videoKey, rangeOpts ? { range: rangeOpts } : {});
         if (!object) return new Response("Not Found", { status: 404 });
 
         const headers = {
@@ -95,11 +102,16 @@ export default {
             "Access-Control-Allow-Origin": "*",
         };
 
-        if (object.size) headers["Content-Length"] = String(object.size);
+        if (rangeOpts && totalSize !== null) {
+            const start = rangeOpts.offset;
+            const chunkSize = object.size;
+            const end = start + chunkSize - 1;
+            headers["Content-Range"] = `bytes ${start}-${end}/${totalSize}`;
+            headers["Content-Length"] = String(chunkSize);
+            return new Response(object.body, { status: 206, headers });
+        }
 
-        return new Response(object.body, {
-            status: rangeHeader ? 206 : 200,
-            headers,
-        });
+        headers["Content-Length"] = String(object.size);
+        return new Response(object.body, { status: 200, headers });
     },
 };
