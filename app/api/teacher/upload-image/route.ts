@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const buffer = Buffer.from(await file.arrayBuffer());
-        const url = await uploadFile(buffer, file.name, file.type);
+        const url = await uploadFile(buffer, file.name, file.type, "pictures");
         return NextResponse.json({ url }, { status: 200 });
     } catch (error) {
         console.error("Image upload error:", error);

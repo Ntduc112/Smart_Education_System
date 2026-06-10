@@ -24,9 +24,10 @@ export async function uploadFile(
     file: Buffer,
     originalName: string,
     contentType: string,
+    folder?: string,
 ): Promise<string> {
     const ext = originalName.split(".").pop() ?? "bin";
-    const key = `${randomUUID()}.${ext}`;
+    const key = folder ? `${folder}/${randomUUID()}.${ext}` : `${randomUUID()}.${ext}`;
 
     await client.send(new PutObjectCommand({
         Bucket: BUCKET,

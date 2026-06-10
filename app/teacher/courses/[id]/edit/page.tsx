@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, use } from "react";
 import {
   ChevronDown, ChevronRight, Plus, Trash2, Save,
-  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ArrowLeft, ImageIcon,
+  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ChevronLeft, ImageIcon,
 } from "lucide-react";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
@@ -946,9 +946,10 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         <div className="px-4 py-4 border-b border-[#e0e2e6]">
           <Link
             href="/teacher/courses"
-            className="flex items-center gap-1.5 text-xs text-[rgba(4,14,32,0.45)] hover:text-[#181d26] mb-3 transition-colors"
+            className="group inline-flex items-center gap-1 text-xs text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors mb-3"
           >
-            <ArrowLeft size={12} /> Danh sách khóa học
+            <ChevronLeft size={12} className="transition-transform group-hover:-translate-x-0.5" />
+            Danh sách khóa học
           </Link>
           <button
             onClick={() => setSelection({ type: "info" })}

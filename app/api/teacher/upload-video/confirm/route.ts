@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFaststartQueue } from "@/lib/queue/video";
 
 export async function POST(request: NextRequest) {
     const userId = request.headers.get("x-user-id");
@@ -8,12 +7,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { videoKey } = body as { videoKey?: string };
 
-    if (!videoKey || !videoKey.startsWith("videos/")) {
+    if (!videoKey?.startsWith("videos/")) {
         return NextResponse.json({ error: "Invalid videoKey" }, { status: 400 });
     }
 
-    const queue = getFaststartQueue();
-    const job = await queue.add("faststart", { videoKey });
+    const workerUrl = process.env.RAILWAY_WORKER_URL;
+    if (workerUrl) {
+        fetch(`${workerUrl}/faststart`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(process.env.WORKER_SECRET
+                    ? { Authorization: `Bearer ${process.env.WORKER_SECRET}` }
+                    : {}),
+            },
+            body: JSON.stringify({ videoKey }),
+        }).catch(err => console.error("[confirm] Failed to trigger faststart:", err.message));
+    }
 
-    return NextResponse.json({ jobId: job.id });
+    return NextResponse.json({ ok: true });
 }

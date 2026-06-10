@@ -2,7 +2,10 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { BarChart2, ClipboardX } from "lucide-react";
+import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import api from "@/lib/axios";
 
 interface QuizMeta {
@@ -41,26 +44,29 @@ function usePerformance(courseId: string) {
 function ScoreCell({ score, isPassed }: { score: number | null; isPassed: boolean | null }) {
   if (score === null) {
     return (
-      <div className="w-full h-10 rounded-lg bg-[#f0f2f5] flex items-center justify-center">
-        <span className="text-xs text-[rgba(4,14,32,0.3)]">—</span>
+      <div className="w-full h-9 rounded-lg bg-[#f4f5f7] flex items-center justify-center">
+        <span className="text-xs text-[rgba(4,14,32,0.25)]">—</span>
       </div>
     );
   }
 
-  const bg =
-    isPassed === true ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-    score >= 50        ? "bg-amber-50 text-amber-700 border-amber-200" :
-                         "bg-red-50 text-red-600 border-red-200";
+  const style =
+    isPassed === true
+      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+      : score >= 50
+      ? "bg-amber-50 text-amber-700 border border-amber-200"
+      : "bg-red-50 text-red-600 border border-red-200";
 
   return (
-    <div className={`w-full h-10 rounded-lg border flex items-center justify-center ${bg}`}>
+    <div className={`w-full h-9 rounded-lg flex items-center justify-center ${style}`}>
       <span className="text-xs font-semibold">{score}%</span>
     </div>
   );
 }
 
 function Avatar({ name, avatar }: { name: string; avatar: string | null }) {
-  if (avatar) return <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover shrink-0" />;
+  if (avatar)
+    return <img src={avatar} alt={name} className="w-7 h-7 rounded-full object-cover shrink-0" />;
   return (
     <div className="w-7 h-7 rounded-full bg-[#1b61c9]/12 flex items-center justify-center shrink-0">
       <span className="text-[10px] font-semibold text-[#1b61c9]">{name.charAt(0).toUpperCase()}</span>
@@ -68,112 +74,209 @@ function Avatar({ name, avatar }: { name: string; avatar: string | null }) {
   );
 }
 
+const CARD_SHADOW = "rgba(15,48,106,0.06) 0px 0px 0px 1px, rgba(15,48,106,0.04) 0px 4px 16px";
+
 export default function PerformancePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data, isLoading } = usePerformance(id);
+  const pathname = usePathname();
 
-  if (isLoading) {
-    return (
-      <div className="px-8 py-8 flex items-center justify-center min-h-[400px]">
-        <div className="w-8 h-8 border-2 border-[#1b61c9] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const tabs = [
+    { label: "Tiến độ học viên", href: `/teacher/courses/${id}/students` },
+    { label: "Hiệu suất quiz",   href: `/teacher/courses/${id}/performance` },
+  ];
 
-  if (!data) return null;
-
-  const { course, quizzes, students } = data;
+  // Summary stats derived from data
+  const totalStudents = data?.students.length ?? 0;
+  const totalQuizzes  = data?.quizzes.length ?? 0;
+  const passRate = (() => {
+    if (!data || !data.students.length || !data.quizzes.length) return null;
+    let passed = 0, attempted = 0;
+    for (const s of data.students) {
+      for (const sc of s.scores) {
+        if (sc.score !== null) {
+          attempted++;
+          if (sc.is_passed) passed++;
+        }
+      }
+    }
+    return attempted === 0 ? null : Math.round((passed / attempted) * 100);
+  })();
 
   return (
     <div className="px-8 py-8 space-y-6">
-      <div className="flex items-center gap-3">
+      {/* ── Header ── */}
+      <div className="flex items-start gap-3">
         <Link
-          href={`/teacher/courses/${id}/students`}
-          className="p-2 rounded-xl hover:bg-[#f0f2f5] text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
+          href={`/teacher/courses/${id}/edit`}
+          className="group inline-flex items-center gap-1 text-sm text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors shrink-0"
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-          </svg>
+          <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
+          Chỉnh sửa khóa học
         </Link>
-        <div>
-          <h1 className="text-2xl font-semibold text-[#181d26]">Hiệu suất quiz</h1>
-          <p className="text-sm text-[rgba(4,14,32,0.55)] mt-0.5">{course.title}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-[rgba(4,14,32,0.45)] uppercase tracking-wider font-medium mb-0.5">
+            {isLoading ? "…" : (data?.course.title ?? "")}
+          </p>
+          <h1 className="text-2xl font-semibold text-[#181d26]">Thống kê học viên</h1>
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-emerald-100 border border-emerald-200" />
-          <span className="text-[rgba(4,14,32,0.55)]">Đạt</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-amber-100 border border-amber-200" />
-          <span className="text-[rgba(4,14,32,0.55)]">Chưa đạt (≥50%)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-red-100 border border-red-200" />
-          <span className="text-[rgba(4,14,32,0.55)]">Yếu (&lt;50%)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-[#f0f2f5]" />
-          <span className="text-[rgba(4,14,32,0.55)]">Chưa làm</span>
-        </div>
+      {/* ── Tab nav ── */}
+      <div className="flex items-center gap-1 border-b border-[#e0e2e6]">
+        {tabs.map((t) => {
+          const active = pathname === t.href;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
+                active
+                  ? "text-[#1b61c9] border-b-2 border-[#1b61c9] -mb-px"
+                  : "text-[rgba(4,14,32,0.55)] hover:text-[#181d26]"
+              }`}
+            >
+              {t.label}
+            </Link>
+          );
+        })}
       </div>
 
-      {quizzes.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#e0e2e6] py-16 flex flex-col items-center gap-3">
-          <p className="text-sm text-[rgba(4,14,32,0.45)]">Khóa học này chưa có quiz nào.</p>
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-[300px]">
+          <div className="w-7 h-7 border-2 border-[#1b61c9] border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : students.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#e0e2e6] py-16 flex flex-col items-center gap-3">
-          <p className="text-sm text-[rgba(4,14,32,0.45)]">Chưa có học viên nào đăng ký.</p>
+      ) : !data || quizzes_empty(data) ? (
+        /* ── Empty state ── */
+        <div
+          className="bg-white rounded-2xl flex flex-col items-center justify-center py-20 gap-4"
+          style={{ boxShadow: CARD_SHADOW }}
+        >
+          <div className="w-14 h-14 rounded-2xl bg-[#f0f4fb] flex items-center justify-center">
+            <ClipboardX size={24} className="text-[#1b61c9]/50" strokeWidth={1.5} />
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-medium text-[#181d26]">Chưa có dữ liệu quiz</p>
+            <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1">
+              Khóa học này chưa có quiz nào hoặc chưa có học viên nào làm bài.
+            </p>
+          </div>
         </div>
       ) : (
-        <div
-          className="bg-white rounded-2xl border border-[#e0e2e6] overflow-auto"
-          style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 16px" }}
-        >
-          <table className="w-full text-sm border-collapse" style={{ minWidth: `${200 + quizzes.length * 100}px` }}>
-            <thead>
-              <tr className="border-b border-[#f0f2f5]">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-[rgba(4,14,32,0.55)] sticky left-0 bg-white w-48 min-w-[180px]">
-                  Học viên
-                </th>
-                {quizzes.map((q) => (
-                  <th key={q.id} className="px-2 py-3 text-center min-w-[96px]">
-                    <p className="text-xs font-semibold text-[#181d26] line-clamp-1">{q.title}</p>
-                    <p className="text-[10px] text-[rgba(4,14,32,0.35)] mt-0.5 font-normal">Qua: {q.pass_score}%</p>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student.user.id} className="border-b border-[#f8fafc] hover:bg-[#fafbfc] transition-colors">
-                  <td className="px-4 py-3 sticky left-0 bg-white hover:bg-[#fafbfc]">
-                    <div className="flex items-center gap-2">
-                      <Avatar name={student.user.name} avatar={student.user.avatar} />
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-[#181d26] truncate">{student.user.name}</p>
-                        <p className="text-[10px] text-[rgba(4,14,32,0.4)] truncate">{student.user.email}</p>
+        <>
+          {/* ── Summary stats ── */}
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { label: "Học viên",   value: totalStudents,           color: "text-[#181d26]" },
+              { label: "Bài quiz",   value: totalQuizzes,            color: "text-[#181d26]" },
+              { label: "Tỷ lệ đạt", value: passRate !== null ? `${passRate}%` : "—", color: passRate !== null && passRate >= 70 ? "text-emerald-600" : "text-amber-600" },
+              { label: "Legend",     value: null,                    color: "" },
+            ].map((item, i) =>
+              item.value === null ? (
+                /* Legend card */
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl px-5 py-4 flex flex-col gap-2.5"
+                  style={{ boxShadow: CARD_SHADOW }}
+                >
+                  <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">Chú thích</p>
+                  <div className="flex flex-col gap-1.5">
+                    {[
+                      { bg: "bg-emerald-50 border-emerald-200", label: "Đạt" },
+                      { bg: "bg-amber-50 border-amber-200",     label: "Chưa đạt (≥50%)" },
+                      { bg: "bg-red-50 border-red-200",         label: "Yếu (<50%)" },
+                      { bg: "bg-[#f4f5f7]",                     label: "Chưa làm" },
+                    ].map(({ bg, label }) => (
+                      <div key={label} className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border ${bg} shrink-0`} />
+                        <span className="text-xs text-[rgba(4,14,32,0.55)]">{label}</span>
                       </div>
-                    </div>
-                  </td>
-                  {quizzes.map((q) => {
-                    const s = student.scores.find((sc) => sc.quiz_id === q.id);
-                    return (
-                      <td key={q.id} className="px-2 py-3">
-                        <ScoreCell score={s?.score ?? null} isPassed={s?.is_passed ?? null} />
-                      </td>
-                    );
-                  })}
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl px-5 py-4 flex flex-col justify-between"
+                  style={{ boxShadow: CARD_SHADOW }}
+                >
+                  <div className="w-8 h-8 rounded-xl bg-[#f0f4fb] flex items-center justify-center">
+                    <BarChart2 size={15} className="text-[#1b61c9]" strokeWidth={2} />
+                  </div>
+                  <div className="mt-3">
+                    <p className={`text-2xl font-semibold ${item.color}`}>{item.value}</p>
+                    <p className="text-xs text-[rgba(4,14,32,0.5)] mt-0.5">{item.label}</p>
+                  </div>
+                </div>
+              )
+            )}
+          </div>
+
+          {/* ── Heatmap table ── */}
+          <div
+            className="bg-white rounded-2xl overflow-auto"
+            style={{ boxShadow: CARD_SHADOW }}
+          >
+            <table
+              className="w-full text-sm border-collapse"
+              style={{ minWidth: `${220 + data.quizzes.length * 110}px` }}
+            >
+              <thead>
+                <tr className="border-b border-[#f0f2f5] bg-[#f8fafc]">
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-[rgba(4,14,32,0.55)] sticky left-0 bg-[#f8fafc] w-52 min-w-[200px] rounded-tl-2xl">
+                    Học viên
+                  </th>
+                  {data.quizzes.map((q, qi) => (
+                    <th
+                      key={q.id}
+                      className={`px-2 py-3.5 text-center min-w-[110px] ${
+                        qi === data.quizzes.length - 1 ? "rounded-tr-2xl" : ""
+                      }`}
+                    >
+                      <p className="text-xs font-semibold text-[#181d26] line-clamp-1 px-1">{q.title}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#e8edf8] text-[#1b61c9]">
+                        Qua: {q.pass_score}%
+                      </span>
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.students.map((student, si) => (
+                  <tr
+                    key={student.user.id}
+                    className={`border-b border-[#f4f5f7] hover:bg-[#fafbfc] transition-colors ${
+                      si === data.students.length - 1 ? "last:border-0" : ""
+                    }`}
+                  >
+                    <td className="px-5 py-3 sticky left-0 bg-white group-hover:bg-[#fafbfc]">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={student.user.name} avatar={student.user.avatar} />
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-[#181d26] truncate">{student.user.name}</p>
+                          <p className="text-[10px] text-[rgba(4,14,32,0.4)] truncate">{student.user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    {data.quizzes.map((q) => {
+                      const s = student.scores.find((sc) => sc.quiz_id === q.id);
+                      return (
+                        <td key={q.id} className="px-2 py-3">
+                          <ScoreCell score={s?.score ?? null} isPassed={s?.is_passed ?? null} />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
+}
+
+function quizzes_empty(data: PerformanceData) {
+  return data.quizzes.length === 0 || data.students.length === 0;
 }

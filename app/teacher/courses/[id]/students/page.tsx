@@ -2,8 +2,10 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import {
-  ArrowLeft, ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight,
   Users, BookOpen, ClipboardList, CheckCircle2, XCircle, Clock, Lock,
 } from "lucide-react";
 import { useStudentsProgress, StudentProgress, QuizResult, LessonDetail } from "./students.hook";
@@ -350,6 +352,12 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const { data, isLoading } = useStudentsProgress(id);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const pathname = usePathname();
+
+  const tabs = [
+    { label: "Tiến độ học viên", href: `/teacher/courses/${id}/students` },
+    { label: "Hiệu suất quiz",   href: `/teacher/courses/${id}/performance` },
+  ];
 
   const toggle = (uid: string) =>
     setExpanded((prev) => {
@@ -377,41 +385,33 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
   return (
     <div className="px-8 py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link
-          href="/teacher/courses"
-          className="p-2 rounded-xl hover:bg-[#f0f2f5] text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
-        >
-          <ArrowLeft size={18} />
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-[#181d26]">Tiến độ học viên</h1>
-          {data?.course && (
-            <p className="text-sm text-[rgba(4,14,32,0.55)] mt-0.5">{data.course.title}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href={`/teacher/courses/${id}/performance`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-[#f0f4fc] text-[#1b61c9] hover:bg-[#1b61c9]/15 transition-colors border border-[#1b61c9]/20"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
-            </svg>
-            Heatmap quiz
-          </Link>
-          <Link
-            href={`/teacher/courses/${id}/announcements`}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-[#f0f4fc] text-[#1b61c9] hover:bg-[#1b61c9]/15 transition-colors border border-[#1b61c9]/20"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3z" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
-            Gửi thông báo
-          </Link>
-        </div>
+      <div>
+        <Breadcrumb items={[
+          { label: "Khóa học",        href: "/teacher/courses" },
+          { label: data?.course?.title ?? "…", href: `/teacher/courses/${id}/edit` },
+          { label: "Tiến độ học viên" },
+        ]} />
+        <h1 className="text-2xl font-semibold text-[#181d26]">Tiến độ học viên</h1>
+      </div>
+
+      {/* Tab nav */}
+      <div className="flex items-center gap-1 border-b border-[#e0e2e6]">
+        {tabs.map((t) => {
+          const active = pathname === t.href;
+          return (
+            <Link
+              key={t.href}
+              href={t.href}
+              className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
+                active
+                  ? "text-[#1b61c9] border-b-2 border-[#1b61c9] -mb-px"
+                  : "text-[rgba(4,14,32,0.55)] hover:text-[#181d26]"
+              }`}
+            >
+              {t.label}
+            </Link>
+          );
+        })}
       </div>
 
       {/* Summary cards */}

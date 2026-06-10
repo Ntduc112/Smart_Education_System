@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Eye, MoreHorizontal, Trash2, Globe, Lock, Users } from "lucide-react";
+import { Plus, Eye, MoreHorizontal, Trash2, Globe, Lock } from "lucide-react";
 import {
   useTeacherCourses,
   useToggleCourseStatus,
@@ -101,14 +101,15 @@ function CourseRow({
 
       {/* Actions */}
       <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-end gap-1">
-          <Link
-            href={`/teacher/courses/${course.id}/students`}
-            className="p-2 rounded-lg hover:bg-[#f0f4fb] text-[rgba(4,14,32,0.45)] hover:text-[#1b61c9] transition-colors opacity-0 group-hover:opacity-100"
-            title="Tiến độ học viên"
-          >
-            <Users size={14} />
-          </Link>
+        <div className="flex items-center justify-end gap-2">
+          {course.status === "PUBLISHED" && (
+            <Link
+              href={`/teacher/courses/${course.id}/students`}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-violet-600 hover:bg-violet-50 transition-colors whitespace-nowrap"
+            >
+              Tiến độ học viên
+            </Link>
+          )}
           <div className="relative">
             <button
               onClick={(e) => {
@@ -121,7 +122,7 @@ function CourseRow({
             </button>
             {isOpen && (
               <div
-                className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl border border-[#e0e2e6] py-1 z-10"
+                className="absolute right-0 bottom-full mb-1 w-52 bg-white rounded-xl border border-[#e0e2e6] py-1 z-50"
                 style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 4px 16px" }}
               >
                 <Link
@@ -236,7 +237,7 @@ export default function TeacherCoursesPage() {
 
       {/* Table */}
       <div
-        className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden"
+        className="bg-white rounded-2xl border border-[#e0e2e6]"
         style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
       >
         {isLoading ? (
@@ -272,7 +273,7 @@ export default function TeacherCoursesPage() {
                 {["Khóa học", "Trạng thái", "Học viên", "Giá", "Cập nhật", ""].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider first:px-6"
+                    className="px-4 py-3 text-left text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider first:px-6 first:rounded-tl-2xl last:rounded-tr-2xl"
                   >
                     {h}
                   </th>

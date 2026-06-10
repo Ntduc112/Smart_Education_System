@@ -4,7 +4,9 @@ import { use, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { ArrowLeft, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
+import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
+import { useTeacherCourses } from "@/app/teacher/courses/courses.hook";
 import { useEssays, useGradeAnswer, useAIGrade, EssayAnswer } from "./essays.hook";
 import { gradeAnswerSchema, GradeAnswerInput } from "./grade-answer.schema";
 
@@ -271,9 +273,10 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
             <div className="flex items-center gap-3">
                 <Link
                     href="/teacher/courses"
-                    className="p-2 rounded-xl hover:bg-[#f0f2f5] text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
+                    className="group inline-flex items-center gap-1 text-sm text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors"
                 >
-                    <ArrowLeft size={18} />
+                    <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
+                    Khóa học
                 </Link>
                 <h1 className="text-2xl font-semibold text-[#181d26]">Chấm bài tự luận</h1>
             </div>
