@@ -104,8 +104,9 @@ export default {
 
         if (rangeOpts && totalSize !== null) {
             const start = rangeOpts.offset;
-            const chunkSize = object.size;
-            const end = start + chunkSize - 1;
+            // object.size returns total file size, not chunk size — compute from input range
+            const end = rangeOpts.length !== undefined ? start + rangeOpts.length - 1 : totalSize - 1;
+            const chunkSize = end - start + 1;
             headers["Content-Range"] = `bytes ${start}-${end}/${totalSize}`;
             headers["Content-Length"] = String(chunkSize);
             return new Response(object.body, { status: 206, headers });
