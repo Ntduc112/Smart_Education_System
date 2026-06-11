@@ -7,7 +7,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, ChevronLeft } from "lucide-react";
 import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import api from "@/lib/axios";
 

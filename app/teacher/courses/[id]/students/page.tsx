@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import {
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, ChevronLeft,
   Users, BookOpen, ClipboardList, CheckCircle2, XCircle, Clock, Lock,
 } from "lucide-react";
 import { useStudentsProgress, StudentProgress, QuizResult, LessonDetail } from "./students.hook";

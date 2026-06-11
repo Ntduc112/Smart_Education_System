@@ -4,7 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart2, ClipboardX } from "lucide-react";
+import { BarChart2, ClipboardX, ChevronLeft } from "lucide-react";
 import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import api from "@/lib/axios";
 
@@ -106,20 +106,13 @@ export default function PerformancePage({ params }: { params: Promise<{ id: stri
   return (
     <div className="px-8 py-8 space-y-6">
       {/* ── Header ── */}
-      <div className="flex items-start gap-3">
-        <Link
-          href={`/teacher/courses/${id}/edit`}
-          className="group inline-flex items-center gap-1 text-sm text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors shrink-0"
-        >
-          <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
-          Chỉnh sửa khóa học
-        </Link>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-[rgba(4,14,32,0.45)] uppercase tracking-wider font-medium mb-0.5">
-            {isLoading ? "…" : (data?.course.title ?? "")}
-          </p>
-          <h1 className="text-2xl font-semibold text-[#181d26]">Thống kê học viên</h1>
-        </div>
+      <div>
+        <Breadcrumb items={[
+          { label: "Khóa học",     href: "/teacher/courses" },
+          { label: data?.course.title ?? "…", href: `/teacher/courses/${id}/edit` },
+          { label: "Hiệu suất quiz" },
+        ]} />
+        <h1 className="text-2xl font-semibold text-[#181d26]">Hiệu suất quiz</h1>
       </div>
 
       {/* ── Tab nav ── */}
