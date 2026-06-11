@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import Groq from "groq-sdk";
 import { z } from "zod";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const BodySchema = z.object({
   lessonTitle: z.string().min(1).max(200),
@@ -34,49 +34,30 @@ Yêu cầu:
 - Câu hỏi TRUE_FALSE có đúng 2 lựa chọn: "Đúng" và "Sai"
 - Câu hỏi SHORT_ANSWER có sample_answer là gợi ý đáp án ngắn
 - Điểm mỗi câu: MCQ = 1, TRUE_FALSE = 1, SHORT_ANSWER = 2
-- Câu hỏi kiểm tra hiểu bài, không chỉ ghi nhớ máy móc`;
+- Câu hỏi kiểm tra hiểu bài, không chỉ ghi nhớ máy móc
+
+Trả về JSON theo đúng schema:
+{
+  "questions": [
+    {
+      "content": "nội dung câu hỏi",
+      "type": "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER",
+      "points": number,
+      "sample_answer": "chỉ dùng cho SHORT_ANSWER",
+      "options": [{ "content": "...", "is_correct": true/false }]
+    }
+  ]
+}`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            questions: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  content:       { type: Type.STRING },
-                  type:          { type: Type.STRING, enum: ["MCQ", "TRUE_FALSE", "SHORT_ANSWER"] },
-                  points:        { type: Type.NUMBER },
-                  sample_answer: { type: Type.STRING },
-                  options: {
-                    type: Type.ARRAY,
-                    items: {
-                      type: Type.OBJECT,
-                      properties: {
-                        content:    { type: Type.STRING },
-                        is_correct: { type: Type.BOOLEAN },
-                      },
-                      required: ["content", "is_correct"],
-                    },
-                  },
-                },
-                required: ["content", "type", "points"],
-              },
-            },
-          },
-          required: ["questions"],
-        },
-        maxOutputTokens: 2048,
-      },
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      max_tokens: 2048,
     });
 
-    const raw = response.text;
+    const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error("Empty response");
 
     const parsed = JSON.parse(raw) as {
