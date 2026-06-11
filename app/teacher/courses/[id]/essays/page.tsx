@@ -3,8 +3,7 @@
 import { use, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, ChevronLeft } from "lucide-react";
 import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import { useTeacherCourses } from "@/app/teacher/courses/courses.hook";
 import { useEssays, useGradeAnswer, useAIGrade, EssayAnswer } from "./essays.hook";
@@ -262,6 +261,8 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
     const { id } = use(params);
     const [gradedFilter, setGradedFilter] = useState<"all" | "ungraded">("all");
     const { data, isLoading } = useEssays(id, gradedFilter);
+    const { data: courses = [] } = useTeacherCourses();
+    const courseTitle = courses.find((c) => c.id === id)?.title ?? "…";
 
     if (isLoading) return <Skeleton />;
 
@@ -270,14 +271,12 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
 
     return (
         <div className="px-8 py-8 space-y-6">
-            <div className="flex items-center gap-3">
-                <Link
-                    href="/teacher/courses"
-                    className="group inline-flex items-center gap-1 text-sm text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors"
-                >
-                    <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
-                    Khóa học
-                </Link>
+            <div>
+                <Breadcrumb items={[
+                  { label: "Khóa học",       href: "/teacher/courses" },
+                  { label: courseTitle,       href: `/teacher/courses/${id}/edit` },
+                  { label: "Chấm bài tự luận" },
+                ]} />
                 <h1 className="text-2xl font-semibold text-[#181d26]">Chấm bài tự luận</h1>
             </div>
 
