@@ -728,6 +728,12 @@ function LessonPanel({
                     {q.time_limit ? ` · ${q.time_limit} phút` : ""}
                   </p>
                 </div>
+                <Link
+                  href={`/teacher/courses/${courseId}/quizzes/${q.id}`}
+                  className="text-xs px-3 py-1.5 border border-[#e0e2e6] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-white hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+                >
+                  Chỉnh sửa
+                </Link>
               </div>
             ))}
           </div>
