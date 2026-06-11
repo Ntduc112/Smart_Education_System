@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { motion, useInView, animate } from "framer-motion";
+import { useMe } from "@/app/student/dashboard/dashboard.hook";
 
 const STATS = [
   { value: 10000, suffix: "+", label: "Học viên" },
@@ -40,6 +41,10 @@ const up = {
 };
 
 export function HeroSection() {
+  const { data: user } = useMe();
+  const firstName = user ? user.name.trim().split(" ").pop() : null;
+  const dashboardHref = user ? `/${user.role.toLowerCase()}/dashboard` : "/register";
+
   return (
     <section className="relative flex flex-col items-center justify-center text-center px-6 pt-20 pb-16 overflow-hidden">
       {/* Zoom-in entrance wrapper */}
@@ -53,35 +58,54 @@ export function HeroSection() {
 
           {/* Badge */}
           <motion.div variants={up} className="mb-8">
-            <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-semibold px-4 py-1.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              Được hỗ trợ bởi AI · Cá nhân hóa 100%
-            </span>
+            {user ? (
+              <span className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-semibold px-4 py-1.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Chào mừng trở lại 👋
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-600 text-xs font-semibold px-4 py-1.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                Được hỗ trợ bởi AI · Cá nhân hóa 100%
+              </span>
+            )}
           </motion.div>
 
           {/* Heading */}
-          <motion.h1 variants={up} className="text-6xl md:text-7xl font-semibold text-[#181d26] leading-[1.1] tracking-tight mb-6">
-            Học thông minh hơn
-            <br />
-            <span className="font-black bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
-              với AI cá nhân hóa
-            </span>
-          </motion.h1>
+          {user ? (
+            <motion.h1 variants={up} className="text-6xl md:text-7xl font-semibold text-[#181d26] leading-[1.1] tracking-tight mb-6">
+              Tiếp tục học nào,
+              <br />
+              <span className="font-black bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
+                {firstName} 🚀
+              </span>
+            </motion.h1>
+          ) : (
+            <motion.h1 variants={up} className="text-6xl md:text-7xl font-semibold text-[#181d26] leading-[1.1] tracking-tight mb-6">
+              Học thông minh hơn
+              <br />
+              <span className="font-black bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent">
+                với AI cá nhân hóa
+              </span>
+            </motion.h1>
+          )}
 
           {/* Sub */}
           <motion.p variants={up} className="text-lg text-[rgba(4,14,32,0.55)] leading-relaxed max-w-lg mb-12">
-            Nền tảng giáo dục thông minh hỗ trợ AI Tutor 24/7, giúp bạn học đúng cách, đúng lúc.
+            {user
+              ? "Hành trình học tập của bạn đang chờ. Vào khu vực học để tiếp tục cùng AI Tutor."
+              : "Nền tảng giáo dục thông minh hỗ trợ AI Tutor 24/7, giúp bạn học đúng cách, đúng lúc."}
           </motion.p>
 
           {/* CTA */}
           <motion.div variants={up} className="flex items-center gap-4 mb-16">
             <motion.div whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}>
               <Link
-                href="/register"
+                href={dashboardHref}
                 className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold text-sm px-8 py-3.5 rounded-xl hover:bg-blue-500 transition-colors"
                 style={{ boxShadow: "0 0 32px rgba(59,130,246,0.3), 0 2px 8px rgba(0,0,0,0.3)" }}
               >
-                Bắt đầu miễn phí
+                {user ? "Vào khu vực học" : "Bắt đầu miễn phí"}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>

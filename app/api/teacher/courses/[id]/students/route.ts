@@ -30,6 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           },
         },
         enrollments: {
+          where:   { user_id: { not: userId } }, // exclude course owner's own enrollment
           orderBy: { enrolled_at: "desc" },
           select: {
             enrolled_at: true,

@@ -24,10 +24,11 @@ export async function GET(request: NextRequest) {
       prisma.course.count({ where: { instructor_id: userId } }),
       prisma.course.count({ where: { instructor_id: userId, status: "PUBLISHED" } }),
       prisma.course.count({ where: { instructor_id: userId, status: "DRAFT" } }),
-      prisma.enrollment.count({ where: { course: { instructor_id: userId } } }),
+      prisma.enrollment.count({ where: { course: { instructor_id: userId }, user_id: { not: userId } } }),
       prisma.payment.aggregate({
         where: {
           course: { instructor_id: userId },
+          user_id: { not: userId },
           status: "PAID",
           created_at: { gte: startOfMonth, lte: endOfMonth },
         },
@@ -37,10 +38,10 @@ export async function GET(request: NextRequest) {
         where:   { instructor_id: userId },
         orderBy: { created_at: "desc" },
         take: 5,
-        include: { _count: { select: { enrollments: true } } },
+        include: { _count: { select: { enrollments: { where: { user_id: { not: userId } } } } } },
       }),
       prisma.enrollment.findMany({
-        where:   { course: { instructor_id: userId } },
+        where:   { course: { instructor_id: userId }, user_id: { not: userId } },
         orderBy: { enrolled_at: "desc" },
         take: 8,
         include: {

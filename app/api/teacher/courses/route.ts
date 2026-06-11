@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
             where:   { instructor_id: userId },
             include: {
                 category: { select: { id: true, name: true } },
-                _count:   { select: { enrollments: true } },
+                _count:   { select: { enrollments: { where: { user_id: { not: userId } } } } },
             },
             orderBy: { created_at: "desc" },
         });

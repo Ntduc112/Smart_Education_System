@@ -21,6 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     type: "SHORT_ANSWER",
                     quiz: { lesson: { chapter: { course_id: id } } },
                 },
+                attempt: { user_id: { not: userId } }, // exclude course owner's own answers
                 ...(gradedFalse ? { points_earned: null } : {}),
             },
             include: {

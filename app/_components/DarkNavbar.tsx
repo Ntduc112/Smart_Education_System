@@ -43,7 +43,7 @@ function DarkAuth() {
 const NAV_LINKS = [
   { href: "/", label: "Trang chủ" },
   { href: "/courses", label: "Khóa học" },
-  { href: "#features", label: "Tính năng" },
+  { href: "/#features", label: "Tính năng" },
 ];
 
 export function DarkNavbar() {

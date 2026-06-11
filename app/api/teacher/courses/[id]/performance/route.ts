@@ -30,7 +30,7 @@ export async function GET(
 
     // Lấy học viên enrolled
     const enrollments = await prisma.enrollment.findMany({
-      where: { course_id: courseId },
+      where: { course_id: courseId, user_id: { not: userId } }, // exclude course owner
       select: {
         user: { select: { id: true, name: true, email: true, avatar: true } },
       },

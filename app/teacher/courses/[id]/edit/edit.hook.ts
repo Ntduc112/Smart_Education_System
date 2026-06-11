@@ -62,9 +62,10 @@ export function useUpdateCourse(id: string) {
       title: string; description: string; thumbnail: string;
       price: number; level: string; status: string; category_id: string;
       discount_percent?: number | null;
-    }) => api.put(`/teacher/courses/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["teacher", "course", id] });
+    }) => (await api.put<{ course: Partial<BuilderCourse> }>(`/teacher/courses/${id}`, data)).data.course,
+    onSuccess: (updated) => {
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", id], (old) =>
+        old ? { ...old, ...updated } : old);
       queryClient.invalidateQueries({ queryKey: ["teacher", "courses"] });
     },
   });
@@ -85,7 +86,9 @@ export function useTogglePublish(id: string, course: BuilderCourse | undefined) 
         status:      course.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED",
       });
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", id] }),
+    onSuccess: () =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", id], (old) =>
+        old ? { ...old, status: old.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED" } : old),
   });
 }
 
@@ -93,8 +96,10 @@ export function useCreateChapter(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ title, order }: { title: string; order: number }) =>
-      api.post("/teacher/chapters", { course_id: courseId, title, order }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+      (await api.post<{ chapter: BuilderChapter }>("/teacher/chapters", { course_id: courseId, title, order })).data.chapter,
+    onSuccess: (chapter) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? { ...old, sections: [...old.sections, { ...chapter, lessons: [] }] } : old),
   });
 }
 
@@ -103,7 +108,9 @@ export function useUpdateChapter(courseId: string) {
   return useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) =>
       api.put(`/teacher/chapters/${id}`, { title }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+    onSuccess: (_res, { id, title }) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? { ...old, sections: old.sections.map((s) => s.id === id ? { ...s, title } : s) } : old),
   });
 }
 
@@ -111,7 +118,9 @@ export function useDeleteChapter(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => api.delete(`/teacher/chapters/${id}`),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+    onSuccess: (_res, id) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? { ...old, sections: old.sections.filter((s) => s.id !== id) } : old),
   });
 }
 
@@ -120,7 +129,13 @@ export function useCreateLesson(courseId: string) {
   return useMutation({
     mutationFn: async ({ chapter_id, title, order }: { chapter_id: string; title: string; order: number }) =>
       (await api.post<{ lesson: BuilderLesson }>("/teacher/lessons", { chapter_id, title, order })).data.lesson,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+    onSuccess: (lesson, { chapter_id }) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? {
+          ...old,
+          sections: old.sections.map((s) =>
+            s.id === chapter_id ? { ...s, lessons: [...s.lessons, { ...lesson, quiz: [] }] } : s),
+        } : old),
   });
 }
 
@@ -133,8 +148,16 @@ export function useUpdateLesson(courseId: string) {
       id: string; title: string; is_free: boolean;
       content: string | null; video_url: string | null;
       pdf_url: string | null; pdf_text: string | null;
-    }) => api.put(`/teacher/lessons/${id}`, { title, is_free, content, video_url, pdf_url, pdf_text }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+    }) => (await api.put<{ lesson: BuilderLesson }>(`/teacher/lessons/${id}`, { title, is_free, content, video_url, pdf_url, pdf_text })).data.lesson,
+    onSuccess: (updated, { id }) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? {
+          ...old,
+          sections: old.sections.map((s) => ({
+            ...s,
+            lessons: s.lessons.map((l) => l.id === id ? { ...l, ...updated } : l),
+          })),
+        } : old),
   });
 }
 
@@ -142,7 +165,12 @@ export function useDeleteLesson(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => api.delete(`/teacher/lessons/${id}`),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+    onSuccess: (_res, id) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? {
+          ...old,
+          sections: old.sections.map((s) => ({ ...s, lessons: s.lessons.filter((l) => l.id !== id) })),
+        } : old),
   });
 }
 
@@ -234,7 +262,15 @@ export function useCreateQuiz(courseId: string) {
   return useMutation({
     mutationFn: async ({ lesson_id, title, pass_score }: { lesson_id: string; title: string; pass_score: number }) =>
       (await api.post<{ quiz: BuilderQuiz }>("/teacher/quizzes", { lesson_id, title, pass_score })).data.quiz,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
+    onSuccess: (quiz, { lesson_id }) =>
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? {
+          ...old,
+          sections: old.sections.map((s) => ({
+            ...s,
+            lessons: s.lessons.map((l) => l.id === lesson_id ? { ...l, quiz: [...l.quiz, quiz] } : l),
+          })),
+        } : old),
   });
 }
 

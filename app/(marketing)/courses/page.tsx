@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Logo } from "@/app/_components/Logo";
-import { UserMenu } from "@/app/_components/UserMenu";
+import { DarkNavbar } from "@/app/_components/DarkNavbar";
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
@@ -268,34 +267,7 @@ function CoursesContent() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       {/* ── Navbar ── */}
-      <header className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10">
-        <div className="w-full px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <Logo size={32} />
-            <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
-          </Link>
-          {!userLoading && (
-            isLoggedIn ? (
-              <UserMenu user={user} />
-            ) : (
-              <div className="flex items-center gap-2">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-[rgba(4,14,32,0.69)] hover:text-[#181d26] hover:bg-[#f8fafc] transition-colors tracking-[0.08px]"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors tracking-[0.08px]"
-                >
-                  Đăng ký
-                </Link>
-              </div>
-            )
-          )}
-        </div>
-      </header>
+      <DarkNavbar />
 
       <main className="max-w-6xl mx-auto px-6 py-10">
         {/* ── Hero ── */}
