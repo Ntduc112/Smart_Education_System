@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, use } from "react";
 import {
   ChevronDown, ChevronRight, Plus, Trash2, Save,
-  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ChevronLeft, ImageIcon,
+  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ChevronLeft, ImageIcon, FolderUp,
 } from "lucide-react";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
@@ -14,6 +14,7 @@ import {
   BuilderChapter, BuilderLesson,
 } from "./edit.hook";
 import { AIQuizModal } from "./_components/AIQuizModal";
+import { BulkImportModal } from "./_components/BulkImportModal";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
@@ -311,10 +312,10 @@ function ChapterPanel({
 
 // ── VideoUploadSection ────────────────────────────────────────────────────────
 
-type VideoMode = "hls" | "url" | "empty";
+type VideoMode = "uploaded" | "url" | "empty";
 
 function videoMode(url: string): VideoMode {
-  if (url.startsWith("hls:")) return "hls";
+  if (url.startsWith("r2:")) return "uploaded";
   if (url.length > 0) return "url";
   return "empty";
 }
@@ -373,21 +374,18 @@ function VideoUploadSection({
     );
   }
 
-  // ── Đã có HLS video ──
-  if (mode === "hls") {
+  // ── Đã có video upload (R2) ──
+  if (mode === "uploaded") {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 border border-[#e0e2e6] rounded-xl bg-[#f8fafc]">
         <div className="w-8 h-8 rounded-lg bg-[#1b61c9]/10 flex items-center justify-center shrink-0">
           <Video size={15} className="text-[#1b61c9]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-[#181d26]">Video HLS đã mã hóa</p>
+          <p className="text-sm font-medium text-[#181d26]">Video đã tải lên</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              AES-128
-            </span>
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#1b61c9]/8 text-[#1b61c9] border border-[#1b61c9]/20">
-              HLS
+              R2
             </span>
           </div>
         </div>
@@ -871,6 +869,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   const [showNewChapter, setShowNewChapter] = useState(false);
   const [addLessonChapterId, setAddLessonChapterId] = useState<string | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState("");
+  const [showBulkImport, setShowBulkImport] = useState(false);
 
   // Auto-expand all chapters on first load
   useEffect(() => {
@@ -1102,6 +1101,12 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
                 <Plus size={13} /> Thêm chương
               </button>
             )}
+            <button
+              onClick={() => setShowBulkImport(true)}
+              className="flex items-center gap-2 w-full px-3 py-2 mt-1 text-xs text-[rgba(4,14,32,0.5)] hover:text-[#1b61c9] hover:bg-[#f8fafc] rounded-xl transition-colors"
+            >
+              <FolderUp size={13} /> Import từ folder
+            </button>
           </div>
         </div>
 
@@ -1139,6 +1144,14 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           )}
         </div>
       </div>
+
+      {showBulkImport && (
+        <BulkImportModal
+          courseId={id}
+          existingChapterCount={course.sections.length}
+          onClose={() => setShowBulkImport(false)}
+        />
+      )}
     </div>
   );
 }

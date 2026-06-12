@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 
+const OptionInput = z.object({
+    content:    z.string().min(1),
+    is_correct: z.boolean(),
+    order:      z.number().int().min(1),
+});
+
 const UpdateQuestionSchema = z.object({
     content:       z.string().min(1).optional(),
     points:        z.number().int().min(1).optional(),
     order:         z.number().int().min(1).optional(),
     sample_answer: z.string().nullable().optional(),
+    options:       z.array(OptionInput).optional(),
 });
 
 async function verifyOwnership(questionId: string, userId: string) {
@@ -35,12 +42,20 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const data = UpdateQuestionSchema.parse(body);
+        const { options, ...rest } = UpdateQuestionSchema.parse(body);
 
-        const question = await prisma.question.update({
-            where:   { id },
-            data,
-            include: { options: { orderBy: { order: "asc" } } },
+        const question = await prisma.$transaction(async (tx) => {
+            if (options) {
+                await tx.option.deleteMany({ where: { question_id: id } });
+                await tx.option.createMany({
+                    data: options.map((o) => ({ ...o, question_id: id })),
+                });
+            }
+            return tx.question.update({
+                where:   { id },
+                data:    rest,
+                include: { options: { orderBy: { order: "asc" } } },
+            });
         });
         return NextResponse.json({ question }, { status: 200 });
     } catch (error) {

@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useState, useCallback, useEffect, useRef, useMemo, Suspense } from "react";
-import Hls from "hls.js";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
@@ -189,60 +188,6 @@ function ChapterItem({
 
 // ── Video Player ───────────────────────────────────────────────────────────
 
-function HlsPlayer({ lessonId, onWatchPercent, videoRef: externalRef }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
-  const internalRef = useRef<HTMLVideoElement>(null);
-  const videoRef    = externalRef ?? internalRef;
-  const lastPctRef  = useRef(0);
-
-  // Reset khi chuyển bài
-  useEffect(() => { lastPctRef.current = 0; }, [lessonId]);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const reportProgress = () => {
-      if (!video.duration) return;
-      const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
-      // Báo cáo mỗi khi tăng >= 5%
-      if (pct - lastPctRef.current >= 5) {
-        lastPctRef.current = pct;
-        onWatchPercent(pct);
-      }
-    };
-    const handleEnded = () => {
-      lastPctRef.current = 100;
-      onWatchPercent(100);
-    };
-
-    video.addEventListener("timeupdate", reportProgress);
-    video.addEventListener("ended", handleEnded);
-
-    const playlistUrl = `/api/student/lessons/${lessonId}/playlist`;
-    let hlsInstance: Hls | null = null;
-
-    if (Hls.isSupported()) {
-      hlsInstance = new Hls({ xhrSetup: (xhr) => { xhr.withCredentials = false; } });
-      hlsInstance.loadSource(playlistUrl);
-      hlsInstance.attachMedia(video);
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = playlistUrl;
-    }
-
-    return () => {
-      video.removeEventListener("timeupdate", reportProgress);
-      video.removeEventListener("ended", handleEnded);
-      hlsInstance?.destroy();
-    };
-  }, [lessonId, onWatchPercent]);
-
-  return (
-    <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style={{ paddingBottom: "62%" }}>
-      <video ref={videoRef} controls className="absolute inset-0 w-full h-full" />
-    </div>
-  );
-}
-
 function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
   const [src, setSrc] = useState<string | null>(null);
 
@@ -264,10 +209,6 @@ function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef }: { lessonId: stri
 }
 
 function VideoPlayer({ url, lessonId, onWatchPercent, videoRef }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
-  if (url.startsWith("hls:")) {
-    return <HlsPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
-  }
-
   if (url.startsWith("r2:")) {
     return <CFWorkerPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
   }

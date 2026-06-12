@@ -47,34 +47,6 @@ export async function deleteFile(url: string): Promise<void> {
     await client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 //Logic xử lý video
-export async function uploadBuffer(
-    buffer: Buffer,
-    key: string,
-    contentType: string,
-): Promise<void> {
-    await client.send(new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: contentType,
-    }));
-}
-
-export async function getObject(key: string): Promise<Buffer> {
-    const res = await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of res.Body as AsyncIterable<Uint8Array>) {
-        chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
-}
-
-export async function getPresignedUrl(key: string, ttlSeconds = 14400): Promise<string> {
-    const cmd = new GetObjectCommand({ Bucket: BUCKET, Key: key });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return getSignedUrl(client as any, cmd, { expiresIn: ttlSeconds });
-}
-
 // Presigned URL để browser upload thẳng lên MinIO (bỏ qua server)
 export async function getPresignedPutUrl(key: string, ttlSeconds = 3600): Promise<string> {
     const cmd = new PutObjectCommand({ Bucket: BUCKET, Key: key });
@@ -86,10 +58,6 @@ export async function getPresignedPutUrl(key: string, ttlSeconds = 3600): Promis
 export async function getObjectStream(key: string): Promise<Readable> {
     const res = await client.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
     return res.Body as Readable;
-}
-
-export async function deleteObject(key: string): Promise<void> {
-    await client.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 
 export async function uploadStream(

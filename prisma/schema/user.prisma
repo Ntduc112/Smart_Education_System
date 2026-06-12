@@ -66,7 +66,7 @@ model LessonProgress {
     user_id         String
     user            User      @relation(fields: [user_id], references: [id])
     lesson_id       String
-    lesson          Lesson    @relation(fields: [lesson_id], references: [id])
+    lesson          Lesson    @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
     is_completed    Boolean   @default(false)
     watch_percent   Int       @default(0)
     last_watched_at DateTime?

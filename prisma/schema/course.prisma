@@ -56,7 +56,7 @@ model Lesson {
     quiz           Quiz[]
     is_free        Boolean          @default(false)
     chapter_id     String
-    chapter        Chapter          @relation(fields: [chapter_id], references: [id])
+    chapter        Chapter          @relation(fields: [chapter_id], references: [id], onDelete: Cascade)
     lessonProgress LessonProgress[]
     questions      LessonQuestion[]
     notes          LessonNote[]
