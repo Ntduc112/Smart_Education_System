@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
         if (!user || !(await verifyPassword(password, user.password_hash))) {
             return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
         }
+        if (!user.is_active) {
+            return NextResponse.json({ error: "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên." }, { status: 403 });
+        }
         const accessToken = await signAccessToken({ userId: user.id, role: user.role });
         const refreshToken = await signRefreshToken({ userId: user.id, role: user.role });
         await setSession(accessToken, refreshToken);

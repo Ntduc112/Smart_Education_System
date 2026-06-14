@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { UserMenu } from "@/app/_components/UserMenu";
+import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { useAllNotes, useUpdateNote, useDeleteNote, AllNote } from "../courses/[courseId]/learn/_components/notes.hook";
@@ -129,38 +130,29 @@ function NoteRow({ note }: { note: AllNote }) {
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
               </button>
-              {confirming ? (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => deleteNote.mutate(note.id, { onSuccess: () => setConfirming(false) })}
-                    disabled={deleteNote.isPending}
-                    className="px-2 py-1 rounded text-xs font-medium bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
-                  >
-                    Xóa
-                  </button>
-                  <button
-                    onClick={() => setConfirming(false)}
-                    className="px-2 py-1 rounded text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26]"
-                  >
-                    Hủy
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setConfirming(true)}
-                  className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-red-500 hover:bg-red-50 transition-colors"
-                  title="Xóa"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-                  </svg>
-                </button>
-              )}
+              <button
+                onClick={() => setConfirming(true)}
+                className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                title="Xóa"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
+                </svg>
+              </button>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        open={confirming}
+        title="Xóa ghi chú?"
+        message="Hành động này không thể hoàn tác."
+        onConfirm={() => deleteNote.mutate(note.id, { onSuccess: () => setConfirming(false) })}
+        onCancel={() => setConfirming(false)}
+        isLoading={deleteNote.isPending}
+      />
     </motion.div>
   );
 }

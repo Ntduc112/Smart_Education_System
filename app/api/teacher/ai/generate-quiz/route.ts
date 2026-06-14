@@ -10,6 +10,19 @@ const BodySchema = z.object({
   questionCount: z.number().int().min(1).max(10).default(5),
 });
 
+const AIQuizSchema = z.object({
+  questions: z.array(z.object({
+    content: z.string().min(1),
+    type: z.enum(["MCQ", "TRUE_FALSE", "SHORT_ANSWER"]),
+    points: z.number().int().min(1),
+    sample_answer: z.string().optional(),
+    options: z.array(z.object({
+      content: z.string().min(1),
+      is_correct: z.boolean(),
+    })).optional(),
+  })).min(1),
+});
+
 export async function POST(request: NextRequest) {
   const userId = request.headers.get("x-user-id");
   if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,15 +73,7 @@ Trả về JSON theo đúng schema:
     const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error("Empty response");
 
-    const parsed = JSON.parse(raw) as {
-      questions: {
-        content: string;
-        type: "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
-        points: number;
-        sample_answer?: string;
-        options?: { content: string; is_correct: boolean }[];
-      }[];
-    };
+    const parsed = AIQuizSchema.parse(JSON.parse(raw));
 
     return NextResponse.json({ questions: parsed.questions });
   } catch (err) {

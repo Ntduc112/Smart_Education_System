@@ -3,27 +3,23 @@
 import Link from "next/link";
 import { useState, useEffect, useRef, use } from "react";
 import {
-  ChevronDown, ChevronRight, Plus, Trash2, Save,
-  Video, FileText, ClipboardList, BookOpen, Globe, Lock, ChevronLeft, ImageIcon, FolderUp,
+  Plus, Save,
+  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon,
 } from "lucide-react";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
-  useCreateChapter, useUpdateChapter, useDeleteChapter,
-  useCreateLesson, useUpdateLesson, useDeleteLesson,
+  useUpdateChapter, useUpdateLesson,
   useUploadPdf, useUploadVideo, useUploadThumbnail, useCreateQuiz,
   BuilderChapter, BuilderLesson,
 } from "./edit.hook";
 import { AIQuizModal } from "./_components/AIQuizModal";
 import { BulkImportModal } from "./_components/BulkImportModal";
+import { ChapterTree, type Selection } from "./_components/ChapterTree";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
 // ── Types ────────────────────────────────────────────────────────────────────
-
-type Selection =
-  | { type: "info" }
-  | { type: "chapter"; id: string }
-  | { type: "lesson"; id: string };
 
 interface Category { id: string; name: string }
 
@@ -165,10 +161,13 @@ function CourseInfoPanel({
     });
   }, [course]);
 
-  const handleSave = () => updateCourse.mutate({
-    ...form,
-    discount_percent: form.discount_percent > 0 ? form.discount_percent : null,
-  });
+  const handleSave = () => updateCourse.mutate(
+    { ...form, discount_percent: form.discount_percent > 0 ? form.discount_percent : null },
+    {
+      onSuccess: () => toast.success("Đã lưu thông tin khóa học"),
+      onError:   () => toast.error("Lưu thông tin thất bại, vui lòng thử lại"),
+    }
+  );
 
   return (
     <div className="space-y-4">
@@ -299,7 +298,10 @@ function ChapterPanel({
         />
       </div>
       <button
-        onClick={() => updateChapter.mutate({ id: chapter.id, title })}
+        onClick={() => updateChapter.mutate({ id: chapter.id, title }, {
+          onSuccess: () => toast.success("Đã lưu chương"),
+          onError:   () => toast.error("Lưu chương thất bại, vui lòng thử lại"),
+        })}
         disabled={updateChapter.isPending}
         className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
       >
@@ -548,10 +550,12 @@ function LessonPanel({
       {
         onSuccess: () => {
           setSaveStatus("success");
+          toast.success("Đã lưu bài học");
           setTimeout(() => setSaveStatus("idle"), 2500);
         },
         onError: () => {
           setSaveStatus("error");
+          toast.error("Lưu bài học thất bại, vui lòng thử lại");
           setTimeout(() => setSaveStatus("idle"), 3000);
         },
       }
@@ -806,40 +810,57 @@ function LessonPanel({
   );
 }
 
-// ── OutlineItem (Lesson row in left panel) ───────────────────────────────────
+// ── Loading skeleton (khớp layout sidebar + editor) ──────────────────────────
 
-function LessonItem({
-  lesson, selected, onSelect, onDelete,
-}: {
-  lesson:   BuilderLesson;
-  selected: boolean;
-  onSelect: () => void;
-  onDelete: () => void;
-}) {
+function EditSkeleton() {
   return (
-    <div
-      onClick={onSelect}
-      className={`group flex items-center gap-2 pl-8 pr-3 py-2 cursor-pointer rounded-lg mx-1 transition-colors ${
-        selected ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "text-[rgba(4,14,32,0.65)] hover:bg-[#f8fafc]"
-      }`}
-    >
-      <BookOpen size={12} className="shrink-0" />
-      <span className="text-xs flex-1 truncate">{lesson.title}</span>
-      <div className="flex items-center gap-1 shrink-0">
-        {lesson.video_url && <Video size={10} className="text-[rgba(4,14,32,0.35)]" />}
-        {lesson.pdf_url   && <FileText size={10} className="text-[rgba(4,14,32,0.35)]" />}
-        {lesson.quiz.length > 0 && <ClipboardList size={10} className="text-[rgba(4,14,32,0.35)]" />}
-        {lesson.is_free && (
-          <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-            Free
-          </span>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"
-        >
-          <Trash2 size={11} />
-        </button>
+    <div className="flex h-screen overflow-hidden animate-pulse">
+      {/* Left sidebar */}
+      <div className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] flex flex-col">
+        <div className="px-4 py-4 border-b border-[#e0e2e6] space-y-3">
+          <div className="h-3 w-28 bg-[#eef1f5] rounded" />
+          <div className="h-9 w-full bg-[#eef1f5] rounded-lg" />
+        </div>
+        <div className="flex-1 px-3 py-4 space-y-2">
+          <div className="h-9 w-full bg-[#f2f4f7] rounded-xl mb-3" />
+          {[64, 48, 56, 44, 60].map((w, i) => (
+            <div key={i} className="space-y-1.5">
+              <div className="flex items-center gap-2 px-2 py-2">
+                <div className="h-3.5 w-3.5 bg-[#eef1f5] rounded" />
+                <div className="h-3.5 bg-[#eef1f5] rounded" style={{ width: `${w}%` }} />
+              </div>
+              <div className="pl-8 pr-3">
+                <div className="h-3 w-3/5 bg-[#f2f4f7] rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-[#e0e2e6] px-4 py-4">
+          <div className="h-10 w-full bg-[#eef1f5] rounded-xl" />
+        </div>
+      </div>
+
+      {/* Right editor */}
+      <div className="flex-1 overflow-y-auto bg-[#f8fafc]">
+        <div className="max-w-xl mx-auto px-8 py-8 space-y-6">
+          <div className="h-5 w-44 bg-[#e7eaef] rounded" />
+          <div className="space-y-2">
+            <div className="h-3 w-24 bg-[#e7eaef] rounded" />
+            <div className="h-10 w-full bg-white border border-[#e9ecf1] rounded-xl" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-3 w-20 bg-[#e7eaef] rounded" />
+            <div className="h-24 w-full bg-white border border-[#e9ecf1] rounded-xl" />
+          </div>
+          <div className="space-y-2">
+            <div className="h-3 w-28 bg-[#e7eaef] rounded" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-28 bg-white border border-[#e9ecf1] rounded-xl" />
+              <div className="h-28 bg-white border border-[#e9ecf1] rounded-xl" />
+            </div>
+          </div>
+          <div className="h-11 w-full bg-[#dbe4f3] rounded-xl" />
+        </div>
       </div>
     </div>
   );
@@ -852,10 +873,6 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
 
   const { data: course, isLoading } = useCourseBuilder(id);
   const togglePublish  = useTogglePublish(id, course);
-  const createChapter  = useCreateChapter(id);
-  const deleteChapter  = useDeleteChapter(id);
-  const createLesson   = useCreateLesson(id);
-  const deleteLesson   = useDeleteLesson(id);
 
   const { data: categoriesData } = useQuery<{ categories: Category[] }>({
     queryKey: ["categories"],
@@ -864,55 +881,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   const categories = categoriesData?.categories ?? [];
 
   const [selection, setSelection]           = useState<Selection>({ type: "info" });
-  const [expanded, setExpanded]             = useState<Set<string>>(new Set());
-  const [newChapterTitle, setNewChapterTitle] = useState("");
-  const [showNewChapter, setShowNewChapter] = useState(false);
-  const [addLessonChapterId, setAddLessonChapterId] = useState<string | null>(null);
-  const [newLessonTitle, setNewLessonTitle] = useState("");
   const [showBulkImport, setShowBulkImport] = useState(false);
-
-  // Auto-expand all chapters on first load
-  useEffect(() => {
-    if (course?.sections) {
-      setExpanded(new Set(course.sections.map((c) => c.id)));
-    }
-  }, [!!course]);
-
-  const toggleExpand = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-
-  const handleAddChapter = () => {
-    if (!newChapterTitle.trim()) return;
-    createChapter.mutate({
-      title: newChapterTitle.trim(),
-      order: (course?.sections.length ?? 0) + 1,
-    });
-    setNewChapterTitle("");
-    setShowNewChapter(false);
-  };
-
-  const handleAddLesson = (chapterId: string) => {
-    if (!newLessonTitle.trim()) return;
-    const chapter = course?.sections.find((c) => c.id === chapterId);
-    createLesson.mutate(
-      {
-        chapter_id: chapterId,
-        title:      newLessonTitle.trim(),
-        order:      (chapter?.lessons.length ?? 0) + 1,
-      },
-      {
-        onSuccess: (lesson) => {
-          setSelection({ type: "lesson", id: lesson.id });
-          setAddLessonChapterId(null);
-          setNewLessonTitle("");
-        },
-      }
-    );
-  };
 
   // Derive selected objects
   const selectedChapter =
@@ -925,13 +894,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
       ? course?.sections.flatMap((c) => c.lessons).find((l) => l.id === selection.id)
       : undefined;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-[rgba(4,14,32,0.45)]">
-        Đang tải...
-      </div>
-    );
-  }
+  if (isLoading) return <EditSkeleton />;
 
   if (!course) {
     return (
@@ -968,152 +931,22 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           </button>
         </div>
 
-        {/* Chapters + Lessons */}
-        <div className="flex-1 overflow-y-auto py-3">
-          {course.sections.map((chapter) => (
-            <div key={chapter.id} className="mb-1">
-              {/* Chapter row */}
-              <div
-                className={`group flex items-center gap-2 px-3 py-2 cursor-pointer rounded-lg mx-1 transition-colors ${
-                  selection.type === "chapter" && selection.id === chapter.id
-                    ? "bg-[#1b61c9]/8 text-[#1b61c9]"
-                    : "text-[rgba(4,14,32,0.7)] hover:bg-[#f8fafc]"
-                }`}
-              >
-                <button
-                  onClick={() => toggleExpand(chapter.id)}
-                  className="shrink-0"
-                >
-                  {expanded.has(chapter.id) ? (
-                    <ChevronDown size={13} />
-                  ) : (
-                    <ChevronRight size={13} />
-                  )}
-                </button>
-                <span
-                  className="text-sm font-medium flex-1 truncate"
-                  onClick={() => setSelection({ type: "chapter", id: chapter.id })}
-                >
-                  {chapter.title}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteChapter.mutate(chapter.id);
-                    if (selection.type === "chapter" && selection.id === chapter.id) {
-                      setSelection({ type: "info" });
-                    }
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-
-              {/* Lessons */}
-              {expanded.has(chapter.id) && (
-                <div className="mt-0.5">
-                  {chapter.lessons.map((lesson) => (
-                    <LessonItem
-                      key={lesson.id}
-                      lesson={lesson}
-                      selected={selection.type === "lesson" && selection.id === lesson.id}
-                      onSelect={() => setSelection({ type: "lesson", id: lesson.id })}
-                      onDelete={() => {
-                        deleteLesson.mutate(lesson.id);
-                        if (selection.type === "lesson" && selection.id === lesson.id) {
-                          setSelection({ type: "chapter", id: chapter.id });
-                        }
-                      }}
-                    />
-                  ))}
-
-                  {/* Add lesson */}
-                  {addLessonChapterId === chapter.id ? (
-                    <div className="pl-8 pr-3 py-2 mx-1 flex gap-2">
-                      <input
-                        autoFocus
-                        className="flex-1 text-xs px-2 py-1.5 border border-[#1b61c9] rounded-lg outline-none"
-                        placeholder="Tên bài học..."
-                        value={newLessonTitle}
-                        onChange={(e) => setNewLessonTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleAddLesson(chapter.id);
-                          if (e.key === "Escape") {
-                            setAddLessonChapterId(null);
-                            setNewLessonTitle("");
-                          }
-                        }}
-                      />
-                      <button
-                        onClick={() => handleAddLesson(chapter.id)}
-                        className="text-xs text-[#1b61c9] font-medium"
-                      >
-                        Thêm
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setAddLessonChapterId(chapter.id);
-                        setNewLessonTitle("");
-                      }}
-                      className="flex items-center gap-1.5 pl-8 pr-3 py-2 mx-1 w-full text-left text-xs text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors rounded-lg hover:bg-[#f8fafc]"
-                    >
-                      <Plus size={11} /> Thêm bài học
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Add chapter */}
-          <div className="px-2 mt-2">
-            {showNewChapter ? (
-              <div className="flex gap-2 px-1">
-                <input
-                  autoFocus
-                  className="flex-1 text-xs px-3 py-2 border border-[#1b61c9] rounded-xl outline-none"
-                  placeholder="Tên chương..."
-                  value={newChapterTitle}
-                  onChange={(e) => setNewChapterTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleAddChapter();
-                    if (e.key === "Escape") {
-                      setShowNewChapter(false);
-                      setNewChapterTitle("");
-                    }
-                  }}
-                />
-                <button
-                  onClick={handleAddChapter}
-                  className="text-xs text-[#1b61c9] font-medium whitespace-nowrap"
-                >
-                  Thêm
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowNewChapter(true)}
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[rgba(4,14,32,0.5)] hover:text-[#1b61c9] hover:bg-[#f8fafc] rounded-xl transition-colors"
-              >
-                <Plus size={13} /> Thêm chương
-              </button>
-            )}
-            <button
-              onClick={() => setShowBulkImport(true)}
-              className="flex items-center gap-2 w-full px-3 py-2 mt-1 text-xs text-[rgba(4,14,32,0.5)] hover:text-[#1b61c9] hover:bg-[#f8fafc] rounded-xl transition-colors"
-            >
-              <FolderUp size={13} /> Import từ folder
-            </button>
-          </div>
-        </div>
+        {/* Chapters + Lessons (drag-drop) */}
+        <ChapterTree
+          courseId={id}
+          sections={course.sections}
+          selection={selection}
+          setSelection={setSelection}
+          onOpenImport={() => setShowBulkImport(true)}
+        />
 
         {/* Publish toggle */}
         <div className="border-t border-[#e0e2e6] px-4 py-4">
           <button
-            onClick={() => togglePublish.mutate()}
+            onClick={() => togglePublish.mutate(undefined, {
+              onSuccess: () => toast.success(isPublished ? "Đã chuyển khóa học về nháp" : "Đã công bố khóa học"),
+              onError:   () => toast.error("Đổi trạng thái thất bại, vui lòng thử lại"),
+            })}
             disabled={togglePublish.isPending}
             className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${
               isPublished

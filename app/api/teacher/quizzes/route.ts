@@ -2,11 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 
+const OptionSchema = z.object({
+    content:    z.string().min(1),
+    is_correct: z.boolean(),
+});
+
+const QuestionSchema = z.object({
+    content:       z.string().min(1),
+    type:          z.enum(["MCQ", "TRUE_FALSE", "SHORT_ANSWER"]),
+    points:        z.number().int().min(1).default(1),
+    sample_answer: z.string().optional(),
+    options:       z.array(OptionSchema).optional(),
+});
+
 const CreateQuizSchema = z.object({
     lesson_id:  z.string().uuid(),
     title:      z.string().min(1),
     pass_score: z.number().int().min(0).max(100).default(70),
     time_limit: z.number().int().min(1).optional(),
+    questions:  z.array(QuestionSchema).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -17,11 +31,11 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const data = CreateQuizSchema.parse(body);
+        const { questions, ...quizData } = CreateQuizSchema.parse(body);
 
         const lesson = await prisma.lesson.findFirst({
             where: {
-                id:      data.lesson_id,
+                id:      quizData.lesson_id,
                 chapter: { course: { instructor_id: userId } },
             },
         });
@@ -29,7 +43,26 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
         }
 
-        const quiz = await prisma.quiz.create({ data });
+        const quiz = await prisma.quiz.create({
+            data: {
+                ...quizData,
+                questions: questions
+                    ? {
+                        create: questions.map((q, i) => ({
+                            content:       q.content,
+                            type:          q.type,
+                            points:        q.points,
+                            order:         i + 1,
+                            sample_answer: q.sample_answer,
+                            options: q.options
+                                ? { create: q.options.map((o, idx) => ({ ...o, order: idx + 1 })) }
+                                : undefined,
+                        })),
+                    }
+                    : undefined,
+            },
+            include: questions ? { questions: { include: { options: true } } } : undefined,
+        });
         return NextResponse.json({ quiz }, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {

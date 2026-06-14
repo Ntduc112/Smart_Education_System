@@ -19,6 +19,7 @@ export async function GET(
             title:     true,
             thumbnail: true,
             status:    true,
+            price:     true,
             instructor: { select: { name: true } },
           },
         },

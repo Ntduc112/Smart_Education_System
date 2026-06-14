@@ -7,6 +7,7 @@ import {
   Category,
 } from "./categories.hook";
 import { getApiError } from "@/lib/api/error";
+import { ConfirmModal } from "@/app/_components/ConfirmModal";
 
 // ── Modal form ────────────────────────────────────────────────────────────────
 
@@ -215,30 +216,12 @@ export default function CategoriesPage() {
                     <Pencil size={13} className="text-[rgba(4,14,32,0.5)]" />
                   </button>
 
-                  {deleteId === cat.id ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleDelete(cat.id)}
-                        disabled={deleteMut.isPending}
-                        className="px-2 py-1 rounded-lg bg-red-500 text-white text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
-                      >
-                        {deleteMut.isPending ? <Loader2 size={11} className="animate-spin" /> : "Xóa"}
-                      </button>
-                      <button
-                        onClick={() => setDeleteId(null)}
-                        className="px-2 py-1 rounded-lg bg-[#f0f2f5] text-xs font-medium text-[rgba(4,14,32,0.6)] hover:bg-[#e8eaed] transition-colors"
-                      >
-                        Hủy
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDeleteId(cat.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      <Trash2 size={13} className="text-red-400" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setDeleteId(cat.id)}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={13} className="text-red-400" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -255,6 +238,16 @@ export default function CategoriesPage() {
           isLoading={isSaving}
         />
       )}
+
+      {/* Delete confirm */}
+      <ConfirmModal
+        open={deleteId !== null}
+        title="Xóa danh mục?"
+        message="Hành động này không thể hoàn tác."
+        onConfirm={() => deleteId && handleDelete(deleteId)}
+        onCancel={() => setDeleteId(null)}
+        isLoading={deleteMut.isPending}
+      />
     </div>
   );
 }

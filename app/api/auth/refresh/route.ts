@@ -53,6 +53,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Bước 3.5: Chặn tài khoản đã bị khóa
+        const account = await prisma.user.findUnique({
+            where: { id: payload.userId },
+            select: { is_active: true },
+        });
+        if (!account?.is_active) {
+            await prisma.refreshToken.delete({ where: { token: refreshToken } }).catch(() => {});
+            await clearSession();
+            return NextResponse.json(
+                { error: "Tài khoản đã bị khóa." },
+                { status: 403 }
+            );
+        }
+
         // Bước 4: Ký token mới
         const newAccessToken = await signAccessToken({
             userId: payload.userId,

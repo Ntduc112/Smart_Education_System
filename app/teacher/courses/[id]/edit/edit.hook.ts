@@ -94,12 +94,23 @@ export function useTogglePublish(id: string, course: BuilderCourse | undefined) 
 
 export function useCreateChapter(courseId: string) {
   const queryClient = useQueryClient();
+  const key = ["teacher", "course", courseId];
   return useMutation({
     mutationFn: async ({ title, order }: { title: string; order: number }) =>
       (await api.post<{ chapter: BuilderChapter }>("/teacher/chapters", { course_id: courseId, title, order })).data.chapter,
-    onSuccess: (chapter) =>
-      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
-        old ? { ...old, sections: [...old.sections, { ...chapter, lessons: [] }] } : old),
+    // Optimistic: hiện chương ngay với id tạm, không chờ backend.
+    onMutate: async ({ title, order }) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<BuilderCourse>(key);
+      const tempId = `temp-chapter-${Date.now()}`;
+      queryClient.setQueryData<BuilderCourse>(key, (old) =>
+        old ? { ...old, sections: [...old.sections, { id: tempId, title, order, lessons: [] }] } : old);
+      return { prev, tempId };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) queryClient.setQueryData(key, ctx.prev); },
+    onSuccess: (chapter, _v, ctx) =>
+      queryClient.setQueryData<BuilderCourse>(key, (old) =>
+        old ? { ...old, sections: old.sections.map((s) => s.id === ctx?.tempId ? { ...chapter, lessons: [] } : s) } : old),
   });
 }
 
@@ -116,25 +127,53 @@ export function useUpdateChapter(courseId: string) {
 
 export function useDeleteChapter(courseId: string) {
   const queryClient = useQueryClient();
+  const key = ["teacher", "course", courseId];
   return useMutation({
     mutationFn: async (id: string) => api.delete(`/teacher/chapters/${id}`),
-    onSuccess: (_res, id) =>
-      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
-        old ? { ...old, sections: old.sections.filter((s) => s.id !== id) } : old),
+    // Optimistic: gỡ chương khỏi UI ngay, không chờ backend.
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<BuilderCourse>(key);
+      queryClient.setQueryData<BuilderCourse>(key, (old) =>
+        old ? { ...old, sections: old.sections.filter((s) => s.id !== id) } : old);
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => { if (ctx?.prev) queryClient.setQueryData(key, ctx.prev); },
   });
 }
 
 export function useCreateLesson(courseId: string) {
   const queryClient = useQueryClient();
+  const key = ["teacher", "course", courseId];
   return useMutation({
     mutationFn: async ({ chapter_id, title, order }: { chapter_id: string; title: string; order: number }) =>
       (await api.post<{ lesson: BuilderLesson }>("/teacher/lessons", { chapter_id, title, order })).data.lesson,
-    onSuccess: (lesson, { chapter_id }) =>
-      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+    // Optimistic: hiện bài học ngay với id tạm, không chờ backend.
+    onMutate: async ({ chapter_id, title, order }) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<BuilderCourse>(key);
+      const tempId = `temp-lesson-${Date.now()}`;
+      const tempLesson: BuilderLesson = {
+        id: tempId, title, order, is_free: false,
+        content: null, video_url: null, pdf_url: null, pdf_text: null, quiz: [],
+      };
+      queryClient.setQueryData<BuilderCourse>(key, (old) =>
         old ? {
           ...old,
           sections: old.sections.map((s) =>
-            s.id === chapter_id ? { ...s, lessons: [...s.lessons, { ...lesson, quiz: [] }] } : s),
+            s.id === chapter_id ? { ...s, lessons: [...s.lessons, tempLesson] } : s),
+        } : old);
+      return { prev, tempId };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) queryClient.setQueryData(key, ctx.prev); },
+    onSuccess: (lesson, { chapter_id }, ctx) =>
+      queryClient.setQueryData<BuilderCourse>(key, (old) =>
+        old ? {
+          ...old,
+          sections: old.sections.map((s) =>
+            s.id === chapter_id
+              ? { ...s, lessons: s.lessons.map((l) => l.id === ctx?.tempId ? { ...lesson, quiz: [] } : l) }
+              : s),
         } : old),
   });
 }
@@ -161,16 +200,75 @@ export function useUpdateLesson(courseId: string) {
   });
 }
 
+/**
+ * Áp dụng thứ tự mới cho chương + bài học (kéo thả).
+ * Optimistic cập nhật cache ngay, sau đó PUT chỉ những item thực sự đổi
+ * (order hoặc chapter_id). Rollback nếu request lỗi.
+ */
+export function useReorder(courseId: string) {
+  const queryClient = useQueryClient();
+  const key = ["teacher", "course", courseId];
+
+  const apply = async (next: BuilderChapter[]) => {
+    const prev = queryClient.getQueryData<BuilderCourse>(key);
+
+    // Đánh lại order tuần tự cho cả chương và bài.
+    const renumbered = next.map((c, ci) => ({
+      ...c,
+      order:   ci + 1,
+      lessons: c.lessons.map((l, li) => ({ ...l, order: li + 1 })),
+    }));
+    queryClient.setQueryData<BuilderCourse>(key, (old) =>
+      old ? { ...old, sections: renumbered } : old);
+
+    // Bảng tra cứu trạng thái cũ để diff.
+    const prevChapterOrder = new Map(prev?.sections.map((c) => [c.id, c.order]));
+    const prevLesson = new Map<string, { order: number; chapterId: string }>();
+    prev?.sections.forEach((c) =>
+      c.lessons.forEach((l) => prevLesson.set(l.id, { order: l.order, chapterId: c.id })));
+
+    const reqs: Promise<unknown>[] = [];
+    renumbered.forEach((c, ci) => {
+      if (prevChapterOrder.get(c.id) !== ci + 1) {
+        reqs.push(api.put(`/teacher/chapters/${c.id}`, { order: ci + 1 }));
+      }
+      c.lessons.forEach((l, li) => {
+        const p = prevLesson.get(l.id);
+        if (!p || p.order !== li + 1 || p.chapterId !== c.id) {
+          reqs.push(api.put(`/teacher/lessons/${l.id}`, { order: li + 1, chapter_id: c.id }));
+        }
+      });
+    });
+
+    try {
+      await Promise.all(reqs);
+    } catch {
+      queryClient.setQueryData(key, prev); // rollback
+    } finally {
+      queryClient.invalidateQueries({ queryKey: key });
+    }
+  };
+
+  return { apply };
+}
+
 export function useDeleteLesson(courseId: string) {
   const queryClient = useQueryClient();
+  const key = ["teacher", "course", courseId];
   return useMutation({
     mutationFn: async (id: string) => api.delete(`/teacher/lessons/${id}`),
-    onSuccess: (_res, id) =>
-      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+    // Optimistic: gỡ bài học khỏi UI ngay, không chờ backend.
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<BuilderCourse>(key);
+      queryClient.setQueryData<BuilderCourse>(key, (old) =>
         old ? {
           ...old,
           sections: old.sections.map((s) => ({ ...s, lessons: s.lessons.filter((l) => l.id !== id) })),
-        } : old),
+        } : old);
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => { if (ctx?.prev) queryClient.setQueryData(key, ctx.prev); },
   });
 }
 
@@ -311,22 +409,18 @@ export function useCreateQuizWithQuestions(courseId: string) {
       passScore: number;
       questions: AIQuestion[];
     }) => {
-      const quizRes = await api.post<{ quiz: BuilderQuiz }>(
-        "/teacher/quizzes",
-        { lesson_id: lessonId, title, pass_score: passScore }
-      );
-      const quizId = quizRes.data.quiz.id;
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i];
-        await api.post(`/teacher/quizzes/${quizId}/questions`, {
+      await api.post<{ quiz: BuilderQuiz }>("/teacher/quizzes", {
+        lesson_id:  lessonId,
+        title,
+        pass_score: passScore,
+        questions:  questions.map((q) => ({
           content:       q.content,
           type:          q.type,
           points:        q.points,
-          order:         i + 1,
           sample_answer: q.sample_answer,
-          options:       q.options?.map((o, idx) => ({ ...o, order: idx + 1 })),
-        });
-      }
+          options:       q.options,
+        })),
+      });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId] }),
   });

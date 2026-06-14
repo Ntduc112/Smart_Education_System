@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAccessToken } from "@/lib/auth/token";
+import { verifyAccessToken, verifyRefreshToken, signAccessToken, type TokenPayload } from "@/lib/auth/token";
 
 const ACCESS_TOKEN_COOKIE = "access_token";
+const REFRESH_TOKEN_COOKIE = "refresh_token";
 
 const PUBLIC_ROUTES = [
     "/",
@@ -32,6 +33,16 @@ const TEACHER_ROUTES = [
 function matchesRoutes(pathName: string, routes: string[]){
     return routes.some(route => pathName === route || pathName.startsWith(route + "/"));
 }
+// đặt cookie access mới khi refresh ngầm thành công (khớp option ở lib/auth/session.ts)
+function setAccessCookie(response: NextResponse, accessToken: string){
+    response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: parseInt(process.env.ACCESS_TOKEN_EXPIRES_IN!),
+        path: "/",
+    });
+}
 export async function proxy(request: NextRequest){
     const pathName = request.nextUrl.pathname;
     if( pathName.startsWith("/_next")||
@@ -44,16 +55,28 @@ export async function proxy(request: NextRequest){
     const authHeader = request.headers.get("authorization");
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
     const accessToken = bearerToken ?? request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-    if(!accessToken){
-        if(pathName.startsWith("/api")){
-            return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
+
+    let session: TokenPayload | null = accessToken ? await verifyAccessToken(accessToken) : null;
+
+    // Refresh ngầm: access thiếu/hết hạn → thử cấp access mới từ refresh token.
+    // Chỉ verify chữ ký JWT (stateless, không DB) để chạy được trên edge runtime.
+    // Rotation + reuse-detection vẫn nằm ở /api/auth/refresh khi client chủ động gọi.
+    let refreshedAccessToken: string | null = null;
+    if(!session){
+        const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+        const refreshPayload = refreshToken ? await verifyRefreshToken(refreshToken) : null;
+        if(refreshPayload){
+            refreshedAccessToken = await signAccessToken({
+                userId: refreshPayload.userId,
+                role: refreshPayload.role,
+            });
+            session = { userId: refreshPayload.userId, role: refreshPayload.role };
         }
-        return NextResponse.redirect(new URL("/login", request.url));
     }
-    const session = await verifyAccessToken(accessToken);
+
     if(!session){
         if(pathName.startsWith("/api")){
-            return NextResponse.json({ error: "AccessToken không hợp lệ" }, { status: 401 });
+            return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
         }
         const response = NextResponse.redirect(new URL("/login", request.url));
         response.cookies.delete(ACCESS_TOKEN_COOKIE);
@@ -75,7 +98,9 @@ export async function proxy(request: NextRequest){
     requestHeaders.set("x-user-id", session.userId);
     requestHeaders.set("x-user-role", session.role);
 
-  return NextResponse.next({ request: { headers: requestHeaders } });
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    if(refreshedAccessToken) setAccessCookie(response, refreshedAccessToken);
+    return response;
 }
 export const config = {
     matcher: ["/((?!login|register|_next/static|_next/image/favicon.ico).*)"]

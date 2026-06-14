@@ -3,8 +3,9 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 
 const UpdateLessonSchema = z.object({
-    title:     z.string().min(1, "Title is required").optional(),
-    order:     z.number().int().min(1, "Order must be a positive integer").optional(),
+    title:      z.string().min(1, "Title is required").optional(),
+    order:      z.number().int().min(1, "Order must be a positive integer").optional(),
+    chapter_id: z.string().uuid("Chapter ID must be a valid UUID").optional(),
     content:   z.string().nullable().optional(),
     video_url: z.string().refine(v => v.startsWith("r2:") || z.string().url().safeParse(v).success, "Video URL không hợp lệ").nullable().optional(),
     pdf_url:   z.string().url("PDF URL must be a valid URL").nullable().optional(),
@@ -43,7 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         const body = await request.json();
-        const { title, order, content, video_url, pdf_url, pdf_text, is_free } = UpdateLessonSchema.parse(body);
+        const { title, order, chapter_id, content, video_url, pdf_url, pdf_text, is_free } = UpdateLessonSchema.parse(body);
 
         const existing = await prisma.lesson.findFirst({
             where: { id, chapter: { course: { instructor_id: userId } } },
@@ -52,9 +53,19 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
         }
 
+        // When moving the lesson to another chapter, verify the target chapter belongs to this instructor.
+        if (chapter_id) {
+            const targetChapter = await prisma.chapter.findFirst({
+                where: { id: chapter_id, course: { instructor_id: userId } },
+            });
+            if (!targetChapter) {
+                return NextResponse.json({ error: "Target chapter not found" }, { status: 404 });
+            }
+        }
+
         const lesson = await prisma.lesson.update({
             where: { id },
-            data:  { title, order, content, video_url, pdf_url, pdf_text, is_free },
+            data:  { title, order, chapter_id, content, video_url, pdf_url, pdf_text, is_free },
         });
         return NextResponse.json({ lesson }, { status: 200 });
     } catch (error) {

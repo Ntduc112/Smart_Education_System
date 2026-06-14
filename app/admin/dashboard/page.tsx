@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   Users, BookOpen, GraduationCap, DollarSign,
-  ClipboardList, BarChart2, Tag, ChevronRight,
+  BarChart2, Tag, ChevronRight,
 } from "lucide-react";
 import { useDashboardStats, useRecentUsers } from "./dashboard.hook";
 
@@ -164,10 +164,10 @@ export default function DashboardPage() {
             iconCls="bg-amber-50 text-amber-600"
           />
           <QuickCard
-            href="/admin/students"
-            label="Tìm học viên"
-            desc={`${ov?.total_students ?? 0} học viên đang học`}
-            icon={ClipboardList}
+            href="/admin/courses"
+            label="Quản lý khóa học"
+            desc={`${ov?.total_courses ?? 0} khóa học trên nền tảng`}
+            icon={BookOpen}
             iconCls="bg-emerald-50 text-emerald-600"
           />
         </div>
@@ -192,7 +192,7 @@ export default function DashboardPage() {
           ) : (
             <div className="divide-y divide-[#f0f2f5]">
               {recentUsers.map((u) => (
-                <div key={u.id} className="flex items-center gap-4 px-6 py-3.5">
+                <Link key={u.id} href={`/admin/users/${u.id}`} className="flex items-center gap-4 px-6 py-3.5 hover:bg-[#f8fafc] transition-colors">
                   {u.avatar ? (
                     <img src={u.avatar} alt={u.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
                   ) : (
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-[rgba(4,14,32,0.4)] shrink-0">
                     {new Date(u.created_at).toLocaleDateString("vi-VN")}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           )}

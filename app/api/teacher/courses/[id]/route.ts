@@ -82,9 +82,23 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        await prisma.course.deleteMany({
-            where: { id, instructor_id: userId },
+        const existingCourse = await prisma.course.findFirst({
+            where:  { id, instructor_id: userId },
+            select: { id: true },
         });
+        if (!existingCourse) {
+            return NextResponse.json({ error: "Course not found" }, { status: 404 });
+        }
+        // Course relations lack onDelete: Cascade, so delete children first.
+        // Deleting chapters cascades to lessons (and their progress/notes/questions/quiz).
+        await prisma.$transaction([
+            prisma.enrollment.deleteMany({ where: { course_id: id } }),
+            prisma.payment.deleteMany({ where: { course_id: id } }),
+            prisma.review.deleteMany({ where: { course_id: id } }),
+            prisma.certificate.deleteMany({ where: { course_id: id } }),
+            prisma.chapter.deleteMany({ where: { course_id: id } }),
+            prisma.course.delete({ where: { id } }),
+        ]);
         return NextResponse.json({ message: "Course deleted successfully" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting course:", error);

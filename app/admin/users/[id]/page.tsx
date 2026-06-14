@@ -8,13 +8,14 @@ import { useRouter } from "next/navigation";
 import { editUserSchema, EditUserInput } from "./edit-user.schema";
 import {
   ArrowLeft, Pencil, Trash2, X, Check, Plus, Search,
-  BookOpen, Users, CreditCard, Globe, Lock,
+  Users, Lock, Unlock,
 } from "lucide-react";
 import {
   useAdminUser, useUpdateUser, useDeleteUser,
   useStudentEnrollments, useAddEnrollment, useRemoveEnrollment,
   useTeacherCourses, useCourseSearch,
 } from "../../admin.hook";
+import { ConfirmModal } from "@/app/_components/ConfirmModal";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,7 @@ function EditModal({
   user,
   onClose,
 }: {
-  user:    { id: string; name: string; email: string; role: string };
+  user:    { id: string; name: string; email: string };
   onClose: () => void;
 }) {
   const update = useUpdateUser(user.id);
@@ -54,11 +55,15 @@ function EditModal({
     formState: { errors },
   } = useForm<EditUserInput>({
     resolver: zodResolver(editUserSchema),
-    defaultValues: { name: user.name, email: user.email, role: user.role as EditUserInput["role"] },
+    defaultValues: { name: user.name, email: user.email, password: "" },
   });
 
   const onSubmit = async (values: EditUserInput) => {
-    await update.mutateAsync(values);
+    await update.mutateAsync({
+      name:  values.name,
+      email: values.email,
+      ...(values.password ? { password: values.password } : {}),
+    });
     onClose();
   };
 
@@ -100,17 +105,16 @@ function EditModal({
           </div>
           <div>
             <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5">
-              Vai trò
+              Mật khẩu mới
             </label>
-            <select
-              {...register("role")}
-              className="w-full px-3 py-2.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] bg-white transition-all"
-            >
-              <option value="STUDENT">Học sinh</option>
-              <option value="TEACHER">Giáo viên</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-            {errors.role && <p className="mt-1 text-xs text-red-500">{errors.role.message}</p>}
+            <input
+              type="password"
+              autoComplete="new-password"
+              placeholder="Để trống nếu không đổi"
+              {...register("password")}
+              className="w-full px-3 py-2.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all"
+            />
+            {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
           </div>
 
           {update.isError && (
@@ -237,8 +241,8 @@ function StudentCoursesSection({ userId }: { userId: string }) {
   const enrolledIds = enrollments.map((e) => e.id);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <h2 className="text-sm font-semibold text-[#181d26]">Khóa học đã đăng ký</h2>
         <button
           onClick={() => setShowAdd(true)}
@@ -255,7 +259,7 @@ function StudentCoursesSection({ userId }: { userId: string }) {
       ) : enrollments.length === 0 ? (
         <p className="text-sm text-[rgba(4,14,32,0.4)] py-6 text-center">Chưa đăng ký khóa học nào.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-2 -mr-2 pr-2">
           {enrollments.map((course) => (
             <div
               key={course.id}
@@ -268,6 +272,7 @@ function StudentCoursesSection({ userId }: { userId: string }) {
                 <p className="text-sm font-medium text-[#181d26] truncate">{course.title}</p>
                 <p className="text-xs text-[rgba(4,14,32,0.45)]">{course.instructor.name}</p>
               </div>
+              <span className="shrink-0 text-sm font-semibold text-[#181d26] whitespace-nowrap">{fmtVND(course.price)}</span>
               <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${
                 course.status === "PUBLISHED" ? "bg-emerald-50 text-emerald-700" : "bg-[#f0f2f5] text-[rgba(4,14,32,0.55)]"
               }`}>
@@ -275,7 +280,7 @@ function StudentCoursesSection({ userId }: { userId: string }) {
               </span>
               <button
                 onClick={() => setRemoveId(course.id)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-50 text-[rgba(4,14,32,0.4)] hover:text-red-500 transition-all"
+                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-50 text-[rgba(4,14,32,0.4)] hover:text-red-500 transition-all shrink-0"
               >
                 <Trash2 size={13} />
               </button>
@@ -324,8 +329,8 @@ function TeacherCoursesSection({ userId }: { userId: string }) {
   const { data: courses = [], isLoading } = useTeacherCourses(userId);
 
   return (
-    <div>
-      <h2 className="text-sm font-semibold text-[#181d26] mb-4">Khóa học đã tạo</h2>
+    <div className="flex flex-col h-full min-h-0">
+      <h2 className="text-sm font-semibold text-[#181d26] mb-4 shrink-0">Khóa học đã tạo</h2>
       {isLoading ? (
         <div className="space-y-2 animate-pulse">
           {[0, 1].map((i) => <div key={i} className="h-16 bg-gray-100 rounded-xl" />)}
@@ -333,7 +338,7 @@ function TeacherCoursesSection({ userId }: { userId: string }) {
       ) : courses.length === 0 ? (
         <p className="text-sm text-[rgba(4,14,32,0.4)] py-6 text-center">Chưa tạo khóa học nào.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-2 -mr-2 pr-2">
           {courses.map((c) => (
             <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl border border-[#e0e2e6] hover:bg-[#f8fafc]">
               <div className="w-14 h-10 rounded-lg overflow-hidden bg-[#f0f2f5] shrink-0">
@@ -366,9 +371,11 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   const router  = useRouter();
   const { data: user, isLoading } = useAdminUser(id);
   const deleteUser = useDeleteUser();
+  const updateUser = useUpdateUser(id);
 
   const [showEdit,   setShowEdit]   = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showLock,   setShowLock]   = useState(false);
 
   if (isLoading) {
     return (
@@ -388,10 +395,10 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  const backHref = user.role === "TEACHER" ? "/admin/teachers" : "/admin/students";
+  const backHref = "/admin/users";
 
   return (
-    <div className="px-8 py-8 space-y-6 max-w-3xl">
+    <div className="px-8 py-8 space-y-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link
@@ -403,82 +410,102 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         <h1 className="text-2xl font-semibold text-[#181d26]">Chi tiết người dùng</h1>
       </div>
 
-      {/* User info card */}
-      <div
-        className="bg-white rounded-2xl border border-[#e0e2e6] p-6"
-        style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
-      >
-        <div className="flex items-start gap-5">
-          {/* Avatar */}
-          {user.avatar ? (
-            <img src={user.avatar} alt={user.name} className="w-16 h-16 rounded-2xl object-cover shrink-0" />
-          ) : (
-            <div className="w-16 h-16 rounded-2xl bg-[#1b61c9]/12 flex items-center justify-center shrink-0">
-              <span className="text-2xl font-bold text-[#1b61c9]">{user.name.charAt(0).toUpperCase()}</span>
-            </div>
-          )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column: profile */}
+        <div className="lg:col-span-1">
+          {/* Profile card */}
+          <div
+            className="bg-white rounded-2xl border border-[#e0e2e6] p-6 flex flex-col items-center text-center"
+            style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
+          >
+            {user.avatar ? (
+              <img src={user.avatar} alt={user.name} className="w-24 h-24 rounded-2xl object-cover" />
+            ) : (
+              <div className="w-24 h-24 rounded-2xl bg-[#1b61c9]/12 flex items-center justify-center">
+                <span className="text-4xl font-bold text-[#1b61c9]">{user.name.charAt(0).toUpperCase()}</span>
+              </div>
+            )}
 
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-lg font-bold text-[#181d26]">{user.name}</h2>
+            <h2 className="text-lg font-bold text-[#181d26] mt-4">{user.name}</h2>
+            <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
               <RoleBadge role={user.role} />
+              {!user.is_active && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-600 inline-flex items-center gap-1">
+                  <Lock size={11} /> Đã khóa
+                </span>
+              )}
             </div>
-            <p className="text-sm text-[rgba(4,14,32,0.55)] mt-0.5">{user.email}</p>
+            <p className="text-sm text-[rgba(4,14,32,0.55)] mt-3 break-all">{user.email}</p>
             <p className="text-xs text-[rgba(4,14,32,0.35)] mt-1">
               Tham gia {new Date(user.created_at).toLocaleDateString("vi-VN")}
             </p>
 
-            {/* Count badges */}
-            <div className="flex items-center gap-4 mt-3">
-              {user.role === "STUDENT" && (
-                <div className="flex items-center gap-1.5 text-sm text-[rgba(4,14,32,0.6)]">
-                  <BookOpen size={14} /> {user._count.enrollments} khóa đang học
-                </div>
-              )}
-              {user.role === "TEACHER" && (
-                <div className="flex items-center gap-1.5 text-sm text-[rgba(4,14,32,0.6)]">
-                  <BookOpen size={14} /> {user._count.courses} khóa học đã tạo
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 text-sm text-[rgba(4,14,32,0.6)]">
-                <CreditCard size={14} /> {user._count.payments} giao dịch
-              </div>
+            {/* Actions */}
+            <div className="flex flex-col gap-2 w-full mt-5">
+              <button
+                onClick={() => setShowEdit(true)}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc] transition-colors"
+              >
+                <Pencil size={13} /> Chỉnh sửa
+              </button>
+              <button
+                onClick={() => setShowLock(true)}
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium border rounded-xl transition-colors ${
+                  user.is_active
+                    ? "text-amber-600 border-amber-100 hover:bg-amber-50"
+                    : "text-emerald-600 border-emerald-100 hover:bg-emerald-50"
+                }`}
+              >
+                {user.is_active ? <><Lock size={13} /> Khóa tài khoản</> : <><Unlock size={13} /> Mở khóa</>}
+              </button>
+              <button
+                onClick={() => setShowDelete(true)}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-red-500 border border-red-100 rounded-xl hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={13} /> Xóa
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setShowEdit(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc] transition-colors"
-            >
-              <Pencil size={13} /> Chỉnh sửa
-            </button>
-            <button
-              onClick={() => setShowDelete(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-red-500 border border-red-100 rounded-xl hover:bg-red-50 transition-colors"
-            >
-              <Trash2 size={13} /> Xóa
-            </button>
+        {/* Right column: courses — height matches profile card, scrolls inside */}
+        <div className="lg:col-span-2 relative">
+          <div
+            className="bg-white rounded-2xl border border-[#e0e2e6] p-6 lg:absolute lg:inset-0 flex flex-col min-h-[300px]"
+            style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
+          >
+            {user.role === "STUDENT" ? (
+              <StudentCoursesSection userId={id} />
+            ) : (
+              <TeacherCoursesSection userId={id} />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Courses section */}
-      <div
-        className="bg-white rounded-2xl border border-[#e0e2e6] p-6"
-        style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
-      >
-        {user.role === "STUDENT" ? (
-          <StudentCoursesSection userId={id} />
-        ) : (
-          <TeacherCoursesSection userId={id} />
-        )}
-      </div>
-
       {/* Edit modal */}
       {showEdit && <EditModal user={user} onClose={() => setShowEdit(false)} />}
+
+      {/* Lock / unlock confirm */}
+      <ConfirmModal
+        open={showLock}
+        danger={user.is_active}
+        title={user.is_active ? "Khóa tài khoản?" : "Mở khóa tài khoản?"}
+        message={
+          user.is_active
+            ? "Người dùng sẽ không thể đăng nhập cho đến khi được mở khóa."
+            : "Người dùng có thể đăng nhập trở lại."
+        }
+        confirmLabel={user.is_active ? "Khóa" : "Mở khóa"}
+        isLoading={updateUser.isPending}
+        onCancel={() => setShowLock(false)}
+        onConfirm={() =>
+          updateUser.mutate(
+            { is_active: !user.is_active },
+            { onSuccess: () => setShowLock(false) },
+          )
+        }
+      />
 
       {/* Delete confirm */}
       {showDelete && (

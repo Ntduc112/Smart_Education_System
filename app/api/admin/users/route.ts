@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
         const limit  = Math.min(50, parseInt(searchParams.get("limit") ?? "20"));
 
         const where = {
-            ...(role && { role: role as "STUDENT" | "TEACHER" | "ADMIN" }),
+            // Admin accounts are out of scope for the user list.
+            role: role && role !== "ADMIN"
+                ? (role as "STUDENT" | "TEACHER")
+                : { not: "ADMIN" as const },
             ...(search && {
                 OR: [
                     { name:  { contains: search, mode: "insensitive" as const } },

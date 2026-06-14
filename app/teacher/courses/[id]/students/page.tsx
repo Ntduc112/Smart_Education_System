@@ -7,6 +7,7 @@ import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import {
   ChevronDown, ChevronRight, ChevronLeft,
   Users, BookOpen, ClipboardList, CheckCircle2, XCircle, Clock, Lock,
+  Trophy, BarChart3, X,
 } from "lucide-react";
 import { useStudentsProgress, StudentProgress, QuizResult, LessonDetail } from "./students.hook";
 
@@ -332,14 +333,83 @@ function SummaryCard({
   );
 }
 
+// ── Stuck-lesson analysis modal ───────────────────────────────────────────────
+
+type StuckRow = { lesson_id: string; lesson_title: string; chapter_title: string; count: number };
+
+function StuckAnalysisModal({
+  rows, inProgress, notStarted, onClose,
+}: {
+  rows: StuckRow[]; inProgress: number; notStarted: number; onClose: () => void;
+}) {
+  const max = rows.length > 0 ? rows[0].count : 0;
+  return (
+    <div
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col"
+        style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 8px 32px" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-[#f0f2f5]">
+          <div>
+            <h3 className="text-base font-semibold text-[#181d26]">Học viên dừng ở đâu?</h3>
+            <p className="text-sm text-[rgba(4,14,32,0.55)] mt-0.5">
+              {inProgress} học viên đang học dở, theo bài xa nhất đã học
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#f0f2f5] text-[rgba(4,14,32,0.45)]">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="overflow-y-auto px-6 py-4 space-y-3.5">
+          {rows.length === 0 ? (
+            <p className="text-sm text-[rgba(4,14,32,0.45)] py-6 text-center">
+              {notStarted > 0
+                ? "Chưa có học viên nào bắt đầu học."
+                : "Tất cả học viên đã hoàn thành khóa học. 🎉"}
+            </p>
+          ) : (
+            rows.map((r, i) => (
+              <div key={r.lesson_id}>
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-[#181d26] truncate">{r.lesson_title}</p>
+                    <p className="text-xs text-[rgba(4,14,32,0.4)] truncate">{r.chapter_title}</p>
+                  </div>
+                  <span className="text-sm font-bold text-[#181d26] shrink-0">{r.count}</span>
+                </div>
+                <div className="h-2 bg-[#f0f2f5] rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${i === 0 ? "bg-amber-500" : "bg-[#1b61c9]"}`}
+                    style={{ width: `${max > 0 ? (r.count / max) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            ))
+          )}
+          {notStarted > 0 && (
+            <div className="flex items-center justify-between gap-3 pt-3 mt-1 border-t border-[#f0f2f5]">
+              <p className="text-sm text-[rgba(4,14,32,0.55)]">Chưa bắt đầu</p>
+              <span className="text-sm font-bold text-[rgba(4,14,32,0.55)] shrink-0">{notStarted}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
     <div className="px-8 py-8 space-y-6 animate-pulse">
       <div className="h-6 w-48 bg-gray-100 rounded-lg" />
-      <div className="grid grid-cols-3 gap-4">
-        {[0, 1, 2].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-2xl" />)}
+      <div className="grid grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-2xl" />)}
       </div>
       <div className="h-96 bg-gray-100 rounded-2xl" />
     </div>
@@ -352,6 +422,7 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const { data, isLoading } = useStudentsProgress(id);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showStuck, setShowStuck] = useState(false);
   const pathname = usePathname();
 
   const tabs = [
@@ -381,6 +452,31 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
             100
         )
       : 0;
+  const completedCount = students.filter((u) => u.completion_pct >= 100).length;
+
+  // Điểm dừng = bài XA NHẤT học viên đã chạm tới (theo thứ tự khóa học).
+  // Bỏ qua học viên chưa hoàn thành nhưng đã bắt đầu = đang học dở; đếm riêng nhóm chưa bắt đầu.
+  const { rows: stuckRows, inProgress: stuckTotal, notStarted } = (() => {
+    const map = new Map<string, StuckRow>();
+    let inProgress = 0;
+    let notStarted = 0;
+    const touched = (l: LessonDetail) => l.is_completed || l.watch_percent > 0 || l.last_watched_at != null;
+    for (const u of students) {
+      if (u.completion_pct >= 100) continue;
+      // lessons_detail đã theo thứ tự khóa học → bài chạm cuối cùng là điểm xa nhất.
+      let furthest: LessonDetail | undefined;
+      for (const l of u.lessons_detail) if (touched(l)) furthest = l;
+      if (!furthest) { notStarted++; continue; }
+      inProgress++;
+      const cur = map.get(furthest.lesson_id);
+      if (cur) cur.count++;
+      else map.set(furthest.lesson_id, {
+        lesson_id: furthest.lesson_id, lesson_title: furthest.lesson_title,
+        chapter_title: furthest.chapter_title, count: 1,
+      });
+    }
+    return { rows: [...map.values()].sort((a, b) => b.count - a.count), inProgress, notStarted };
+  })();
 
   return (
     <div className="px-8 py-8 space-y-6">
@@ -415,12 +511,18 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <SummaryCard
           label="Tổng học viên"
           value={String(students.length)}
           icon={Users}
           iconCls="bg-[#1b61c9]/10 text-[#1b61c9]"
+        />
+        <SummaryCard
+          label="Hoàn thành khóa học"
+          value={String(completedCount)}
+          icon={Trophy}
+          iconCls="bg-amber-50 text-amber-600"
         />
         <SummaryCard
           label="Hoàn thành trung bình"
@@ -435,6 +537,19 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
           iconCls="bg-violet-50 text-violet-600"
         />
       </div>
+
+      {/* Stuck-lesson analysis trigger */}
+      {students.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowStuck(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1b61c9] bg-[#1b61c9]/8 rounded-xl hover:bg-[#1b61c9]/14 transition-colors"
+          >
+            <BarChart3 size={16} />
+            Phân tích điểm dừng
+          </button>
+        </div>
+      )}
 
       {/* Student table */}
       <div
@@ -472,6 +587,15 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
           </table>
         )}
       </div>
+
+      {showStuck && (
+        <StuckAnalysisModal
+          rows={stuckRows}
+          inProgress={stuckTotal}
+          notStarted={notStarted}
+          onClose={() => setShowStuck(false)}
+        />
+      )}
     </div>
   );
 }

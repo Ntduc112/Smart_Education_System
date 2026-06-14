@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Users, GraduationCap, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Search, Users, GraduationCap, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdminUsers } from "./users.hook";
 
 // ── Role badge ────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ const ROLE_CLS: Record<string, string> = {
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_CLS[role] ?? "bg-gray-100 text-gray-600"}`}>
+    <span className={`w-fit justify-self-start inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ROLE_CLS[role] ?? "bg-gray-100 text-gray-600"}`}>
       {ROLE_LABEL[role] ?? role}
     </span>
   );
@@ -66,12 +66,11 @@ function Skeleton() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-const ROLES = ["ALL", "STUDENT", "TEACHER", "ADMIN"] as const;
+const ROLES = ["ALL", "STUDENT", "TEACHER"] as const;
 const ROLE_FILTER_LABEL: Record<string, string> = {
   ALL:     "Tất cả",
   STUDENT: "Học viên",
   TEACHER: "Giáo viên",
-  ADMIN:   "Admin",
 };
 
 export default function UsersPage() {
@@ -138,12 +137,11 @@ export default function UsersPage() {
         style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
       >
         {/* Head */}
-        <div className="grid grid-cols-[auto_1fr_160px_120px_80px] items-center gap-4 px-6 py-3 border-b border-[#f0f2f5] bg-[#f8fafc]">
+        <div className="grid grid-cols-[auto_1fr_160px_120px] items-center gap-4 px-6 py-3 border-b border-[#f0f2f5] bg-[#f8fafc]">
           <div className="w-9" />
           <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wide">Người dùng</p>
           <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wide">Vai trò</p>
           <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wide">Ngày tạo</p>
-          <div />
         </div>
 
         {/* Rows */}
@@ -157,7 +155,8 @@ export default function UsersPage() {
             {users.map((u) => (
               <div
                 key={u.id}
-                className="grid grid-cols-[auto_1fr_160px_120px_80px] items-center gap-4 px-6 py-3.5 hover:bg-[#f8fafc] transition-colors"
+                onClick={() => router.push(`/admin/users/${u.id}`)}
+                className="grid grid-cols-[auto_1fr_160px_120px] items-center gap-4 px-6 py-3.5 hover:bg-[#f8fafc] transition-colors cursor-pointer"
               >
                 <Avatar name={u.name} avatar={u.avatar} />
                 <div className="min-w-0">
@@ -168,13 +167,6 @@ export default function UsersPage() {
                 <p className="text-xs text-[rgba(4,14,32,0.45)]">
                   {new Date(u.created_at).toLocaleDateString("vi-VN")}
                 </p>
-                <button
-                  onClick={() => router.push(`/admin/users/${u.id}`)}
-                  className="flex items-center gap-1 text-xs text-[#1b61c9] hover:text-[#1550a8] transition-colors font-medium"
-                >
-                  <ExternalLink size={12} />
-                  Xem
-                </button>
               </div>
             ))}
           </div>

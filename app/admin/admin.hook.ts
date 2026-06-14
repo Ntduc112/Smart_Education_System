@@ -35,6 +35,7 @@ export interface AdminUserDetail {
   email:      string;
   role:       "STUDENT" | "TEACHER" | "ADMIN";
   avatar:     string | null;
+  is_active:  boolean;
   created_at: string;
   _count:     { enrollments: number; courses: number; payments: number };
 }
@@ -50,7 +51,7 @@ export function useAdminUser(id: string) {
 export function useUpdateUser(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { name?: string; email?: string; role?: string }) =>
+    mutationFn: async (data: { name?: string; email?: string; password?: string; is_active?: boolean }) =>
       api.put(`/admin/users/${id}`, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "user", id] }),
   });
@@ -71,6 +72,7 @@ export interface EnrolledCourse {
   title:       string;
   thumbnail:   string;
   status:      "DRAFT" | "PUBLISHED";
+  price:       string;
   enrolled_at: string;
   instructor:  { name: string };
 }
@@ -171,5 +173,85 @@ export function useAdminStats() {
     queryKey: ["admin", "statistics"],
     queryFn:  async () => (await api.get<AdminStats>("/admin/statistics")).data,
     staleTime: 60_000,
+  });
+}
+
+// ── Course management ──────────────────────────────────────────────────────────
+
+export interface AdminCourseRow {
+  id:         string;
+  title:      string;
+  thumbnail:  string;
+  price:      string;
+  status:     "DRAFT" | "PUBLISHED";
+  level:      string;
+  created_at: string;
+  category:   { id: string; name: string };
+  instructor: { id: string; name: string; email: string };
+  _count:     { enrollments: number };
+}
+
+export interface AdminCoursesResult {
+  courses:    AdminCourseRow[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export function useAdminCourses(opts: { search: string; status: string; page: number }) {
+  const { search, status, page } = opts;
+  return useQuery<AdminCoursesResult>({
+    queryKey: ["admin", "courses", "list", { search, status, page }],
+    queryFn:  async () => {
+      const params = new URLSearchParams({ page: String(page), limit: "12" });
+      if (search.trim())   params.set("search", search.trim());
+      if (status !== "ALL") params.set("status", status);
+      return (await api.get<AdminCoursesResult>(`/admin/courses?${params}`)).data;
+    },
+  });
+}
+
+export interface AdminCourseDetail {
+  id:               string;
+  title:            string;
+  description:      string;
+  thumbnail:        string;
+  price:            string;
+  discount_percent: number | null;
+  level:            string;
+  status:           "DRAFT" | "PUBLISHED";
+  category_id:      string;
+  created_at:       string;
+  category:         { id: string; name: string };
+  instructor:       { id: string; name: string; email: string; avatar: string | null };
+  _count:           { enrollments: number; sections: number; reviews: number; payments: number };
+}
+
+export function useAdminCourse(id: string) {
+  return useQuery<AdminCourseDetail>({
+    queryKey: ["admin", "course", id],
+    queryFn:  async () => (await api.get<{ course: AdminCourseDetail }>(`/admin/courses/${id}`)).data.course,
+    enabled:  !!id,
+  });
+}
+
+export function useUpdateAdminCourse(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      title?: string; description?: string; thumbnail?: string;
+      price?: number; discount_percent?: number | null; level?: string;
+      category_id?: string; status?: "DRAFT" | "PUBLISHED";
+    }) => (await api.put<{ course: AdminCourseDetail }>(`/admin/courses/${id}`, data)).data.course,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(["admin", "course", id], updated);
+      queryClient.invalidateQueries({ queryKey: ["admin", "courses", "list"] });
+    },
+  });
+}
+
+export function useDeleteAdminCourse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => api.delete(`/admin/courses/${id}`),
+    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["admin", "courses", "list"] }),
   });
 }

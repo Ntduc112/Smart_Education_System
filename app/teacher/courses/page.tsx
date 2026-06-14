@@ -241,16 +241,31 @@ export default function TeacherCoursesPage() {
         style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
       >
         {isLoading ? (
-          <div className="animate-pulse divide-y divide-[#f0f2f5]">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-6 py-4">
-                <div className="w-20 h-14 bg-gray-100 rounded-lg shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 bg-gray-100 rounded" />
-                  <div className="h-3 w-1/3 bg-gray-100 rounded" />
+          <div className="animate-pulse">
+            {/* Header */}
+            <div className="flex items-center gap-4 px-6 py-3 border-b border-[#f0f2f5] bg-[#f8fafc]">
+              <div className="h-3 w-24 bg-[#eef1f5] rounded flex-1" />
+              <div className="h-3 w-20 bg-[#eef1f5] rounded" />
+              <div className="h-3 w-14 bg-[#eef1f5] rounded" />
+              <div className="h-3 w-16 bg-[#eef1f5] rounded" />
+              <div className="h-3 w-20 bg-[#eef1f5] rounded" />
+            </div>
+            {/* Rows */}
+            <div className="divide-y divide-[#f0f2f5]">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4">
+                  <div className="w-14 h-10 bg-[#eef1f5] rounded-lg shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-2/3 bg-[#eef1f5] rounded" />
+                    <div className="h-3 w-1/3 bg-[#f2f4f7] rounded" />
+                  </div>
+                  <div className="h-6 w-20 bg-[#f2f4f7] rounded-full" />
+                  <div className="h-4 w-8 bg-[#eef1f5] rounded" />
+                  <div className="h-4 w-14 bg-[#eef1f5] rounded" />
+                  <div className="h-3 w-20 bg-[#f2f4f7] rounded" />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
