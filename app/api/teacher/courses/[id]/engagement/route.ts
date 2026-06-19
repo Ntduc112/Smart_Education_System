@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
+import { computeEngagement } from "@/lib/analytics/engagement";
 
 // GET: tổng hợp mức độ tương tác theo từng bài học của một khóa học.
 // Dùng watch_percent + is_completed (đã thu sẵn) để chỉ ra bài học nào học viên
@@ -59,46 +60,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       select: { lesson_id: true, is_completed: true, watch_percent: true },
     });
 
-    // Gom theo lesson_id
-    const byLesson: Record<string, { sumWatch: number; completed: number; started: number }> = {};
-    for (const p of progresses) {
-      const agg = (byLesson[p.lesson_id] ??= { sumWatch: 0, completed: 0, started: 0 });
-      agg.sumWatch += p.watch_percent;
-      if (p.is_completed)        agg.completed += 1;
-      if (p.watch_percent > 0)   agg.started   += 1;
-    }
-
-    // Tính chỉ số theo thứ tự bài học; drop_from_prev = mức tụt completion so với bài trước
-    let prevCompletion: number | null = null;
-    const lessons = allLessons.map((lesson, index) => {
-      const agg = byLesson[lesson.id] ?? { sumWatch: 0, completed: 0, started: 0 };
-      const avgWatch       = Math.round(agg.sumWatch / totalEnrolled);
-      const completionRate = Math.round((agg.completed / totalEnrolled) * 100);
-      const dropFromPrev   = prevCompletion === null ? 0 : prevCompletion - completionRate;
-      prevCompletion = completionRate;
-
-      return {
-        lesson_id:       lesson.id,
-        lesson_title:    lesson.title,
-        chapter_title:   lesson.chapter_title,
-        position:        index + 1,
-        avg_watch_percent: avgWatch,
-        completion_rate:   completionRate,
-        students_started:  agg.started,
-        students_completed: agg.completed,
-        drop_from_prev:    dropFromPrev,
-      };
-    });
-
-    // Bài "mất hứng thú" nhất = avg_watch_percent thấp nhất
-    const worst = lessons.reduce((min, l) => (l.avg_watch_percent < min.avg_watch_percent ? l : min), lessons[0]);
+    const { lessons, worst_lesson_id } = computeEngagement(allLessons, progresses, totalEnrolled);
 
     return NextResponse.json({
       course:          { id: course.id, title: course.title },
       total_enrolled:  totalEnrolled,
       total_lessons:   allLessons.length,
       lessons,
-      worst_lesson_id: worst.lesson_id,
+      worst_lesson_id,
     });
   } catch (error) {
     console.error("Error fetching engagement:", error);
