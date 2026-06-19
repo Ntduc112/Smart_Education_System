@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { SignJWT } from "jose";
 import prisma from "@/prisma/prisma";
+import { verifyPassword } from "@/lib/auth/password";
+
+const MAX_ATTEMPTS = 5;
 
 const Schema = z.object({
     email: z.string().email(),
@@ -20,7 +23,7 @@ export async function POST(request: NextRequest) {
         const { email, code } = Schema.parse(body);
 
         const record = await prisma.passwordReset.findFirst({
-            where: { email, code, used: false },
+            where: { email, used: false },
             orderBy: { created_at: "desc" },
         });
 
@@ -28,7 +31,18 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Mã không hợp lệ hoặc đã hết hạn" }, { status: 400 });
         }
 
-        // Đánh dấu đã dùng
+        const isMatch = await verifyPassword(code, record.code_hash);
+        if (!isMatch) {
+            // Sai mã: tăng bộ đếm, vô hiệu record khi vượt ngưỡng (chặn brute-force)
+            const attempts = record.attempts + 1;
+            await prisma.passwordReset.update({
+                where: { id: record.id },
+                data:  { attempts, ...(attempts >= MAX_ATTEMPTS ? { used: true } : {}) },
+            });
+            return NextResponse.json({ error: "Mã không hợp lệ hoặc đã hết hạn" }, { status: 400 });
+        }
+
+        // Đúng mã → đánh dấu đã dùng
         await prisma.passwordReset.update({ where: { id: record.id }, data: { used: true } });
 
         // Tạo reset token (5 phút)

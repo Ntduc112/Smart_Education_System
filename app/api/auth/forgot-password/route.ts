@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomInt } from "crypto";
 import { z } from "zod";
 import prisma from "@/prisma/prisma";
 import { sendOtpEmail } from "@/lib/email/resend";
+import { hashPassword } from "@/lib/auth/password";
 
 const Schema = z.object({
     email: z.string().email("Email không hợp lệ"),
@@ -24,11 +26,12 @@ export async function POST(request: NextRequest) {
             data:  { used: true },
         });
 
-        const code       = String(Math.floor(100_000 + Math.random() * 900_000));
+        const code       = String(randomInt(100_000, 1_000_000)); // CSPRNG, max exclusive → 100000..999999
+        const code_hash  = await hashPassword(code);               // lưu hash, không lưu mã gốc
         const expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
 
-        await prisma.passwordReset.create({ data: { email, code, expires_at } });
-        await sendOtpEmail(email, code);
+        await prisma.passwordReset.create({ data: { email, code_hash, expires_at } });
+        await sendOtpEmail(email, code); // email gửi mã gốc cho người dùng
 
         return NextResponse.json({ message: "Nếu email tồn tại, mã sẽ được gửi." }, { status: 200 });
     } catch (error) {

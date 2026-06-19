@@ -54,7 +54,8 @@ model Enrollment {
 model PasswordReset {
     id         String   @id @default(uuid())
     email      String
-    code       String
+    code_hash  String
+    attempts   Int      @default(0)
     expires_at DateTime
     used       Boolean  @default(false)
     created_at DateTime @default(now())
