@@ -118,7 +118,7 @@ function QuizRow({ q }: { q: QuizResult }) {
         {noAttempt ? "—" : `${q.attempts} lần thi`}
       </span>
 
-      {/* Score */}
+      {/* Điểm cao nhất */}
       <div className="w-24 text-right shrink-0">
         {noAttempt ? (
           <span className="text-xs text-[rgba(4,14,32,0.35)]">Chưa làm</span>
@@ -131,9 +131,17 @@ function QuizRow({ q }: { q: QuizResult }) {
             >
               {q.best_score !== null ? `${q.best_score}` : "—"}
             </span>
-            <span className="text-xs text-[rgba(4,14,32,0.4)]">/{q.pass_score} qua</span>
+            {q.best_score !== null && (
+              <span className="text-xs text-[rgba(4,14,32,0.4)]">/100</span>
+            )}
           </>
         )}
+      </div>
+
+      {/* Điểm qua bài */}
+      <div className="w-24 text-right shrink-0">
+        <span className="text-sm font-semibold text-[rgba(4,14,32,0.55)]">{q.pass_score}</span>
+        <span className="text-xs text-[rgba(4,14,32,0.4)]">/100</span>
       </div>
 
       {/* Last attempt */}
@@ -295,6 +303,7 @@ function StudentRow({
                         <p className="flex-1 text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">Bài kiểm tra</p>
                         <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-20 text-center">Số lần thi</p>
                         <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-24 text-right">Điểm cao nhất</p>
+                        <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-24 text-right">Điểm qua bài</p>
                         <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-28 text-right">Lần thi cuối</p>
                       </div>
                       {student.quizzes.map((q) => <QuizRow key={q.quiz_id} q={q} />)}
@@ -428,6 +437,7 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
   const tabs = [
     { label: "Tiến độ học viên", href: `/teacher/courses/${id}/students` },
     { label: "Hiệu suất quiz",   href: `/teacher/courses/${id}/performance` },
+    { label: "Mức độ tương tác", href: `/teacher/courses/${id}/engagement` },
   ];
 
   const toggle = (uid: string) =>

@@ -84,6 +84,7 @@ export default function PerformancePage({ params }: { params: Promise<{ id: stri
   const tabs = [
     { label: "Tiến độ học viên", href: `/teacher/courses/${id}/students` },
     { label: "Hiệu suất quiz",   href: `/teacher/courses/${id}/performance` },
+    { label: "Mức độ tương tác", href: `/teacher/courses/${id}/engagement` },
   ];
 
   // Summary stats derived from data
