@@ -29,6 +29,9 @@ model User {
     questionReplies QuestionReply[]
     questionVotes   QuestionVote[]
     replyVotes      ReplyVote[]
+    posts           Post[]
+    postComments    PostComment[]
+    postLikes       PostLike[]
 }
 
 model RefreshToken {

@@ -1,4 +1,5 @@
 import { CoursesSection } from "./_components/CoursesSection";
+import { PostsFeedSection } from "./_components/PostsFeedSection";
 import { HeroSection } from "./_components/HeroSection";
 import { FeaturesSection } from "./_components/FeaturesSection";
 import { CTASection } from "./_components/CTASection";
@@ -59,6 +60,9 @@ export default function HomePage() {
 
       {/* Courses */}
       <CoursesSection />
+
+      {/* Community posts feed (chỉ hiện cho user đã đăng nhập) */}
+      <PostsFeedSection />
 
       {/* Features */}
       <FeaturesSection />

@@ -1,0 +1,46 @@
+enum post_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum post_media_type {
+  IMAGE
+  VIDEO
+}
+
+model Post {
+  id         String           @id @default(uuid())
+  author_id  String
+  author     User             @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  media_url  String?
+  media_type post_media_type?
+  status     post_status      @default(PENDING)
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+  comments   PostComment[]
+  likes      PostLike[]
+
+  @@index([status, created_at])
+}
+
+model PostComment {
+  id         String   @id @default(uuid())
+  post_id    String
+  post       Post     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  content    String
+  created_at DateTime @default(now())
+}
+
+model PostLike {
+  post_id String
+  post    Post   @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([post_id, user_id])
+}

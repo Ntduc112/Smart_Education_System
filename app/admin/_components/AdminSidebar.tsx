@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart2, LogOut, Loader2, ShieldCheck, LayoutDashboard, UsersRound, Tag, BookOpen, KeyRound, X, ChevronUp } from "lucide-react";
+import { BarChart2, LogOut, Loader2, ShieldCheck, LayoutDashboard, UsersRound, Tag, BookOpen, KeyRound, X, ChevronUp, FileText } from "lucide-react";
 import { Logo } from "@/app/_components/Logo";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -15,6 +15,7 @@ const NAV = [
   { href: "/admin/users",      label: "Người dùng", icon: UsersRound },
   { href: "/admin/courses",    label: "Khóa học",   icon: BookOpen },
   { href: "/admin/categories", label: "Danh mục",   icon: Tag },
+  { href: "/admin/posts",      label: "Bài viết",   icon: FileText },
   { href: "/admin/statistics", label: "Thống kê",   icon: BarChart2 },
 ];
 
