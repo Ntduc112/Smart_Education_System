@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Be_Vietnam_Pro } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import NextTopLoader from "nextjs-toploader";
@@ -7,6 +7,14 @@ import NextTopLoader from "nextjs-toploader";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// Display font — Be Vietnam Pro: modern, highly readable, built for Vietnamese.
+const display = Be_Vietnam_Pro({
+  variable: "--font-bvp",
+  subsets: ["vietnamese", "latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -25,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${inter.variable} h-full antialiased`}>
+    <html lang="vi" className={`${inter.variable} ${display.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-white text-[#181d26]">
         <NextTopLoader
           color="#2563eb"

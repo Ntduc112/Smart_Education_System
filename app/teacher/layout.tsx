@@ -1,12 +1,4 @@
-import { TeacherSidebar } from "./_components/TeacherSidebar";
-
+// Toàn bộ trang teacher dùng MainNavbar top-nav (mỗi page tự render) — không còn sidebar.
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
-      <TeacherSidebar />
-      <main className="flex-1 ml-60 min-h-screen">
-        {children}
-      </main>
-    </div>
-  );
+  return <>{children}</>;
 }

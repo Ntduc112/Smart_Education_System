@@ -93,7 +93,7 @@ const fetchCourse = async (id: string): Promise<CourseDetail> => {
 };
 
 const fetchCategories = async (): Promise<Category[]> => {
-  const { data } = await api.get<{ categories: Category[] }>("/admin/categories");
+  const { data } = await api.get<{ categories: Category[] }>("/categories");
   return data.categories;
 };
 

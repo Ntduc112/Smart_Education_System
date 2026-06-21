@@ -1,9 +1,9 @@
-import { CoursesSection } from "./_components/CoursesSection";
-import { PostsFeedSection } from "./_components/PostsFeedSection";
-import { HeroSection } from "./_components/HeroSection";
-import { FeaturesSection } from "./_components/FeaturesSection";
-import { CTASection } from "./_components/CTASection";
-import { DarkNavbar } from "./_components/DarkNavbar";
+import { CoursesSection } from "./_components/home/CoursesSection";
+import { PostsFeedSection } from "./_components/home/PostsFeedSection";
+import { HeroSection } from "./_components/home/HeroSection";
+import { FeaturesSection } from "./_components/home/FeaturesSection";
+import { CTASection } from "./_components/home/CTASection";
+import { MainNavbar } from "./_components/MainNavbar";
 import { Logo } from "./_components/Logo";
 import Link from "next/link";
 
@@ -15,45 +15,33 @@ const FOOTER_COLS = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen relative overflow-x-hidden" style={{ background: "linear-gradient(160deg, #eef4ff 0%, #f4f7ff 40%, #f0f5ff 100%)" }}>
+    <div className="min-h-screen relative overflow-x-hidden" style={{ background: "linear-gradient(170deg,#EFF5FE 0%,#F3F8FE 45%,#EAF2FD 100%)" }}>
 
-      {/* Ambient background orbs */}
+      {/* Soft floating blobs — same cozy-blue atmosphere as /student/home */}
       <div
-        className="fixed top-[-20%] left-[-10%] w-[700px] h-[700px] rounded-full pointer-events-none"
-        style={{
-          background: "rgba(59,130,246,0.08)",
-          filter: "blur(140px)",
-          animation: "breathe1 18s ease-in-out infinite",
-        }}
+        className="fixed top-[-12%] left-[-8%] w-[560px] h-[560px] rounded-full pointer-events-none"
+        style={{ background: "#BCD7FF", opacity: 0.5, filter: "blur(110px)", animation: "breathe1 20s ease-in-out infinite" }}
       />
       <div
-        className="fixed top-[50%] left-[60%] w-[500px] h-[500px] rounded-full pointer-events-none"
-        style={{
-          background: "rgba(99,102,241,0.07)",
-          filter: "blur(120px)",
-          animation: "breathe2 22s ease-in-out infinite",
-        }}
+        className="fixed top-[18%] right-[-10%] w-[480px] h-[480px] rounded-full pointer-events-none"
+        style={{ background: "#A7C8FF", opacity: 0.45, filter: "blur(110px)", animation: "breathe2 24s ease-in-out infinite" }}
       />
       <div
-        className="fixed top-[30%] left-[35%] w-[380px] h-[380px] rounded-full pointer-events-none"
-        style={{
-          background: "rgba(14,165,233,0.05)",
-          filter: "blur(100px)",
-          animation: "breathe1 15s ease-in-out infinite 2s",
-        }}
+        className="fixed bottom-[2%] left-[22%] w-[420px] h-[420px] rounded-full pointer-events-none"
+        style={{ background: "#CFE0FA", opacity: 0.5, filter: "blur(110px)", animation: "breathe1 17s ease-in-out infinite 2s" }}
       />
 
-      {/* Dot grid */}
+      {/* Subtle grain */}
       <div
-        className="fixed inset-0 pointer-events-none"
+        className="fixed inset-0 pointer-events-none opacity-[0.035] mix-blend-multiply"
         style={{
-          backgroundImage: "radial-gradient(circle, rgba(99,132,246,0.08) 1px, transparent 1px)",
-          backgroundSize: "32px 32px",
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
         }}
       />
 
       {/* Navbar */}
-      <DarkNavbar />
+      <MainNavbar />
 
       {/* Hero */}
       <HeroSection />
@@ -71,13 +59,13 @@ export default function HomePage() {
       <CTASection />
 
       {/* Footer */}
-      <footer className="border-t border-[#e4eaf5] py-12 px-8 bg-white/60">
+      <footer className="relative border-t border-[#DCE6F4] py-12 px-8 bg-white/70 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between gap-10 pb-8 border-b border-[#e8edf5]">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Logo size={26} />
-                <span className="font-semibold text-[#181d26] text-sm">SmartEdu</span>
+                <Logo size={28} />
+                <span className="font-display font-bold text-[#181d26] text-lg tracking-tight">SmartEdu</span>
               </div>
               <p className="text-sm text-[rgba(4,14,32,0.45)] max-w-xs leading-relaxed">
                 Nền tảng học tập thông minh, cá nhân hóa trải nghiệm học của bạn.

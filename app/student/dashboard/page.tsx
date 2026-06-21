@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Logo } from "@/app/_components/Logo";
-import { SearchBar } from "@/app/_components/SearchBar";
-import { UserMenu } from "@/app/_components/UserMenu";
+import { MainNavbar } from "@/app/_components/MainNavbar";
 import { motion } from "framer-motion";
 import { useMe, useStudentCourses, useCoursesProgress, useStreak, StudentCourse, CourseProgress } from "./dashboard.hook";
 
@@ -299,28 +297,8 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* ── Navbar ── */}
-      <motion.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35, ease: "easeOut" as const }}
-        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10"
-      >
-        <div className="w-full px-6 h-16 flex items-center">
-          <div className="flex-1 min-w-0">
-            <Link href="/" className="flex items-center gap-2 w-fit">
-              <Logo size={32} />
-              <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
-            </Link>
-          </div>
-          <div style={{ width: 520, flexShrink: 0, transform: "translateX(-10px)" }}>
-            <SearchBar />
-          </div>
-          <div className="flex-1 min-w-0 flex justify-end">
-            <UserMenu user={user ?? null} />
-          </div>
-        </div>
-      </motion.header>
+      {/* ── Navbar (chung toàn app) ── */}
+      <MainNavbar />
 
       {/* ── Main ── */}
       <main className="max-w-6xl mx-auto px-6 py-10">

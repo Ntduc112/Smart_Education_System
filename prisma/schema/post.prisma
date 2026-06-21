@@ -41,6 +41,7 @@ model PostLike {
   post    Post   @relation(fields: [post_id], references: [id], onDelete: Cascade)
   user_id String
   user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  value   Int    @default(1) // 1 = like, -1 = dislike
 
   @@id([post_id, user_id])
 }

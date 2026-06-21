@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import api from "@/lib/axios";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -21,8 +22,10 @@ export interface Post {
     status: "PENDING" | "APPROVED" | "REJECTED";
     created_at: string;
     author: PostAuthor;
-    _count: { likes: number; comments: number };
-    likedByMe: boolean;
+    _count: { comments: number };
+    likeCount: number;
+    dislikeCount: number;
+    myReaction: 1 | -1 | null;
 }
 
 export interface PostComment {
@@ -66,27 +69,33 @@ export function useCreatePost() {
     });
 }
 
-// Upload media lên R2 qua presigned PUT. Trả {publicUrl, mediaType}.
-export async function uploadPostMedia(file: File): Promise<{ publicUrl: string; mediaType: MediaType }> {
+// Upload media lên R2 qua presigned PUT (browser PUT thẳng, có progress). Trả {publicUrl, mediaType}.
+export async function uploadPostMedia(
+    file: File,
+    onProgress?: (pct: number) => void
+): Promise<{ publicUrl: string; mediaType: MediaType }> {
     const { data } = await api.get<{ uploadUrl: string; publicUrl: string; mediaType: MediaType }>(
         `/posts/upload/presigned?contentType=${encodeURIComponent(file.type)}`
     );
-    const res = await fetch(data.uploadUrl, {
-        method: "PUT",
-        body: file,
+    await axios.put(data.uploadUrl, file, {
         headers: { "Content-Type": file.type },
+        onUploadProgress: (e) => {
+            if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+        },
     });
-    if (!res.ok) throw new Error("Upload thất bại");
     return { publicUrl: data.publicUrl, mediaType: data.mediaType };
 }
 
 // ── Like ─────────────────────────────────────────────────────────────────────
 
-export function useToggleLike() {
+export function useReactPost() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: async (postId: string) =>
-            (await api.post<{ liked: boolean; likeCount: number }>(`/posts/${postId}/like`)).data,
+        mutationFn: async ({ postId, value }: { postId: string; value: 1 | -1 }) =>
+            (await api.post<{ myReaction: 1 | -1 | null; likeCount: number; dislikeCount: number }>(
+                `/posts/${postId}/like`,
+                { value }
+            )).data,
         onSuccess: () => qc.invalidateQueries({ queryKey: ["posts", "feed"] }),
     });
 }

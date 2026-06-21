@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, use } from "react";
 import { motion } from "framer-motion";
 import {
   Plus, Save,
-  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon,
+  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings,
 } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
 import {
@@ -839,13 +839,11 @@ function EditSkeleton() {
     <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
       <Atmosphere />
       <MainNavbar />
-      <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
-        <div
-          className="flex overflow-hidden rounded-3xl bg-white animate-pulse"
-          style={{ height: "calc(100vh - 9rem)", border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
-        >
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <div className="flex animate-pulse flex-col gap-6 lg:flex-row lg:items-start">
       {/* Left sidebar */}
-      <div className="w-72 shrink-0 bg-white border-r border-[#DCE6F4] flex flex-col">
+      <div className="flex w-full flex-col overflow-hidden rounded-3xl bg-white lg:w-72 lg:shrink-0"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
         <div className="px-4 py-4 border-b border-[#DCE6F4] space-y-3">
           <div className="h-3 w-28 bg-[#E2ECF9] rounded" />
           <div className="h-9 w-full bg-[#E2ECF9] rounded-lg" />
@@ -870,8 +868,9 @@ function EditSkeleton() {
       </div>
 
       {/* Right editor */}
-      <div className="flex-1 overflow-y-auto bg-[#F4F8FE]">
-        <div className="max-w-xl mx-auto px-8 py-8 space-y-6">
+      <div className="flex-1 rounded-3xl bg-white p-7"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
+        <div className="max-w-xl space-y-6">
           <div className="h-5 w-44 bg-[#E2ECF9] rounded" />
           <div className="space-y-2">
             <div className="h-3 w-24 bg-[#E2ECF9] rounded" />
@@ -950,31 +949,49 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
     <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
       <Atmosphere />
       <MainNavbar />
-      <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
-        <div
-          className="flex overflow-hidden rounded-3xl bg-white"
-          style={{ height: "calc(100vh - 9rem)", border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
-        >
-      {/* ── Left panel: Outline ── */}
-      <div className="w-72 shrink-0 bg-white border-r border-[#DCE6F4] flex flex-col overflow-hidden">
+      <main className="mx-auto max-w-6xl px-6 py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <nav className="mb-1.5 flex items-center gap-1.5 text-sm">
+              <Link href="/teacher/courses" className="transition-colors hover:text-[#1b61c9]" style={{ color: C.inkFaint }}>Khóa học</Link>
+              <span style={{ color: C.inkFaint }}>/</span>
+              <span className="font-medium" style={{ color: C.inkSoft }}>Chỉnh sửa</span>
+            </nav>
+            <div className="flex items-center gap-3">
+              <h1 className="font-display text-2xl font-semibold" style={{ color: C.ink }}>{course.title}</h1>
+              <span className="rounded-full px-2.5 py-1 text-xs font-semibold"
+                style={isPublished ? { background: "rgba(14,159,110,0.12)", color: C.emerald } : { background: "#EAF1FC", color: C.inkSoft }}>
+                {isPublished ? "Đã công bố" : "Nháp"}
+              </span>
+            </div>
+          </div>
+          <Link href={`/courses/${id}`} target="_blank"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40"
+            style={{ border: `1px solid ${C.border}`, color: C.ink }}>
+            Xem trang khóa học
+          </Link>
+        </div>
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      {/* ── Left panel: Outline (card riêng) ── */}
+      <aside className="flex w-full flex-col overflow-hidden rounded-3xl bg-white lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:w-72 lg:shrink-0"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
         {/* Top bar */}
         <div className="px-4 py-4 border-b border-[#DCE6F4]">
-          <Link
-            href="/teacher/courses"
-            className="group inline-flex items-center gap-1 text-xs text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors mb-3"
-          >
-            <ChevronLeft size={12} className="transition-transform group-hover:-translate-x-0.5" />
-            Danh sách khóa học
-          </Link>
+          <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: C.inkFaint }}>
+            Nội dung khóa học
+          </p>
           <button
             onClick={() => setSelection({ type: "info" })}
-            className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`flex w-full items-center gap-2 text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               selection.type === "info"
                 ? "bg-[#1b61c9]/8 text-[#1b61c9]"
                 : "text-[rgba(4,14,32,0.7)] hover:bg-[#F4F8FE]"
             }`}
           >
-            <span className="line-clamp-1">{course.title}</span>
+            <Settings size={14} className="shrink-0" />
+            <span className="line-clamp-1">Thông tin khóa học</span>
           </button>
         </div>
 
@@ -1005,11 +1022,12 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             {isPublished ? "Đang công bố" : "Công bố khóa học"}
           </button>
         </div>
-      </div>
+      </aside>
 
-      {/* ── Right panel: Editor ── */}
-      <div className="flex-1 overflow-y-auto bg-[#F4F8FE]">
-        <div className="max-w-xl mx-auto px-8 py-8">
+      {/* ── Right panel: Editor (card riêng) ── */}
+      <div className="flex-1 rounded-3xl bg-white p-7"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
+        <div className="max-w-xl">
           {selection.type === "info" && (
             <CourseInfoPanel courseId={id} course={course} categories={categories} />
           )}

@@ -7,9 +7,31 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { ImageIcon, ChevronLeft } from "lucide-react";
 import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
+import { MainNavbar } from "@/app/_components/MainNavbar";
 import api from "@/lib/axios";
+
+// ── Palette (cozy-blue, đồng bộ teacher/home) ────────────────────────────────
+const C = { canvas:"#EFF5FE", ink:"#181d26", inkSoft:"rgba(4,14,32,0.62)", inkFaint:"rgba(4,14,32,0.40)", border:"#DCE6F4", blue:"#1b61c9", blueDark:"#254fad", sky:"#2E8BE6", emerald:"#0E9F6E", violet:"#7C5CFC", rose:"#E5484D" };
+function Atmosphere() {
+  const blobs = [
+    { c: "#BCD7FF", s: 460, top: "-8%", left: "-6%", dur: 22 },
+    { c: "#A7C8FF", s: 400, top: "12%", right: "-8%", dur: 26 },
+    { c: "#CFE0FA", s: 360, bottom: "-10%", left: "18%", dur: 30 },
+  ];
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10" aria-hidden>
+      {blobs.map((b, i) => (
+        <motion.div key={i} className="absolute rounded-full"
+          style={{ width: b.s, height: b.s, background: b.c, opacity: 0.28, filter: "blur(90px)", top: b.top, left: b.left, right: b.right, bottom: b.bottom }}
+          animate={{ y: [0, -26, 0], x: [0, 16, 0] }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.5 }} />
+      ))}
+    </div>
+  );
+}
 
 const schema = z.object({
   title:       z.string().min(1, "Tên khóa học là bắt buộc"),
@@ -41,7 +63,7 @@ function FieldError({ message }: { message?: string }) {
 
 function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNode }) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-[#181d26] mb-1.5 tracking-[0.08px]">
+    <label htmlFor={htmlFor} className="block text-sm font-medium mb-1.5 tracking-[0.08px]" style={{ color: C.inkSoft }}>
       {children}
     </label>
   );
@@ -49,7 +71,7 @@ function Label({ htmlFor, children }: { htmlFor: string; children: React.ReactNo
 
 const inputCls = (hasError?: boolean) =>
   `w-full px-4 py-2.5 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${
-    hasError ? "border-red-400 focus:border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"
+    hasError ? "border-red-400 focus:border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"
   }`;
 
 export default function NewCoursePage() {
@@ -57,7 +79,7 @@ export default function NewCoursePage() {
 
   const { data: categoriesData } = useQuery<{ categories: Category[] }>({
     queryKey: ["categories"],
-    queryFn:  async () => (await api.get("/admin/categories")).data,
+    queryFn:  async () => (await api.get("/categories")).data,
   });
   const categories = categoriesData?.categories ?? [];
 
@@ -113,23 +135,26 @@ export default function NewCoursePage() {
   });
 
   return (
-    <div className="px-8 py-8 max-w-2xl mx-auto">
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
+      <main className="mx-auto max-w-3xl px-6 py-10">
       {/* Header */}
       <div className="mb-8">
         <Breadcrumb items={[
           { label: "Khóa học", href: "/teacher/courses" },
           { label: "Tạo khóa học mới" },
         ]} />
-        <h1 className="text-2xl font-semibold text-[#181d26]">Tạo khóa học mới</h1>
-        <p className="text-sm text-[rgba(4,14,32,0.5)] mt-1">
+        <h1 className="font-display text-3xl font-semibold" style={{ color: C.ink }}>Tạo khóa học mới</h1>
+        <p className="text-sm mt-1" style={{ color: C.inkSoft }}>
           Điền thông tin cơ bản — thêm nội dung chi tiết ở bước tiếp theo
         </p>
       </div>
 
       {/* Card */}
       <div
-        className="bg-white rounded-2xl border border-[#e0e2e6] p-7"
-        style={{ boxShadow: "rgba(15,48,106,0.06) 0px 0px 0px 1px, rgba(15,48,106,0.04) 0px 8px 24px" }}
+        className="bg-white rounded-3xl p-7"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
       >
         {createCourse.isError && (
           <div className="mb-6 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
@@ -169,22 +194,22 @@ export default function NewCoursePage() {
             <input type="hidden" {...register("thumbnail")} />
             <input ref={thumbnailRef} type="file" accept="image/*" className="hidden" onChange={handleThumbChange} />
             {uploadThumbnail.isPending ? (
-              <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+              <div className="px-4 py-4 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE] space-y-2.5">
                 <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
                   <span>Đang tải ảnh lên...</span>
                   <span className="font-medium text-[#1b61c9]">{thumbProgress}%</span>
                 </div>
-                <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+                <div className="h-1.5 bg-[#E2ECF9] rounded-full overflow-hidden">
                   <div className="h-full bg-[#1b61c9] rounded-full transition-all duration-300" style={{ width: `${thumbProgress}%` }} />
                 </div>
               </div>
             ) : thumbnailUrl ? (
               <div className="space-y-2">
-                <img src={thumbnailUrl} alt="thumbnail preview" className="w-full h-44 object-cover rounded-xl border border-[#e0e2e6]" />
+                <img src={thumbnailUrl} alt="thumbnail preview" className="w-full h-44 object-cover rounded-xl border border-[#DCE6F4]" />
                 <button
                   type="button"
                   onClick={() => thumbnailRef.current?.click()}
-                  className="w-full py-1.5 text-xs font-medium border border-[#e0e2e6] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+                  className="w-full py-1.5 text-xs font-medium border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#F4F8FE] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
                 >
                   Thay thế ảnh
                 </button>
@@ -193,9 +218,9 @@ export default function NewCoursePage() {
               <button
                 type="button"
                 onClick={() => thumbnailRef.current?.click()}
-                className="w-full flex flex-col items-center gap-3 py-8 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
+                className="w-full flex flex-col items-center gap-3 py-8 border border-dashed border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
               >
-                <div className="w-11 h-11 rounded-2xl bg-[#f0f4fb] flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-[#EAF1FC] flex items-center justify-center">
                   <ImageIcon size={20} className="text-[#1b61c9]" />
                 </div>
                 <div className="text-center">
@@ -207,7 +232,7 @@ export default function NewCoursePage() {
             <FieldError message={errors.thumbnail?.message} />
           </div>
 
-          <div className="border-t border-[#f0f2f5]" />
+          <div className="border-t border-[#EAF1FC]" />
 
           {/* Category + Level row */}
           <div className="grid grid-cols-2 gap-4">
@@ -264,7 +289,7 @@ export default function NewCoursePage() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-1 border-t border-[#f0f2f5]">
+          <div className="flex items-center justify-end gap-3 pt-1 border-t border-[#EAF1FC]">
             <Link
               href="/teacher/courses"
               className="px-5 py-2.5 text-sm font-medium text-[rgba(4,14,32,0.6)] hover:text-[#181d26] transition-colors"
@@ -282,6 +307,7 @@ export default function NewCoursePage() {
           </div>
         </form>
       </div>
+      </main>
     </div>
   );
 }

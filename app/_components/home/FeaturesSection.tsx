@@ -23,7 +23,8 @@ function FeatureCard({ feat, index }: { feat: typeof FEATURES[0]; index: number 
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.55, delay: (index % 3) * 0.08, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -5 }}
-      className="group relative rounded-2xl p-6 border border-[#e4eaf5] bg-white overflow-hidden transition-colors hover:bg-[#f8faff] hover:border-blue-100 cursor-default"
+      className="group relative rounded-3xl p-6 border border-[#DCE6F4] bg-white overflow-hidden transition-colors hover:border-blue-200 cursor-default"
+      style={{ boxShadow: "rgba(27,60,120,0.05) 0px 8px 24px" }}
     >
       {/* Colored glow on hover */}
       <div
@@ -40,7 +41,7 @@ function FeatureCard({ feat, index }: { feat: typeof FEATURES[0]; index: number 
         {feat.icon}
       </motion.div>
 
-      <h3 className="relative text-base font-semibold text-[#181d26] mb-2">{feat.title}</h3>
+      <h3 className="relative font-display text-lg font-semibold text-[#181d26] mb-2">{feat.title}</h3>
       <p className="relative text-sm text-[rgba(4,14,32,0.60)] leading-relaxed">{feat.desc}</p>
     </motion.div>
   );
@@ -51,7 +52,7 @@ export function FeaturesSection() {
   const inView = useInView(headingRef, { once: true, margin: "-80px" });
 
   return (
-    <section id="features" className="py-24 px-8 bg-[#f0f4ff]/50">
+    <section id="features" className="relative py-24 px-8">
       <div className="max-w-5xl mx-auto">
         <motion.div
           ref={headingRef}
@@ -60,11 +61,11 @@ export function FeaturesSection() {
           transition={{ duration: 0.55, ease: "easeOut" }}
           className="text-center mb-16"
         >
-          <span className="inline-block text-xs font-semibold text-blue-600 uppercase tracking-widest mb-4">
+          <span className="inline-block text-xs font-semibold text-[#1b61c9] uppercase tracking-widest mb-4">
             Tính năng nổi bật
           </span>
-          <h2 className="text-4xl font-semibold text-[#181d26] mb-3">Tại sao chọn SmartEdu?</h2>
-          <p className="text-[rgba(4,14,32,0.55)]">Tất cả những gì bạn cần để học tập hiệu quả</p>
+          <h2 className="font-display text-4xl md:text-5xl font-light text-[#181d26] mb-3">Tại sao chọn <span className="font-semibold text-[#1b61c9]">SmartEdu?</span></h2>
+          <p className="text-[rgba(4,14,32,0.6)]">Tất cả những gì bạn cần để học tập hiệu quả</p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

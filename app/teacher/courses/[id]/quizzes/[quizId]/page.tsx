@@ -2,9 +2,11 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Plus, ChevronLeft, CheckCircle2, Pencil, X, Check, GripVertical } from "lucide-react";
 import api from "@/lib/axios";
+import { MainNavbar } from "@/app/_components/MainNavbar";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from "@dnd-kit/core";
@@ -23,12 +25,46 @@ interface Option   { id: string; content: string; is_correct: boolean; order: nu
 interface Question { id: string; content: string; type: QuestionType; points: number; order: number; sample_answer?: string | null; options: Option[] }
 interface Quiz     { id: string; title: string; pass_score: number; time_limit?: number | null; questions: Question[] }
 
-const inputCls = "w-full px-3 py-2 text-sm rounded-xl border border-[#e0e2e6] bg-white focus:outline-none focus:ring-2 focus:ring-[#1b61c9]/30 focus:border-[#1b61c9] transition-all";
+// ── Palette (đồng bộ teacher/home) ────────────────────────────────────────────
+const C = {
+  canvas: "#EFF5FE",
+  ink: "#181d26",
+  inkSoft: "rgba(4,14,32,0.62)",
+  inkFaint: "rgba(4,14,32,0.40)",
+  border: "#DCE6F4",
+  blue: "#1b61c9",
+  blueDark: "#254fad",
+  sky: "#2E8BE6",
+  emerald: "#0E9F6E",
+  violet: "#7C5CFC",
+  rose: "#E5484D",
+};
+
+// ── Atmosphere (đồng bộ teacher/home) ─────────────────────────────────────────
+function Atmosphere() {
+  const blobs = [
+    { c: "#BCD7FF", s: 460, top: "-8%", left: "-6%", dur: 22 },
+    { c: "#A7C8FF", s: 400, top: "12%", right: "-8%", dur: 26 },
+    { c: "#CFE0FA", s: 360, bottom: "-10%", left: "18%", dur: 30 },
+  ];
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10" aria-hidden>
+      {blobs.map((b, i) => (
+        <motion.div key={i} className="absolute rounded-full"
+          style={{ width: b.s, height: b.s, background: b.c, opacity: 0.28, filter: "blur(90px)", top: b.top, left: b.left, right: b.right, bottom: b.bottom }}
+          animate={{ y: [0, -26, 0], x: [0, 16, 0] }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.5 }} />
+      ))}
+    </div>
+  );
+}
+
+const inputCls = "w-full px-3 py-2 text-sm rounded-xl border border-[#DCE6F4] bg-white focus:outline-none focus:ring-2 focus:ring-[#1b61c9]/30 focus:border-[#1b61c9] transition-all";
 
 const TYPE_META: Record<QuestionType, { label: string; pill: string }> = {
-  MCQ:          { label: "Trắc nghiệm", pill: "bg-[#eff4ff] text-[#1b61c9]" },
+  MCQ:          { label: "Trắc nghiệm", pill: "bg-[#EAF1FC] text-[#1b61c9]" },
   TRUE_FALSE:   { label: "Đúng/Sai",    pill: "bg-amber-50 text-amber-600" },
-  SHORT_ANSWER: { label: "Tự luận",     pill: "bg-purple-50 text-purple-600" },
+  SHORT_ANSWER: { label: "Tự luận",     pill: "bg-[rgba(124,92,252,0.12)] text-[#7C5CFC]" },
 };
 
 // ── Hooks ────────────────────────────────────────────────────────────────────
@@ -140,11 +176,11 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
   };
 
   return (
-    <div className="p-5 border border-[#1b61c9]/25 rounded-2xl bg-[#f8fafc] space-y-4">
+    <div className="p-5 border border-[#1b61c9]/25 rounded-2xl bg-[#EAF1FC] space-y-4">
       <div className="flex gap-2">
         {(["MCQ", "TRUE_FALSE", "SHORT_ANSWER"] as const).map(t => (
           <button key={t} onClick={() => setType(t)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${type === t ? "bg-[#1b61c9] text-white" : "bg-white border border-[#e0e2e6] text-[rgba(4,14,32,0.6)] hover:border-[#1b61c9]/40"}`}>
+            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${type === t ? "bg-[#1b61c9] text-white" : "bg-white border border-[#DCE6F4] text-[rgba(4,14,32,0.6)] hover:border-[#1b61c9]/40"}`}>
             {TYPE_META[t].label}
           </button>
         ))}
@@ -165,7 +201,7 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
           {mcqOptions.map((opt, i) => (
             <div key={i} className="flex items-center gap-2">
               <button onClick={() => setMcqOptions(mcqOptions.map((o, j) => ({ ...o, is_correct: j === i })))}
-                className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${opt.is_correct ? "border-[#1b61c9] bg-[#1b61c9]" : "border-[#c0c8d5]"}`} />
+                className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${opt.is_correct ? "border-[#1b61c9] bg-[#1b61c9]" : "border-[#C5D4EA]"}`} />
               <input className={inputCls} placeholder={`Lựa chọn ${i + 1}`} value={opt.content}
                 onChange={e => setMcqOptions(mcqOptions.map((o, j) => j === i ? { ...o, content: e.target.value } : o))} />
             </div>
@@ -180,7 +216,7 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
 
       <div className="flex gap-2 pt-1">
         <button onClick={onClose}
-          className="flex-1 py-2 text-sm border border-[#e0e2e6] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors">
+          className="flex-1 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors">
           Hủy
         </button>
         <button onClick={handleSubmit} disabled={!content.trim() || addQuestion.isPending}
@@ -218,7 +254,7 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
   };
 
   return (
-    <div className="p-5 border border-[#1b61c9]/25 rounded-2xl bg-[#f8fafc] space-y-4">
+    <div className="p-5 border border-[#1b61c9]/25 rounded-2xl bg-[#EAF1FC] space-y-4">
       <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Nội dung câu hỏi"
         value={content} onChange={e => setContent(e.target.value)} />
 
@@ -234,7 +270,7 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
           {options.map((opt, i) => (
             <div key={i} className="flex items-center gap-2">
               <button onClick={() => setCorrect(i)}
-                className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${opt.is_correct ? "border-[#1b61c9] bg-[#1b61c9]" : "border-[#c0c8d5]"}`} />
+                className={`shrink-0 w-4 h-4 rounded-full border-2 transition-colors ${opt.is_correct ? "border-[#1b61c9] bg-[#1b61c9]" : "border-[#C5D4EA]"}`} />
               <input className={inputCls} value={opt.content} disabled={q.type === "TRUE_FALSE"}
                 placeholder={`Lựa chọn ${i + 1}`}
                 onChange={e => setOptions(options.map((o, j) => j === i ? { ...o, content: e.target.value } : o))} />
@@ -250,7 +286,7 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
 
       <div className="flex gap-2 pt-1">
         <button onClick={onClose}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm border border-[#e0e2e6] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors">
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors">
           <X size={14} /> Hủy
         </button>
         <button onClick={handleSave} disabled={!content.trim() || updateQuestion.isPending}
@@ -279,7 +315,7 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
       className={`p-5 bg-white border rounded-2xl space-y-3.5 transition-colors ${
-        isDragging ? "outline-2 outline-dashed outline-[#1b61c9] bg-[#1b61c9]/5 border-transparent" : "border-[#e0e2e6] hover:border-[#c0c8d5]"
+        isDragging ? "outline-2 outline-dashed outline-[#1b61c9] bg-[#1b61c9]/5 border-transparent" : "border-[#DCE6F4] hover:border-[#C5D4EA]"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -292,18 +328,18 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
           >
             <GripVertical size={16} />
           </button>
-          <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-[#f0f4ff] text-xs font-semibold text-[#1b61c9]">
+          <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-[#EAF1FC] text-xs font-semibold text-[#1b61c9]">
             {index + 1}
           </span>
           <p className="text-sm text-[#181d26] leading-relaxed pt-0.5">{q.content}</p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button onClick={() => setEditing(true)}
-            className="p-1.5 text-[rgba(4,14,32,0.35)] hover:text-[#1b61c9] hover:bg-[#f0f4ff] rounded-lg transition-colors">
+            className="p-1.5 text-[rgba(4,14,32,0.35)] hover:text-[#1b61c9] hover:bg-[#EAF1FC] rounded-lg transition-colors">
             <Pencil size={14} />
           </button>
           <button onClick={() => setShowDelete(true)} disabled={deleteQuestion.isPending}
-            className="p-1.5 text-[rgba(4,14,32,0.35)] hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+            className="p-1.5 text-[rgba(4,14,32,0.35)] hover:text-[#E5484D] hover:bg-[rgba(229,72,77,0.10)] rounded-lg transition-colors">
             <Trash2 size={14} />
           </button>
         </div>
@@ -327,11 +363,11 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
         <div className="space-y-1.5 pl-9">
           {q.options.map(opt => (
             <div key={opt.id}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${opt.is_correct ? "bg-green-50 border border-green-200" : "border border-transparent"}`}>
+              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg ${opt.is_correct ? "bg-[rgba(14,159,110,0.10)] border border-[rgba(14,159,110,0.30)]" : "border border-transparent"}`}>
               {opt.is_correct
-                ? <CheckCircle2 size={14} className="text-green-500 shrink-0" />
-                : <span className="w-3.5 h-3.5 rounded-full border border-[#c0c8d5] shrink-0" />}
-              <span className={`text-xs ${opt.is_correct ? "font-medium text-green-700" : "text-[rgba(4,14,32,0.6)]"}`}>{opt.content}</span>
+                ? <CheckCircle2 size={14} className="text-[#0E9F6E] shrink-0" />
+                : <span className="w-3.5 h-3.5 rounded-full border border-[#C5D4EA] shrink-0" />}
+              <span className={`text-xs ${opt.is_correct ? "font-medium text-[#0E9F6E]" : "text-[rgba(4,14,32,0.6)]"}`}>{opt.content}</span>
             </div>
           ))}
         </div>
@@ -348,47 +384,55 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
 
 function QuizSkeleton() {
   return (
-    <div className="px-8 py-10 max-w-2xl mx-auto space-y-7 animate-pulse">
-      {/* Header */}
-      <div className="space-y-3">
-        <div className="h-3.5 w-36 bg-[#eef1f5] rounded" />
-        <div className="h-7 w-64 bg-[#e7eaef] rounded" />
-        <div className="h-3.5 w-48 bg-[#eef1f5] rounded" />
-      </div>
-
-      {/* Quiz meta card */}
-      <div className="p-5 bg-white border border-[#e9ecf1] rounded-2xl flex items-center justify-between">
-        <div className="space-y-2">
-          <div className="h-4 w-40 bg-[#e7eaef] rounded" />
-          <div className="h-3 w-24 bg-[#eef1f5] rounded" />
-        </div>
-        <div className="h-8 w-8 bg-[#eef1f5] rounded-lg" />
-      </div>
-
-      {/* Questions */}
-      <div className="space-y-3.5">
-        <div className="flex items-center justify-between">
-          <div className="h-4 w-28 bg-[#e7eaef] rounded" />
-          <div className="h-3 w-20 bg-[#eef1f5] rounded" />
-        </div>
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="p-5 bg-white border border-[#e9ecf1] rounded-2xl space-y-3.5">
-            <div className="flex items-start gap-3">
-              <div className="h-6 w-6 bg-[#eef1f5] rounded-full shrink-0" />
-              <div className="h-4 w-4/5 bg-[#eef1f5] rounded" />
-            </div>
-            <div className="flex items-center gap-2 pl-9">
-              <div className="h-4 w-20 bg-[#f2f4f7] rounded-md" />
-              <div className="h-3 w-12 bg-[#f2f4f7] rounded" />
-            </div>
-            <div className="space-y-1.5 pl-9">
-              <div className="h-7 w-2/3 bg-[#f2f4f7] rounded-lg" />
-              <div className="h-7 w-1/2 bg-[#f2f4f7] rounded-lg" />
-            </div>
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
+      <main className="mx-auto max-w-5xl px-6 py-10 space-y-6">
+        <div className="max-w-2xl mx-auto space-y-7 animate-pulse">
+          {/* Header */}
+          <div className="space-y-3">
+            <div className="h-3.5 w-36 bg-[#E2ECF9] rounded" />
+            <div className="h-7 w-64 bg-[#D6E3F6] rounded" />
+            <div className="h-3.5 w-48 bg-[#E2ECF9] rounded" />
           </div>
-        ))}
-        <div className="h-12 w-full bg-[#f2f4f7] border border-dashed border-[#e0e2e6] rounded-2xl" />
-      </div>
+
+          {/* Quiz meta card */}
+          <div className="p-5 bg-white rounded-2xl flex items-center justify-between"
+            style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.05) 0px 6px 18px" }}>
+            <div className="space-y-2">
+              <div className="h-4 w-40 bg-[#D6E3F6] rounded" />
+              <div className="h-3 w-24 bg-[#E2ECF9] rounded" />
+            </div>
+            <div className="h-8 w-8 bg-[#E2ECF9] rounded-lg" />
+          </div>
+
+          {/* Questions */}
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="h-4 w-28 bg-[#D6E3F6] rounded" />
+              <div className="h-3 w-20 bg-[#E2ECF9] rounded" />
+            </div>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="p-5 bg-white rounded-2xl space-y-3.5"
+                style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.05) 0px 6px 18px" }}>
+                <div className="flex items-start gap-3">
+                  <div className="h-6 w-6 bg-[#E2ECF9] rounded-full shrink-0" />
+                  <div className="h-4 w-4/5 bg-[#E2ECF9] rounded" />
+                </div>
+                <div className="flex items-center gap-2 pl-9">
+                  <div className="h-4 w-20 bg-[#EAF1FC] rounded-md" />
+                  <div className="h-3 w-12 bg-[#EAF1FC] rounded" />
+                </div>
+                <div className="space-y-1.5 pl-9">
+                  <div className="h-7 w-2/3 bg-[#EAF1FC] rounded-lg" />
+                  <div className="h-7 w-1/2 bg-[#EAF1FC] rounded-lg" />
+                </div>
+              </div>
+            ))}
+            <div className="h-12 w-full bg-[#EAF1FC] border border-dashed rounded-2xl" style={{ borderColor: C.border }} />
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
@@ -427,7 +471,11 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
   const totalPoints = quiz.questions.reduce((s, q) => s + q.points, 0);
 
   return (
-    <div className="px-8 py-10 max-w-2xl mx-auto space-y-7">
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
+      <main className="mx-auto max-w-5xl px-6 py-10 space-y-6">
+        <div className="max-w-2xl mx-auto space-y-7">
       {/* Header */}
       <div>
         <Link href={`/teacher/courses/${courseId}/edit`}
@@ -435,14 +483,15 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
           <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
           Chỉnh sửa khóa học
         </Link>
-        <h1 className="text-2xl font-semibold text-[#181d26]">Chỉnh sửa bài kiểm tra</h1>
+        <h1 className="font-display text-3xl font-semibold text-[#181d26]">Chỉnh sửa bài kiểm tra</h1>
         <p className="text-sm text-[rgba(4,14,32,0.45)] mt-1">
           {quiz.questions.length} câu hỏi · {totalPoints} điểm · đạt từ {quiz.pass_score}%
         </p>
       </div>
 
       {/* Quiz meta */}
-      <div className="p-5 bg-white border border-[#e0e2e6] rounded-2xl">
+      <div className="p-5 bg-white rounded-2xl"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.05) 0px 6px 18px" }}>
         {titleEditing ? (
           <div className="space-y-3">
             <input className={inputCls} value={title} onChange={e => setTitle(e.target.value)} placeholder="Tên bài kiểm tra" />
@@ -453,7 +502,7 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
             </div>
             <div className="flex gap-2">
               <button onClick={() => setTitleEditing(false)}
-                className="flex-1 py-2 text-sm border border-[#e0e2e6] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] transition-colors">
+                className="flex-1 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-[#EAF1FC] transition-colors">
                 Hủy
               </button>
               <button onClick={handleSaveMeta} disabled={updateQuiz.isPending}
@@ -472,7 +521,7 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
               </p>
             </div>
             <button onClick={() => { setTitle(quiz.title); setPassScore(quiz.pass_score); setTitleEditing(true); }}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-[#e0e2e6] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] hover:border-[#1b61c9]/40 transition-colors">
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#EAF1FC] hover:border-[#1b61c9]/40 transition-colors">
               <Pencil size={12} /> Sửa
             </button>
           </div>
@@ -508,12 +557,14 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
           <AddQuestionForm quizId={quizId} nextOrder={quiz.questions.length + 1} onClose={() => setShowAddForm(false)} />
         ) : (
           <button onClick={() => setShowAddForm(true)}
-            className="w-full flex items-center justify-center gap-1.5 py-3 border border-dashed border-[#c0c8d5] rounded-2xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors">
+            className="w-full flex items-center justify-center gap-1.5 py-3 border border-dashed border-[#C5D4EA] rounded-2xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors">
             <Plus size={14} />
             Thêm câu hỏi
           </button>
         )}
       </div>
+        </div>
+      </main>
     </div>
   );
 }

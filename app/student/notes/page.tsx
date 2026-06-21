@@ -2,12 +2,24 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Logo } from "@/app/_components/Logo";
-import { UserMenu } from "@/app/_components/UserMenu";
-import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMe } from "@/app/student/dashboard/dashboard.hook";
+import { StickyNote, Play, Pencil, Trash2, ChevronDown } from "lucide-react";
+import { MainNavbar } from "@/app/_components/MainNavbar";
+import { Atmosphere } from "@/app/student/_components/Atmosphere";
+import { BackButton } from "@/app/student/_components/BackButton";
+import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { useAllNotes, useUpdateNote, useDeleteNote, AllNote } from "../courses/[courseId]/learn/_components/notes.hook";
+
+const C = {
+  ink: "#181d26",
+  inkSoft: "rgba(4,14,32,0.62)",
+  inkFaint: "rgba(4,14,32,0.40)",
+  border: "#DCE6F4",
+  blue: "#1b61c9",
+  blueDark: "#254fad",
+  canvas: "#EFF5FE",
+};
+const CARD_SHADOW = "rgba(27,60,120,0.05) 0px 8px 24px";
 
 function formatTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -51,16 +63,15 @@ function NoteRow({ note }: { note: AllNote }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
       transition={{ duration: 0.3 }}
-      className="py-3 border-b border-[#f0f2f5] last:border-0"
+      className="border-b py-3 last:border-0"
+      style={{ borderColor: "#EAF1FC" }}
     >
-      <div className="flex items-start justify-between gap-3 mb-1.5">
-        <div className="flex items-center gap-2 min-w-0">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(4,14,32,0.35)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
-          <span className="text-xs text-[rgba(4,14,32,0.55)] truncate">{note.lesson.title}</span>
+      <div className="mb-1.5 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Play size={11} fill={C.inkFaint} stroke="none" className="shrink-0" />
+          <span className="truncate text-xs" style={{ color: C.inkSoft }}>{note.lesson.title}</span>
         </div>
-        <span className="text-xs text-[rgba(4,14,32,0.35)] shrink-0">
+        <span className="shrink-0 text-xs" style={{ color: C.inkFaint }}>
           {note.updated_at !== note.created_at ? `Sửa ${timeAgo(note.updated_at)}` : timeAgo(note.created_at)}
         </span>
       </div>
@@ -68,11 +79,10 @@ function NoteRow({ note }: { note: AllNote }) {
       {note.video_time != null && (
         <Link
           href={`/student/courses/${note.lesson.chapter.course.id}/learn?lesson=${note.lesson.id}`}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1b61c9]/8 text-[#1b61c9] text-xs font-medium mb-2 hover:bg-[#1b61c9]/15 transition-colors"
+          className="mb-2 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:bg-[#1b61c9]/15"
+          style={{ background: "rgba(27,97,201,0.08)", color: C.blue }}
         >
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
-            <polygon points="5 3 19 12 5 21 5 3" />
-          </svg>
+          <Play size={9} fill="currentColor" stroke="none" />
           {formatTime(note.video_time)}
         </Link>
       )}
@@ -85,26 +95,29 @@ function NoteRow({ note }: { note: AllNote }) {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="space-y-2 mt-2 overflow-hidden"
+            className="mt-2 space-y-2 overflow-hidden"
           >
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
               rows={3}
               autoFocus
-              className="w-full px-3 py-2 rounded-lg border border-[#e0e2e6] text-sm text-[#181d26] focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/30 resize-none"
+              className="w-full resize-none rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1b61c9]/30"
+              style={{ borderColor: C.border, color: C.ink }}
             />
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
                 disabled={!editText.trim() || updateNote.isPending}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors disabled:opacity-50"
+                className="rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#254fad] disabled:opacity-50"
+                style={{ background: C.blue }}
               >
                 {updateNote.isPending ? "Đang lưu..." : "Lưu"}
               </button>
               <button
                 onClick={() => { setEditing(false); setEditText(note.content); }}
-                className="px-3 py-1.5 rounded-lg text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
+                className="rounded-lg px-3 py-1.5 text-xs transition-colors"
+                style={{ color: C.inkSoft }}
               >
                 Hủy
               </button>
@@ -118,27 +131,23 @@ function NoteRow({ note }: { note: AllNote }) {
             exit={{ opacity: 0 }}
             className="flex items-start gap-2"
           >
-            <p className="text-sm text-[#181d26] leading-relaxed whitespace-pre-wrap flex-1">{note.content}</p>
-            <div className="flex items-center gap-1 shrink-0 mt-0.5">
+            <p className="flex-1 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: C.ink }}>{note.content}</p>
+            <div className="mt-0.5 flex shrink-0 items-center gap-1">
               <button
                 onClick={() => { setEditing(true); setEditText(note.content); }}
-                className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-[#1b61c9] hover:bg-[#1b61c9]/8 transition-colors"
+                className="rounded-lg p-1.5 transition-colors hover:bg-[#1b61c9]/8 hover:text-[#1b61c9]"
+                style={{ color: C.inkFaint }}
                 title="Sửa"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
+                <Pencil size={12} />
               </button>
               <button
                 onClick={() => setConfirming(true)}
-                className="p-1.5 rounded-lg text-[rgba(4,14,32,0.35)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="rounded-lg p-1.5 transition-colors hover:bg-red-50 hover:text-red-500"
+                style={{ color: C.inkFaint }}
                 title="Xóa"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                  <path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
-                </svg>
+                <Trash2 size={12} />
               </button>
             </div>
           </motion.div>
@@ -170,36 +179,32 @@ function CourseGroup({ courseId, courseTitle, thumbnail, notes, index }: {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.07, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-      whileHover={{ boxShadow: "rgba(15,48,106,0.1) 0px 8px 24px", transition: { duration: 0.2 } }}
-      className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden"
-      style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
+      transition={{ duration: 0.5, delay: index * 0.07, ease: [0.22, 0.61, 0.36, 1] as const }}
+      whileHover={{ boxShadow: "rgba(27,60,120,0.12) 0px 12px 32px", transition: { duration: 0.2 } }}
+      className="overflow-hidden rounded-3xl bg-white"
+      style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
     >
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-[#f8fafc] transition-colors text-left"
+        className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-[#EAF1FC]"
       >
-        <img src={thumbnail} alt={courseTitle} className="w-14 h-10 rounded-lg object-cover shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[#181d26] truncate">{courseTitle}</p>
-          <p className="text-xs text-[rgba(4,14,32,0.45)] mt-0.5">{notes.length} ghi chú</p>
+        <img src={thumbnail} alt={courseTitle} className="h-10 w-14 shrink-0 rounded-lg object-cover" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-display text-sm font-semibold" style={{ color: C.ink }}>{courseTitle}</p>
+          <p className="mt-0.5 text-xs" style={{ color: C.inkFaint }}>{notes.length} ghi chú</p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <Link
             href={`/student/courses/${courseId}/learn`}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs text-[#1b61c9] font-medium hover:text-[#254fad] px-2.5 py-1 rounded-lg hover:bg-[#1b61c9]/8 transition-colors"
+            className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[#1b61c9]/8"
+            style={{ color: C.blue }}
           >
             Học tiếp
           </Link>
-          <motion.svg
-            width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-            className="text-[rgba(4,14,32,0.35)]"
-            animate={{ rotate: open ? 180 : 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            <polyline points="6 9 12 15 18 9" />
-          </motion.svg>
+          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.25 }} style={{ color: C.inkFaint }}>
+            <ChevronDown size={16} />
+          </motion.span>
         </div>
       </button>
 
@@ -226,7 +231,6 @@ function CourseGroup({ courseId, courseTitle, thumbnail, notes, index }: {
 }
 
 export default function NotesPage() {
-  const { data: user } = useMe();
   const { data: notes, isLoading } = useAllNotes();
 
   const grouped = notes?.reduce<Record<string, { courseTitle: string; thumbnail: string; notes: AllNote[] }>>(
@@ -240,46 +244,26 @@ export default function NotesPage() {
   ) ?? {};
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <motion.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-10"
-      >
-        <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2">
-              <Logo size={32} />
-              <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
-            </Link>
-            <div className="w-px h-5 bg-[#e0e2e6] hidden sm:block" />
-            <Link href="/student/dashboard" className="text-sm text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors hidden sm:block">
-              Dashboard
-            </Link>
-          </div>
-          <UserMenu user={user ?? null} />
-        </div>
-      </motion.header>
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main className="mx-auto max-w-4xl px-6 py-10">
+        <BackButton />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.05 }}
-          className="flex items-center gap-3 mb-8"
+          className="mb-8"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-          <h1 className="text-2xl font-semibold text-[#181d26]">
-            Ghi chú của tôi
+          <div className="mb-3 flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+            style={{ background: "rgba(27,97,201,0.10)", color: C.blue }}>
+            <StickyNote size={13} /> Sổ tay học tập
+          </div>
+          <h1 className="font-display text-[32px] font-light leading-tight">
+            Ghi chú <span className="font-semibold" style={{ color: C.blue }}>của tôi</span>
             {notes && notes.length > 0 && (
-              <span className="ml-2 text-base font-normal text-[rgba(4,14,32,0.45)]">({notes.length})</span>
+              <span className="ml-2 text-lg font-normal" style={{ color: C.inkFaint }}>({notes.length})</span>
             )}
           </h1>
         </motion.div>
@@ -287,17 +271,17 @@ export default function NotesPage() {
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-[#e0e2e6] p-5 animate-pulse">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-10 bg-gray-100 rounded-lg" />
-                  <div className="space-y-2 flex-1">
-                    <div className="h-4 w-48 bg-gray-100 rounded" />
-                    <div className="h-3 w-20 bg-gray-100 rounded" />
+              <div key={i} className="animate-pulse rounded-3xl bg-white p-5" style={{ border: `1px solid ${C.border}` }}>
+                <div className="mb-4 flex items-center gap-4">
+                  <div className="h-10 w-14 rounded-lg" style={{ background: "#E2ECF9" }} />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-48 rounded" style={{ background: "#E2ECF9" }} />
+                    <div className="h-3 w-20 rounded" style={{ background: "#E2ECF9" }} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="h-3 w-full bg-gray-100 rounded" />
-                  <div className="h-3 w-3/4 bg-gray-100 rounded" />
+                  <div className="h-3 w-full rounded" style={{ background: "#E2ECF9" }} />
+                  <div className="h-3 w-3/4 rounded" style={{ background: "#E2ECF9" }} />
                 </div>
               </div>
             ))}
@@ -317,46 +301,28 @@ export default function NotesPage() {
           </div>
         ) : (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4 }}
-            className="flex flex-col items-center py-20 gap-4 bg-white rounded-2xl border border-[#e0e2e6]"
+            className="flex flex-col items-center gap-4 rounded-3xl bg-white py-20"
+            style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
-              className="w-16 h-16 rounded-2xl bg-[#1b61c9]/8 flex items-center justify-center"
+              className="grid h-16 w-16 place-items-center rounded-2xl"
+              style={{ background: "rgba(27,97,201,0.08)" }}
             >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" y1="13" x2="8" y2="13" />
-                <line x1="16" y1="17" x2="8" y2="17" />
-                <polyline points="10 9 9 9 8 9" />
-              </svg>
+              <StickyNote size={28} style={{ color: C.blue }} />
             </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="text-center"
-            >
-              <p className="text-[#181d26] font-medium mb-1">Chưa có ghi chú nào</p>
-              <p className="text-sm text-[rgba(4,14,32,0.55)]">Bắt đầu ghi chú khi học bài để ôn tập sau!</p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <Link
-                href="/student/dashboard"
-                className="mt-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
-                style={{ boxShadow: "rgba(45,127,249,0.28) 0px 1px 4px" }}
-              >
+            <div className="text-center">
+              <p className="font-display text-lg font-semibold">Chưa có ghi chú nào</p>
+              <p className="mt-1 text-sm" style={{ color: C.inkSoft }}>Bắt đầu ghi chú khi học bài để ôn tập sau!</p>
+            </div>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link href="/student/home" className="rounded-xl px-5 py-2.5 text-sm font-medium text-white"
+                style={{ background: C.blue, boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}>
                 Vào học ngay
               </Link>
             </motion.div>

@@ -371,7 +371,7 @@ export function ChapterTree({
   const activeChapter = localSections.find((c) => c.id === activeId);
 
   return (
-    <div className="flex-1 overflow-y-auto py-3">
+    <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden py-3">
       {/* Import từ folder */}
       <div className="px-2 mb-2 pb-2 border-b border-[#f0f2f5]">
         <button

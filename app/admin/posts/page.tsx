@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X, Inbox } from "lucide-react";
 import { useAdminPosts, useModeratePost, type PostStatus } from "./posts.hook";
 
 const TABS: { key: PostStatus; label: string }[] = [
@@ -22,8 +22,10 @@ export default function AdminPostsPage() {
     const { data: posts, isLoading } = useAdminPosts(tab);
     const moderate = useModeratePost();
 
+    const fullWidth = tab === "APPROVED";
+
     return (
-        <div className="px-8 py-7 max-w-3xl">
+        <div className="px-8 py-7">
             <h1 className="text-2xl font-semibold text-[#181d26] mb-1">Bài viết cộng đồng</h1>
             <p className="text-sm text-[rgba(4,14,32,0.5)] mb-6">Duyệt bài viết do người dùng đăng.</p>
 
@@ -44,7 +46,7 @@ export default function AdminPostsPage() {
             {isLoading ? (
                 <div className="flex justify-center py-10"><Loader2 size={22} className="animate-spin text-[#1b61c9]" /></div>
             ) : posts && posts.length > 0 ? (
-                <div className="space-y-4">
+                <div className={`space-y-4 ${fullWidth ? "w-full" : "max-w-3xl"}`}>
                     {posts.map((p) => (
                         <div key={p.id} className="bg-white rounded-2xl border border-[#e0e2e6] p-5">
                             <div className="flex items-center justify-between mb-2">
@@ -82,7 +84,15 @@ export default function AdminPostsPage() {
                     ))}
                 </div>
             ) : (
-                <p className="text-center py-10 text-sm text-[rgba(4,14,32,0.5)]">Không có bài viết.</p>
+                <div className="flex flex-col items-center justify-center text-center py-24">
+                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#f1f5f9] mb-4">
+                        <Inbox size={26} className="text-[rgba(4,14,32,0.35)]" />
+                    </div>
+                    <p className="text-sm font-medium text-[#181d26]">Không có bài viết.</p>
+                    <p className="text-sm text-[rgba(4,14,32,0.5)] mt-1">
+                        {tab === "PENDING" ? "Chưa có bài chờ duyệt." : tab === "APPROVED" ? "Chưa có bài đã duyệt." : "Chưa có bài bị từ chối."}
+                    </p>
+                </div>
             )}
         </div>
     );

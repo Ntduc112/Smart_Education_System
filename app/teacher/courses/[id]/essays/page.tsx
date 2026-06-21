@@ -3,11 +3,32 @@
 import { use, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { motion } from "framer-motion";
 import { FileText, ChevronLeft } from "lucide-react";
+import { MainNavbar } from "@/app/_components/MainNavbar";
 import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import { useTeacherCourses } from "@/app/teacher/courses/courses.hook";
 import { useEssays, useGradeAnswer, useAIGrade, EssayAnswer } from "./essays.hook";
 import { gradeAnswerSchema, GradeAnswerInput } from "./grade-answer.schema";
+
+const C = { canvas:"#EFF5FE", ink:"#181d26", inkSoft:"rgba(4,14,32,0.62)", inkFaint:"rgba(4,14,32,0.40)", border:"#DCE6F4", blue:"#1b61c9", blueDark:"#254fad", sky:"#2E8BE6", emerald:"#0E9F6E", violet:"#7C5CFC", rose:"#E5484D" };
+function Atmosphere() {
+  const blobs = [
+    { c: "#BCD7FF", s: 460, top: "-8%", left: "-6%", dur: 22 },
+    { c: "#A7C8FF", s: 400, top: "12%", right: "-8%", dur: 26 },
+    { c: "#CFE0FA", s: 360, bottom: "-10%", left: "18%", dur: 30 },
+  ];
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10" aria-hidden>
+      {blobs.map((b, i) => (
+        <motion.div key={i} className="absolute rounded-full"
+          style={{ width: b.s, height: b.s, background: b.c, opacity: 0.28, filter: "blur(90px)", top: b.top, left: b.left, right: b.right, bottom: b.bottom }}
+          animate={{ y: [0, -26, 0], x: [0, 16, 0] }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.5 }} />
+      ))}
+    </div>
+  );
+}
 
 function formatDate(dateStr: string) {
     return new Date(dateStr).toLocaleDateString("vi-VN", {
@@ -32,17 +53,17 @@ function Avatar({ name, avatar }: { name: string; avatar: string | null }) {
 
 function Skeleton() {
     return (
-        <div className="px-8 py-8 space-y-6 animate-pulse">
-            <div className="h-7 w-56 bg-gray-100 rounded-lg" />
+        <div className="space-y-6 animate-pulse">
+            <div className="h-7 w-56 rounded-lg" style={{ background: "#E2ECF9" }} />
             <div className="flex gap-2">
-                <div className="h-9 w-24 bg-gray-100 rounded-xl" />
-                <div className="h-9 w-24 bg-gray-100 rounded-xl" />
+                <div className="h-9 w-24 rounded-xl" style={{ background: "#E2ECF9" }} />
+                <div className="h-9 w-24 rounded-xl" style={{ background: "#E2ECF9" }} />
             </div>
             {[0, 1].map((i) => (
                 <div key={i} className="space-y-3">
-                    <div className="h-5 w-40 bg-gray-100 rounded" />
-                    <div className="h-48 bg-gray-100 rounded-2xl" />
-                    <div className="h-48 bg-gray-100 rounded-2xl" />
+                    <div className="h-5 w-40 rounded" style={{ background: "#E2ECF9" }} />
+                    <div className="h-48 rounded-2xl" style={{ background: "#E2ECF9" }} />
+                    <div className="h-48 rounded-2xl" style={{ background: "#E2ECF9" }} />
                 </div>
             ))}
         </div>
@@ -103,8 +124,8 @@ function AnswerCard({
 
     return (
         <div
-            className="bg-white rounded-2xl border border-[#e0e2e6] p-5 space-y-4"
-            style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 16px" }}
+            className="bg-white rounded-2xl p-5 space-y-4"
+            style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.05) 0px 6px 18px" }}
         >
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -142,7 +163,7 @@ function AnswerCard({
                 <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">
                     Bài làm:
                 </p>
-                <div className="bg-[#f8fafc] border border-[#e0e2e6] rounded-xl px-4 py-3">
+                <div className="rounded-xl px-4 py-3" style={{ background: "#F4F8FE", border: `1px solid ${C.border}` }}>
                     <p className="text-sm text-[#181d26] whitespace-pre-wrap">{answer.answer}</p>
                 </div>
             </div>
@@ -174,7 +195,7 @@ function AnswerCard({
                     </button>
                 </div>
             ) : (
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 pt-1 border-t border-[#f0f2f5]">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 pt-1" style={{ borderTop: `1px solid ${C.border}` }}>
                     {/* AI grading button */}
                     <div className="flex items-center justify-between">
                         <label className="text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">
@@ -217,7 +238,8 @@ function AnswerCard({
                             max={maxPoints}
                             step={0.5}
                             {...register("points", { valueAsNumber: true })}
-                            className="w-24 border border-[#e0e2e6] rounded-lg px-3 py-1.5 text-sm text-[#181d26] focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/20"
+                            className="w-24 bg-white rounded-lg px-3 py-1.5 text-sm text-[#181d26] focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/20"
+                            style={{ border: `1px solid ${C.border}` }}
                             placeholder="0"
                         />
                     </div>
@@ -230,14 +252,15 @@ function AnswerCard({
                             rows={3}
                             {...register("feedback")}
                             placeholder="Viết nhận xét cho học viên..."
-                            className="w-full border border-[#e0e2e6] rounded-xl px-3 py-2 text-sm text-[#181d26] resize-none focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/20"
+                            className="w-full bg-white rounded-xl px-3 py-2 text-sm text-[#181d26] resize-none focus:outline-none focus:border-[#1b61c9] focus:ring-1 focus:ring-[#1b61c9]/20"
+                            style={{ border: `1px solid ${C.border}` }}
                         />
                     </div>
                     <div className="flex items-center gap-2">
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="px-4 py-2 bg-[#1b61c9] hover:bg-[#1550aa] text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-[#1b61c9] hover:bg-[#254fad] text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isPending ? "Đang lưu..." : "Lưu điểm"}
                         </button>
@@ -245,7 +268,7 @@ function AnswerCard({
                             <button
                                 type="button"
                                 onClick={() => setEditing(false)}
-                                className="px-4 py-2 text-sm font-medium text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] rounded-xl transition-colors"
+                                className="px-4 py-2 text-sm font-medium text-[rgba(4,14,32,0.6)] hover:bg-[#EAF1FC] rounded-xl transition-colors"
                             >
                                 Hủy
                             </button>
@@ -264,20 +287,33 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
     const { data: courses = [] } = useTeacherCourses();
     const courseTitle = courses.find((c) => c.id === id)?.title ?? "…";
 
-    if (isLoading) return <Skeleton />;
+    if (isLoading) {
+        return (
+            <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+                <Atmosphere />
+                <MainNavbar />
+                <main className="mx-auto max-w-5xl px-6 py-10 space-y-6">
+                    <Skeleton />
+                </main>
+            </div>
+        );
+    }
 
     const quizzes = data?.quizzes ?? [];
     const totalAnswers = quizzes.reduce((s, q) => s + q.answers.length, 0);
 
     return (
-        <div className="px-8 py-8 space-y-6">
+        <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+            <Atmosphere />
+            <MainNavbar />
+            <main className="mx-auto max-w-5xl px-6 py-10 space-y-6">
             <div>
                 <Breadcrumb items={[
                   { label: "Khóa học",       href: "/teacher/courses" },
                   { label: courseTitle,       href: `/teacher/courses/${id}/edit` },
                   { label: "Chấm bài tự luận" },
                 ]} />
-                <h1 className="text-2xl font-semibold text-[#181d26]">Chấm bài tự luận</h1>
+                <h1 className="font-display text-3xl font-semibold text-[#181d26]">Chấm bài tự luận</h1>
             </div>
 
             <div className="flex items-center gap-2">
@@ -286,7 +322,7 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                         gradedFilter === "all"
                             ? "bg-[#1b61c9] text-white"
-                            : "bg-white border border-[#e0e2e6] text-[rgba(4,14,32,0.65)] hover:bg-[#f8fafc]"
+                            : "bg-[#EAF1FC] text-[rgba(4,14,32,0.62)] hover:bg-[#DCE6F4]"
                     }`}
                 >
                     Tất cả
@@ -296,7 +332,7 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                         gradedFilter === "ungraded"
                             ? "bg-[#1b61c9] text-white"
-                            : "bg-white border border-[#e0e2e6] text-[rgba(4,14,32,0.65)] hover:bg-[#f8fafc]"
+                            : "bg-[#EAF1FC] text-[rgba(4,14,32,0.62)] hover:bg-[#DCE6F4]"
                     }`}
                 >
                     Chưa chấm
@@ -305,10 +341,10 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
 
             {totalAnswers === 0 ? (
                 <div
-                    className="bg-white rounded-2xl border border-[#e0e2e6] py-20 flex flex-col items-center gap-3"
-                    style={{ boxShadow: "rgba(15,48,106,0.05) 0px 0px 20px" }}
+                    className="bg-white rounded-3xl py-20 flex flex-col items-center gap-3"
+                    style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
                 >
-                    <div className="w-12 h-12 rounded-2xl bg-[#f8fafc] border border-[#e0e2e6] flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: "#F4F8FE", border: `1px solid ${C.border}` }}>
                         <FileText size={22} className="text-[rgba(4,14,32,0.3)]" />
                     </div>
                     <p className="text-sm text-[rgba(4,14,32,0.45)]">
@@ -323,7 +359,7 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
                         <div key={quiz.id} className="space-y-4">
                             <div className="flex items-center gap-2">
                                 <h2 className="text-base font-semibold text-[#181d26]">{quiz.title}</h2>
-                                <span className="text-xs text-[rgba(4,14,32,0.4)] bg-[#f0f2f5] px-2 py-0.5 rounded-full">
+                                <span className="text-xs text-[rgba(4,14,32,0.62)] bg-[#EAF1FC] px-2 py-0.5 rounded-full">
                                     {quiz.answers.length} bài
                                 </span>
                             </div>
@@ -336,6 +372,7 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
                     ))}
                 </div>
             )}
+            </main>
         </div>
     );
 }

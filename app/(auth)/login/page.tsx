@@ -104,7 +104,7 @@ export default function LoginPage() {
       const result = await login(data);
       const role = result.user?.role;
       if (role === "ADMIN") router.push("/admin/dashboard");
-      else if (role === "TEACHER") router.push("/teacher/dashboard");
+      else if (role === "TEACHER") router.push("/teacher/home");
       else router.push("/");
     } catch (err) {
       setError("root", { message: getApiError(err, "Đăng nhập thất bại") });

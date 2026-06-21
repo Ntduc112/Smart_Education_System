@@ -160,8 +160,8 @@ function Section({
     <div className="mb-16">
       <div className="flex items-end justify-between mb-7">
         <div>
-          <h2 className="text-2xl font-semibold text-[#181d26] tracking-tight">{title}</h2>
-          <p className="text-sm text-[rgba(4,14,32,0.55)] mt-1 tracking-[0.07px]">{subtitle}</p>
+          <h2 className="font-display text-3xl font-semibold text-[#181d26] tracking-tight">{title}</h2>
+          <p className="text-sm text-[rgba(4,14,32,0.6)] mt-1.5 tracking-[0.07px]">{subtitle}</p>
         </div>
         <Link
           href={href}
@@ -188,7 +188,7 @@ export function CoursesSection() {
   const paid = all.filter((c) => parseFloat(c.price) > 0);
 
   return (
-    <section className="max-w-7xl mx-auto px-6 py-16 border-t border-[#e8edf5]">
+    <section className="relative max-w-7xl mx-auto px-6 py-16 border-t border-[#DCE6F4]">
       {/* Free courses */}
       <Section
         title="Khóa học miễn phí"

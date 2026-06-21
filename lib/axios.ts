@@ -32,9 +32,15 @@ api.interceptors.response.use(
       await refreshing;
       return api(original); // retry request gốc với access token mới
     } catch (refreshErr) {
-      // refresh token cũng hết hạn / bị thu hồi → buộc đăng nhập lại
-      if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
-        window.location.href = "/login";
+      // refresh token cũng hết hạn / bị thu hồi → buộc đăng nhập lại.
+      // Chỉ ép đăng nhập khi đang ở khu vực bảo vệ; trang công khai (marketing,
+      // /courses) probe /user/me hay /posts mà 401 chỉ nghĩa là "khách" → không bounce.
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        const onProtectedPage = /^\/(student|teacher|admin)(\/|$)/.test(path);
+        if (onProtectedPage && !path.startsWith("/login")) {
+          window.location.href = "/login";
+        }
       }
       return Promise.reject(refreshErr);
     }

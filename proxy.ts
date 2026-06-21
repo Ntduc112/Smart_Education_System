@@ -17,8 +17,10 @@ const PUBLIC_ROUTES = [
     "/forgot-password",
     "/api/payment/webhook",
     "/api/courses",
-    "/api/admin/categories",
+    "/api/posts",
+    "/api/categories",
     "/courses",
+    "/posts",
     "/payment/success",
     "/payment/cancel",
 ];
@@ -32,6 +34,12 @@ const TEACHER_ROUTES = [
 ];
 function matchesRoutes(pathName: string, routes: string[]){
     return routes.some(route => pathName === route || pathName.startsWith(route + "/"));
+}
+// Trang chủ theo role — đẩy user đã đăng nhập khỏi landing marketing.
+function roleHome(role: string){
+    if(role === "ADMIN") return "/admin/dashboard";
+    if(role === "TEACHER") return "/teacher/home";
+    return "/student/home";
 }
 // đặt cookie access mới khi refresh ngầm thành công (khớp option ở lib/auth/session.ts)
 function setAccessCookie(response: NextResponse, accessToken: string){
@@ -49,9 +57,28 @@ export async function proxy(request: NextRequest){
         pathName.startsWith("/favicon.ico")){
         return NextResponse.next();
     }
-    if(matchesRoutes(pathName, PUBLIC_ROUTES)){
+    // Landing marketing: chỉ guest mới thấy. Đã đăng nhập → vào thẳng home theo role.
+    if(pathName === "/"){
+        const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+        let s: TokenPayload | null = token ? await verifyAccessToken(token) : null;
+        let refreshed: string | null = null;
+        if(!s){
+            const rt = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+            const rp = rt ? await verifyRefreshToken(rt) : null;
+            if(rp){
+                refreshed = await signAccessToken({ userId: rp.userId, role: rp.role });
+                s = { userId: rp.userId, role: rp.role };
+            }
+        }
+        if(s){
+            const res = NextResponse.redirect(new URL(roleHome(s.role), request.url));
+            if(refreshed) setAccessCookie(res, refreshed);
+            return res;
+        }
         return NextResponse.next();
     }
+    // Giải mã session (nếu có) cho MỌI route — route công khai vẫn nhận diện được
+    // user khi đã đăng nhập (vd feed /api/posts trả myReaction của chính họ).
     const authHeader = request.headers.get("authorization");
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
     const accessToken = bearerToken ?? request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
@@ -74,7 +101,11 @@ export async function proxy(request: NextRequest){
         }
     }
 
+    const isPublic = matchesRoutes(pathName, PUBLIC_ROUTES);
+
     if(!session){
+        // Guest ở route công khai → cho qua (không gắn header identity).
+        if(isPublic) return NextResponse.next();
         if(pathName.startsWith("/api")){
             return NextResponse.json({ error: "Chưa đăng nhập" }, { status: 401 });
         }

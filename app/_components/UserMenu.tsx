@@ -6,26 +6,27 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { BookOpen, ChevronDown, LogOut, Loader2, KeyRound, User } from "lucide-react";
 import api from "@/lib/axios";
-import { ChangePasswordModal } from "../(auth)/changePassword/ChangePasswordModal";
+import { ChangePasswordModal } from "@/app/(auth)/changePassword/ChangePasswordModal";
 
 interface User {
   name: string;
   email: string;
   avatar: string | null;
+  role?: string;
 }
 
-interface EnrolledCourse {
+interface MenuCourse {
   id: string;
   title: string;
   thumbnail: string | null;
 }
 
-function useEnrolledCourses(enabled: boolean) {
-  return useQuery<EnrolledCourse[]>({
-    queryKey: ["enrolled-courses"],
+function useMenuCourses(enabled: boolean, isTeacher: boolean) {
+  return useQuery<MenuCourse[]>({
+    queryKey: ["user-menu-courses", isTeacher ? "teacher" : "student"],
     queryFn: async () => {
-      const res = await api.get("/student/courses");
-      return res.data.courses as EnrolledCourse[];
+      const res = await api.get(isTeacher ? "/teacher/courses" : "/student/courses");
+      return res.data.courses as MenuCourse[];
     },
     enabled,
     retry: false,
@@ -43,7 +44,8 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
   const [logoutLoading,     setLogoutLoading]     = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
-  const { data: courses, isLoading: coursesLoading } = useEnrolledCourses(coursesOpen);
+  const isTeacher = user?.role === "TEACHER";
+  const { data: courses, isLoading: coursesLoading } = useMenuCourses(coursesOpen, isTeacher);
 
   // Đóng cả 2 dropdown khi click ngoài
   useEffect(() => {
@@ -63,7 +65,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
       await api.post("/auth/logout");
     } finally {
       queryClient.removeQueries({ queryKey: ["me"] });
-      queryClient.removeQueries({ queryKey: ["enrolled-courses"] });
+      queryClient.removeQueries({ queryKey: ["user-menu-courses"] });
       setLogoutLoading(false);
       router.push("/");
     }
@@ -94,7 +96,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
             style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 4px 16px" }}
           >
             <p className="px-4 pt-2.5 pb-2 text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">
-              Khóa học đã đăng ký
+              {isTeacher ? "Khóa học của bạn" : "Khóa học đã đăng ký"}
             </p>
 
             {coursesLoading && (
@@ -105,13 +107,15 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
 
             {!coursesLoading && (!courses || courses.length === 0) && (
               <div className="px-4 py-5 text-center">
-                <p className="text-sm text-[rgba(4,14,32,0.45)]">Bạn chưa đăng ký khóa học nào.</p>
+                <p className="text-sm text-[rgba(4,14,32,0.45)]">
+                  {isTeacher ? "Bạn chưa tạo khóa học nào." : "Bạn chưa đăng ký khóa học nào."}
+                </p>
                 <Link
-                  href="/courses"
+                  href={isTeacher ? "/teacher/courses/new" : "/courses"}
                   onClick={() => setCoursesOpen(false)}
                   className="inline-block mt-2 text-sm text-[#1b61c9] font-medium hover:underline"
                 >
-                  Khám phá khóa học →
+                  {isTeacher ? "Tạo khóa học →" : "Khám phá khóa học →"}
                 </Link>
               </div>
             )}
@@ -121,7 +125,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
                 {courses.map((course) => (
                   <Link
                     key={course.id}
-                    href={`/student/courses/${course.id}/learn`}
+                    href={isTeacher ? `/teacher/courses/${course.id}/edit` : `/student/courses/${course.id}/learn`}
                     onClick={() => setCoursesOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors"
                   >
@@ -146,7 +150,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
 
             <div className="border-t border-[#f0f2f5] mt-1 pt-1 px-4 pb-2">
               <Link
-                href="/student/dashboard"
+                href={isTeacher ? "/teacher/courses" : "/student/dashboard"}
                 onClick={() => setCoursesOpen(false)}
                 className="text-xs text-[#1b61c9] font-medium hover:underline"
               >

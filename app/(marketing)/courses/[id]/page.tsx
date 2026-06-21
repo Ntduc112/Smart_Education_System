@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { DarkNavbar } from "@/app/_components/DarkNavbar";
+import { motion } from "framer-motion";
+import { MainNavbar } from "@/app/_components/MainNavbar";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
@@ -10,6 +11,59 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import { useWishlist } from "@/app/student/wishlist/wishlist.hook";
 import { WishlistButton } from "@/app/_components/WishlistButton";
+
+// ── Palette (cozy-blue) ──────────────────────────────────────────────────────
+const C = {
+  canvas: "#EFF5FE",
+  card: "#FFFFFF",
+  ink: "#181d26",
+  inkSoft: "rgba(4,14,32,0.62)",
+  inkFaint: "rgba(4,14,32,0.40)",
+  border: "#DCE6F4",
+  blue: "#1b61c9",
+  blueDark: "#254fad",
+  emerald: "#0E9F6E",
+  danger: "#e53e3e",
+};
+const CARD_SHADOW = "rgba(27,60,120,0.05) 0px 8px 24px";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 0.61, 0.36, 1] as const } },
+};
+
+// ── Decorative floating blobs ─────────────────────────────────────────────────
+function Atmosphere() {
+  const blobs = [
+    { c: "#BCD7FF", s: 460, top: "-8%", left: "-6%", dur: 22 },
+    { c: "#A7C8FF", s: 400, top: "12%", right: "-8%", dur: 26 },
+    { c: "#CFE0FA", s: 360, bottom: "-10%", left: "18%", dur: 30 },
+  ] as const;
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10" aria-hidden>
+      {blobs.map((b, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: b.s, height: b.s, background: b.c, opacity: 0.28, filter: "blur(90px)",
+            top: "top" in b ? b.top : undefined, left: "left" in b ? b.left : undefined,
+            right: "right" in b ? b.right : undefined, bottom: "bottom" in b ? b.bottom : undefined,
+          }}
+          animate={{ y: [0, -26, 0], x: [0, 16, 0] }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.5 }}
+        />
+      ))}
+      <div
+        className="absolute inset-0 opacity-[0.035] mix-blend-multiply"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        }}
+      />
+    </div>
+  );
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -95,7 +149,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           {i <= (hovered || value) ? (
             <StarFilled className="text-[#f59e0b] w-7 h-7" />
           ) : (
-            <StarEmpty className="text-[#e0e2e6] hover:text-[#f59e0b] w-7 h-7" />
+            <StarEmpty className="text-[#cdd9ec] hover:text-[#f59e0b] w-7 h-7" />
           )}
         </button>
       ))}
@@ -145,9 +199,9 @@ function ReviewForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-[#f8fafc] border border-[#e0e2e6] rounded-2xl p-5 space-y-4">
+    <form onSubmit={handleSubmit} className="rounded-2xl p-5 space-y-4" style={{ background: "#F4F8FE", border: `1px solid ${C.border}` }}>
       <div>
-        <p className="text-sm font-medium text-[#181d26] mb-2">Đánh giá của bạn</p>
+        <p className="text-sm font-medium mb-2" style={{ color: C.ink }}>Đánh giá của bạn</p>
         <StarPicker value={rating} onChange={setRating} />
       </div>
       <div>
@@ -156,16 +210,17 @@ function ReviewForm({
           onChange={(e) => setComment(e.target.value)}
           placeholder="Chia sẻ cảm nhận của bạn về khóa học..."
           rows={4}
-          className="w-full border border-[#e0e2e6] rounded-xl px-4 py-3 text-sm text-[#181d26] placeholder-[rgba(4,14,32,0.35)] focus:outline-none focus:border-[#1b61c9] resize-none bg-white"
+          className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#1b61c9] resize-none bg-white"
+          style={{ color: C.ink, border: `1px solid ${C.border}` }}
         />
       </div>
-      {formError && <p className="text-xs text-red-500">{formError}</p>}
+      {formError && <p className="text-xs" style={{ color: C.danger }}>{formError}</p>}
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={isPending}
-          className="px-5 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
+          className="px-5 py-2.5 text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{ background: C.blue, boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
         >
           {isPending ? "Đang gửi..." : initialReview ? "Cập nhật đánh giá" : "Gửi đánh giá"}
         </button>
@@ -173,7 +228,8 @@ function ReviewForm({
           <button
             type="button"
             onClick={onCancel}
-            className="px-5 py-2.5 text-sm font-medium text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors"
+            className="px-5 py-2.5 text-sm font-medium transition-colors hover:text-[#181d26]"
+            style={{ color: C.inkSoft }}
           >
             Hủy
           </button>
@@ -197,20 +253,20 @@ function ReviewsSection({ courseId, isEnrolled, isLoggedIn }: { courseId: string
   return (
     <div className="mt-10">
       <div className="flex items-center gap-3 mb-6">
-        <h2 className="text-lg font-semibold text-[#181d26] tracking-[0.08px]">Đánh giá</h2>
+        <h2 className="font-display text-xl font-semibold" style={{ color: C.ink }}>Đánh giá</h2>
         {reviewsData && reviewsData.averageRating !== null && (
-          <span className="text-sm text-[rgba(4,14,32,0.55)]">
+          <span className="text-sm" style={{ color: C.inkSoft }}>
             {reviewsData.averageRating} ★ ({reviewsData.totalCount} đánh giá)
           </span>
         )}
       </div>
 
       {reviewsData && reviewsData.averageRating !== null && (
-        <div className="flex items-center gap-3 mb-6 p-4 bg-white border border-[#e0e2e6] rounded-2xl w-fit">
-          <span className="text-4xl font-light text-[#181d26]">{reviewsData.averageRating}</span>
+        <div className="flex items-center gap-3 mb-6 p-4 rounded-2xl w-fit bg-white" style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}>
+          <span className="font-display text-4xl font-light" style={{ color: C.ink }}>{reviewsData.averageRating}</span>
           <div>
             <StarRating rating={Math.round(reviewsData.averageRating)} />
-            <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1">{reviewsData.totalCount} đánh giá</p>
+            <p className="text-xs mt-1" style={{ color: C.inkFaint }}>{reviewsData.totalCount} đánh giá</p>
           </div>
         </div>
       )}
@@ -218,19 +274,20 @@ function ReviewsSection({ courseId, isEnrolled, isLoggedIn }: { courseId: string
       {isEnrolled && isLoggedIn && (
         <div className="mb-6">
           {myReview && !editing ? (
-            <div className="bg-[#f8fafc] border border-[#e0e2e6] rounded-2xl p-5">
+            <div className="rounded-2xl p-5" style={{ background: "#F4F8FE", border: `1px solid ${C.border}` }}>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-[#181d26]">Đánh giá của bạn</p>
+                <p className="text-sm font-medium" style={{ color: C.ink }}>Đánh giá của bạn</p>
                 <button
                   onClick={() => setEditing(true)}
-                  className="text-xs text-[#1b61c9] hover:text-[#254fad] font-medium transition-colors"
+                  className="text-xs hover:text-[#254fad] font-medium transition-colors"
+                  style={{ color: C.blue }}
                 >
                   Sửa đánh giá
                 </button>
               </div>
               <StarRating rating={myReview.rating} />
               {myReview.comment && (
-                <p className="mt-2 text-sm text-[rgba(4,14,32,0.69)]">{myReview.comment}</p>
+                <p className="mt-2 text-sm" style={{ color: C.inkSoft }}>{myReview.comment}</p>
               )}
             </div>
           ) : (
@@ -247,10 +304,10 @@ function ReviewsSection({ courseId, isEnrolled, isLoggedIn }: { courseId: string
         <div className="space-y-4">
           {[1, 2].map((i) => (
             <div key={i} className="animate-pulse flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-gray-100 shrink-0" />
+              <div className="w-10 h-10 rounded-full shrink-0" style={{ background: "#E2ECF9" }} />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-32 bg-gray-100 rounded" />
-                <div className="h-3 w-full bg-gray-100 rounded" />
+                <div className="h-4 w-32 rounded" style={{ background: "#E2ECF9" }} />
+                <div className="h-3 w-full rounded" style={{ background: "#E2ECF9" }} />
               </div>
             </div>
           ))}
@@ -258,29 +315,29 @@ function ReviewsSection({ courseId, isEnrolled, isLoggedIn }: { courseId: string
       ) : reviewsData && reviewsData.reviews.length > 0 ? (
         <div className="space-y-5">
           {reviewsData.reviews.map((review) => (
-            <div key={review.id} className="flex gap-4 pb-5 border-b border-[#f0f2f5] last:border-0 last:pb-0">
+            <div key={review.id} className="flex gap-4 pb-5 border-b last:border-0 last:pb-0" style={{ borderColor: "#EEF3FB" }}>
               {review.user.avatar ? (
                 <img src={review.user.avatar} alt={review.user.name} className="w-10 h-10 rounded-full object-cover shrink-0" />
               ) : (
-                <div className="w-10 h-10 rounded-full bg-[#1b61c9]/15 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-[#1b61c9]">{review.user.name.charAt(0)}</span>
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "rgba(27,97,201,0.12)" }}>
+                  <span className="text-sm font-bold" style={{ color: C.blue }}>{review.user.name.charAt(0)}</span>
                 </div>
               )}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
-                  <span className="text-sm font-medium text-[#181d26]">{review.user.name}</span>
-                  <span className="text-xs text-[rgba(4,14,32,0.35)]">{formatDate(review.created_at)}</span>
+                  <span className="text-sm font-medium" style={{ color: C.ink }}>{review.user.name}</span>
+                  <span className="text-xs" style={{ color: C.inkFaint }}>{formatDate(review.created_at)}</span>
                 </div>
                 <StarRating rating={review.rating} />
                 {review.comment && (
-                  <p className="mt-2 text-sm text-[rgba(4,14,32,0.69)] leading-relaxed">{review.comment}</p>
+                  <p className="mt-2 text-sm leading-relaxed" style={{ color: C.inkSoft }}>{review.comment}</p>
                 )}
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-sm text-[rgba(4,14,32,0.45)]">Chưa có đánh giá nào.</p>
+        <p className="text-sm" style={{ color: C.inkFaint }}>Chưa có đánh giá nào.</p>
       )}
     </div>
   );
@@ -316,43 +373,45 @@ function CurriculumChapter({ chapter }: { chapter: Chapter }) {
   const freeCount = chapter.lessons.filter((l) => l.is_free).length;
 
   return (
-    <div className="border border-[#e0e2e6] rounded-2xl overflow-hidden">
+    <div className="rounded-2xl overflow-hidden bg-white" style={{ border: `1px solid ${C.border}` }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 bg-[#f8fafc] hover:bg-white transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 transition-colors text-left hover:bg-[#F4F8FE]"
+        style={{ background: "#F4F8FE" }}
       >
         <div className="flex items-center gap-3">
           <svg
-            className={`transition-transform duration-200 text-[rgba(4,14,32,0.45)] shrink-0 ${open ? "rotate-90" : ""}`}
+            className={`transition-transform duration-200 shrink-0 ${open ? "rotate-90" : ""}`}
+            style={{ color: C.inkFaint }}
             width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           >
             <polyline points="9 18 15 12 9 6"/>
           </svg>
-          <span className="font-medium text-[#181d26] tracking-[0.08px]">{chapter.title}</span>
+          <span className="font-medium tracking-[0.08px]" style={{ color: C.ink }}>{chapter.title}</span>
         </div>
-        <span className="text-xs text-[rgba(4,14,32,0.45)] shrink-0 ml-4">
+        <span className="text-xs shrink-0 ml-4" style={{ color: C.inkFaint }}>
           {chapter.lessons.length} bài{freeCount > 0 ? ` · ${freeCount} miễn phí` : ""}
         </span>
       </button>
 
       {open && (
-        <ul className="divide-y divide-[#f0f2f5]">
+        <ul className="divide-y" style={{ borderColor: "#EEF3FB" }}>
           {chapter.lessons.map((lesson) => (
-            <li key={lesson.id} className="flex items-center gap-3 px-5 py-3.5">
+            <li key={lesson.id} className="flex items-center gap-3 px-5 py-3.5 border-t first:border-t-0" style={{ borderColor: "#EEF3FB" }}>
               {lesson.is_free ? (
-                <svg className="shrink-0 text-[#1b61c9]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="shrink-0" style={{ color: C.blue }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
                 </svg>
               ) : (
-                <svg className="shrink-0 text-[rgba(4,14,32,0.3)]" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg className="shrink-0" style={{ color: C.inkFaint }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                 </svg>
               )}
-              <span className={`text-sm flex-1 tracking-[0.07px] ${lesson.is_free ? "text-[#181d26]" : "text-[rgba(4,14,32,0.55)]"}`}>
+              <span className="text-sm flex-1 tracking-[0.07px]" style={{ color: lesson.is_free ? C.ink : C.inkSoft }}>
                 {lesson.title}
               </span>
               {lesson.is_free && (
-                <span className="text-xs text-[#1b61c9] font-medium bg-[#1b61c9]/8 px-2 py-0.5 rounded-full shrink-0">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style={{ color: C.blue, background: "rgba(27,97,201,0.09)" }}>
                   Xem thử
                 </span>
               )}
@@ -367,18 +426,18 @@ function CurriculumChapter({ chapter }: { chapter: Chapter }) {
 function DetailSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-5 w-40 bg-gray-100 rounded mb-8" />
+      <div className="h-5 w-40 rounded mb-8" style={{ background: "#E2ECF9" }} />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-4">
-          <div className="h-8 w-3/4 bg-gray-100 rounded" />
-          <div className="h-5 w-1/2 bg-gray-100 rounded" />
+          <div className="h-8 w-3/4 rounded" style={{ background: "#E2ECF9" }} />
+          <div className="h-5 w-1/2 rounded" style={{ background: "#E2ECF9" }} />
           <div className="space-y-2 mt-6">
-            <div className="h-4 w-full bg-gray-100 rounded" />
-            <div className="h-4 w-full bg-gray-100 rounded" />
-            <div className="h-4 w-2/3 bg-gray-100 rounded" />
+            <div className="h-4 w-full rounded" style={{ background: "#E2ECF9" }} />
+            <div className="h-4 w-full rounded" style={{ background: "#E2ECF9" }} />
+            <div className="h-4 w-2/3 rounded" style={{ background: "#E2ECF9" }} />
           </div>
         </div>
-        <div className="h-80 bg-gray-100 rounded-2xl" />
+        <div className="h-80 rounded-3xl" style={{ background: "#E2ECF9" }} />
       </div>
     </div>
   );
@@ -420,35 +479,36 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <DarkNavbar />
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
 
       <main className="max-w-6xl mx-auto px-6 py-10">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-[rgba(4,14,32,0.45)] mb-8">
+        <div className="flex items-center gap-2 text-sm mb-8" style={{ color: C.inkFaint }}>
           <Link href="/courses" className="hover:text-[#1b61c9] transition-colors">Khóa học</Link>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 18 15 12 9 6"/>
           </svg>
-          <span className="text-[#181d26] truncate max-w-xs">{course?.title ?? "..."}</span>
+          <span className="truncate max-w-xs" style={{ color: C.ink }}>{course?.title ?? "..."}</span>
         </div>
 
         {isLoading ? <DetailSkeleton /> : course ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <motion.div initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* ── Left: Content ── */}
             <div className="lg:col-span-2">
               {/* Badges */}
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-[#1b61c9] bg-[#1b61c9]/8 px-2.5 py-1 rounded-full font-medium">
+                <span className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ color: C.blue, background: "rgba(27,97,201,0.09)" }}>
                   {course.category.name}
                 </span>
-                <span className="text-xs text-[rgba(4,14,32,0.55)] bg-white px-2.5 py-1 rounded-full border border-[#e0e2e6]">
+                <span className="rounded-full px-2.5 py-1 text-xs" style={{ color: C.inkSoft, background: "#EAF1FC" }}>
                   {LEVEL_LABEL[course.level] ?? course.level}
                 </span>
               </div>
 
               {/* Title */}
-              <h1 className="text-3xl font-light text-[#181d26] leading-snug mb-5 tracking-[0.08px]">
+              <h1 className="font-display text-3xl font-semibold leading-snug mb-5 tracking-[0.08px]" style={{ color: C.ink }}>
                 {course.title}
               </h1>
 
@@ -457,18 +517,18 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                 {course.instructor.avatar ? (
                   <img src={course.instructor.avatar} alt={course.instructor.name} className="w-10 h-10 rounded-full object-cover" />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#1b61c9]/15 flex items-center justify-center">
-                    <span className="text-sm font-bold text-[#1b61c9]">{course.instructor.name.charAt(0)}</span>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "rgba(27,97,201,0.12)" }}>
+                    <span className="text-sm font-bold" style={{ color: C.blue }}>{course.instructor.name.charAt(0)}</span>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-[rgba(4,14,32,0.45)] tracking-[0.07px]">Giảng viên</p>
-                  <p className="text-sm font-medium text-[#181d26]">{course.instructor.name}</p>
+                  <p className="text-sm tracking-[0.07px]" style={{ color: C.inkFaint }}>Giảng viên</p>
+                  <p className="text-sm font-medium" style={{ color: C.ink }}>{course.instructor.name}</p>
                 </div>
               </div>
 
               {/* Stats row */}
-              <div className="flex items-center gap-6 mb-8 pb-8 border-b border-[#e0e2e6]">
+              <div className="flex items-center gap-6 mb-8 pb-8 border-b" style={{ borderColor: C.border }}>
                 {[
                   {
                     icon: (
@@ -496,7 +556,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     text: `${totalLessons} bài học`,
                   },
                 ].map((s, i) => (
-                  <div key={i} className="flex items-center gap-2 text-[rgba(4,14,32,0.55)]">
+                  <div key={i} className="flex items-center gap-2" style={{ color: C.inkSoft }}>
                     {s.icon}
                     <span className="text-sm tracking-[0.07px]">{s.text}</span>
                   </div>
@@ -505,17 +565,17 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
 
               {/* Description */}
               <div className="mb-10">
-                <h2 className="text-lg font-semibold text-[#181d26] mb-3 tracking-[0.08px]">Mô tả khóa học</h2>
-                <p className="text-[rgba(4,14,32,0.69)] leading-relaxed tracking-[0.18px]">
+                <h2 className="font-display text-xl font-semibold mb-3 tracking-[0.08px]" style={{ color: C.ink }}>Mô tả khóa học</h2>
+                <p className="leading-relaxed tracking-[0.18px]" style={{ color: C.inkSoft }}>
                   {course.description}
                 </p>
               </div>
 
               {/* Curriculum */}
               <div>
-                <h2 className="text-lg font-semibold text-[#181d26] mb-4 tracking-[0.08px]">
+                <h2 className="font-display text-xl font-semibold mb-4 tracking-[0.08px]" style={{ color: C.ink }}>
                   Nội dung khóa học
-                  <span className="ml-2 text-sm font-normal text-[rgba(4,14,32,0.45)]">
+                  <span className="ml-2 text-sm font-normal" style={{ color: C.inkFaint }}>
                     ({course.sections.length} chương · {totalLessons} bài)
                   </span>
                 </h2>
@@ -538,11 +598,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
             <div className="lg:col-span-1">
               <div className="sticky top-24">
                 <div
-                  className="bg-white rounded-2xl border border-[#e0e2e6] overflow-hidden"
-                  style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 0px 2px, rgba(45,127,249,0.28) 0px 1px 3px" }}
+                  className="rounded-3xl overflow-hidden bg-white"
+                  style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
                 >
                   {/* Thumbnail */}
-                  <div className="aspect-video overflow-hidden">
+                  <div className="aspect-video overflow-hidden" style={{ background: "#E7EFFB" }}>
                     <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
                   </div>
 
@@ -550,37 +610,37 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     {/* Price */}
                     <div className="mb-5">
                       {course.is_free ? (
-                        <span className="text-2xl font-semibold text-[#006400]">Miễn phí</span>
+                        <span className="font-display text-2xl font-semibold" style={{ color: C.emerald }}>Miễn phí</span>
                       ) : discountedPrice(course.price, course.discount_percent) !== null ? (
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-semibold text-[#e53e3e]">
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="font-display text-2xl font-semibold" style={{ color: C.danger }}>
                             {formatPriceNum(discountedPrice(course.price, course.discount_percent)!)}
                           </span>
-                          <span className="text-sm text-[rgba(4,14,32,0.4)] line-through">
+                          <span className="text-sm line-through" style={{ color: C.inkFaint }}>
                             {formatPrice(course.price)}
                           </span>
-                          <span className="text-xs font-semibold text-white bg-[#e53e3e] px-1.5 py-0.5 rounded">
+                          <span className="text-xs font-semibold text-white px-1.5 py-0.5 rounded" style={{ background: C.danger }}>
                             -{course.discount_percent}%
                           </span>
                         </div>
                       ) : (
-                        <span className="text-2xl font-semibold text-[#181d26]">{formatPrice(course.price)}</span>
+                        <span className="font-display text-2xl font-semibold" style={{ color: C.ink }}>{formatPrice(course.price)}</span>
                       )}
                     </div>
 
                     {/* CTA */}
                     {enrollSuccess ? (
-                      <div className="mb-5 flex flex-col items-center gap-2 py-4 px-4 bg-green-50 border border-green-200 rounded-xl text-center">
-                        <svg className="text-green-500" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <div className="mb-5 flex flex-col items-center gap-2 py-4 px-4 rounded-xl text-center" style={{ background: "rgba(14,159,110,0.08)", border: `1px solid rgba(14,159,110,0.25)` }}>
+                        <svg style={{ color: C.emerald }} width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="12" cy="12" r="10"/><polyline points="20 6 9 17 4 12"/>
                         </svg>
-                        <p className="text-sm font-semibold text-green-700">Đăng ký thành công!</p>
-                        <p className="text-xs text-green-600">Đang chuyển sang trang học...</p>
+                        <p className="text-sm font-semibold" style={{ color: C.emerald }}>Đăng ký thành công!</p>
+                        <p className="text-xs" style={{ color: C.inkSoft }}>Đang chuyển sang trang học...</p>
                       </div>
                     ) : (
                       <>
                         {enrollError && (
-                          <p className="text-xs text-red-500 mb-3 px-1">{enrollError}</p>
+                          <p className="text-xs mb-3 px-1" style={{ color: C.danger }}>{enrollError}</p>
                         )}
                       </>
                     )}
@@ -588,7 +648,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                     {!enrollSuccess && (course.is_enrolled ? (
                       <Link
                         href={`/student/courses/${course.id}/learn`}
-                        className="w-full flex items-center justify-center gap-2 bg-[#006400] text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:bg-[#005200] transition-colors"
+                        className="w-full flex items-center justify-center gap-2 text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:brightness-95 transition-all"
+                        style={{ background: C.emerald }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           <polyline points="20 6 9 17 4 12"/>
@@ -600,8 +661,8 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                         <button
                           onClick={handleEnroll}
                           disabled={enrolling}
-                          className="flex-1 flex items-center justify-center gap-2 bg-[#1b61c9] text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                          style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
+                          className="flex-1 flex items-center justify-center gap-2 text-white py-3 rounded-xl font-medium text-sm tracking-[0.08px] hover:bg-[#254fad] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                          style={{ background: C.blue, boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
                         >
                           {enrolling ? (
                             <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -627,7 +688,7 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                         { icon: "♾️", text: "Truy cập trọn đời" },
                         { icon: "📱", text: "Học trên mọi thiết bị" },
                       ].map((f) => (
-                        <li key={f.text} className="flex items-center gap-2.5 text-sm text-[rgba(4,14,32,0.69)]">
+                        <li key={f.text} className="flex items-center gap-2.5 text-sm" style={{ color: C.inkSoft }}>
                           <span>{f.icon}</span>
                           <span>{f.text}</span>
                         </li>
@@ -637,11 +698,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
         ) : (
           <div className="text-center py-20">
-            <p className="text-[rgba(4,14,32,0.55)]">Không tìm thấy khóa học.</p>
-            <Link href="/courses" className="mt-4 inline-block text-sm text-[#1b61c9] hover:text-[#254fad]">
+            <p style={{ color: C.inkSoft }}>Không tìm thấy khóa học.</p>
+            <Link href="/courses" className="mt-4 inline-block text-sm hover:text-[#254fad]" style={{ color: C.blue }}>
               ← Quay lại danh sách
             </Link>
           </div>

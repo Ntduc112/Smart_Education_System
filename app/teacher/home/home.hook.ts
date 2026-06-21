@@ -60,3 +60,28 @@ export function useTeacherDashboard() {
     staleTime: 30_000,
   });
 }
+
+// ── Grading queue (bài tự luận chờ chấm, gộp mọi khóa) ───────────────────────
+
+export interface GradingQueueCourse {
+  course_id: string;
+  title:     string;
+  count:     number;
+}
+
+export interface GradingQueue {
+  total:   number;
+  courses: GradingQueueCourse[];
+}
+
+export function useGradingQueue() {
+  return useQuery<GradingQueue>({
+    queryKey: ["teacher", "grading-queue"],
+    queryFn:  async () => (await api.get<GradingQueue>("/teacher/grading-queue")).data,
+    staleTime: 30_000,
+  });
+}
+
+// Analytics — KPI tăng trưởng + chart mini cho trang chủ.
+export { useTeacherAnalytics } from "../analytics/analytics.hook";
+export type { AnalyticsData, MonthlyPoint } from "../analytics/analytics.hook";

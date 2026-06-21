@@ -14,6 +14,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "course_id is required" }, { status: 400 });
         }
 
+        // URL trả về suy ra từ origin của request → tự đúng trên local/production/preview.
+        // Cho phép ghi đè bằng APP_URL khi muốn ghim domain chính thức.
+        const baseUrl = process.env.APP_URL ?? request.nextUrl.origin;
+
         const course = await prisma.course.findFirst({
             where: { id: course_id, status: "PUBLISHED" },
             select: { id: true, title: true, price: true, discount_percent: true },
@@ -49,8 +53,8 @@ export async function POST(request: NextRequest) {
                 orderCode:   pendingPayment.order_code,
                 amount:      Number(pendingPayment.amount),
                 description: `Khoa hoc ${course.title}`.slice(0, 25),
-                returnUrl:   process.env.PAYOS_RETURN_URL!,
-                cancelUrl:   process.env.PAYOS_CANCEL_URL!,
+                returnUrl:   `${baseUrl}/payment/success`,
+                cancelUrl:   `${baseUrl}/payment/cancel`,
             });
             return NextResponse.json({ checkoutUrl }, { status: 200 });
         }
@@ -72,8 +76,8 @@ export async function POST(request: NextRequest) {
             orderCode:   payment.order_code,
             amount:      Number(payment.amount),
             description: `Khoa hoc ${course.title}`.slice(0, 25),
-            returnUrl:   process.env.PAYOS_RETURN_URL!,
-            cancelUrl:   process.env.PAYOS_CANCEL_URL!,
+            returnUrl:   `${baseUrl}/payment/success`,
+            cancelUrl:   `${baseUrl}/payment/cancel`,
         });
 
         return NextResponse.json({ checkoutUrl }, { status: 201 });

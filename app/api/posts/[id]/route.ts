@@ -16,16 +16,18 @@ export async function GET(
         where: { id },
         include: {
             author: { select: authorSelect },
-            _count: { select: { likes: true, comments: true } },
+            _count: { select: { comments: true } },
         },
     });
     if (!post) return NextResponse.json({ error: "Không tìm thấy bài viết" }, { status: 404 });
 
-    const likedByMe = !!(await prisma.postLike.findUnique({
-        where: { post_id_user_id: { post_id: id, user_id: userId } },
-    }));
+    const [likeCount, dislikeCount, my] = await Promise.all([
+        prisma.postLike.count({ where: { post_id: id, value: 1 } }),
+        prisma.postLike.count({ where: { post_id: id, value: -1 } }),
+        prisma.postLike.findUnique({ where: { post_id_user_id: { post_id: id, user_id: userId } }, select: { value: true } }),
+    ]);
 
-    return NextResponse.json({ post: { ...post, likedByMe } });
+    return NextResponse.json({ post: { ...post, likeCount, dislikeCount, myReaction: my?.value ?? null } });
 }
 
 // DELETE /api/posts/[id] — tác giả hoặc admin

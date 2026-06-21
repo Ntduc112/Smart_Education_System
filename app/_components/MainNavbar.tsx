@@ -8,7 +8,7 @@ import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "./NotificationBell";
 
 
-function DarkAuth() {
+function MainAuth() {
   const { data: user, isLoading } = useMe();
   if (isLoading) return <div className="w-32 h-9" />;
   if (user) {
@@ -40,13 +40,20 @@ function DarkAuth() {
   );
 }
 
-const NAV_LINKS = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/courses", label: "Khóa học" },
-  { href: "/#features", label: "Tính năng" },
-];
+function roleHome(role?: string) {
+  if (role === "ADMIN") return "/admin/dashboard";
+  if (role === "TEACHER") return "/teacher/home";
+  if (role === "STUDENT") return "/student/home";
+  return "/";
+}
 
-export function DarkNavbar() {
+export function MainNavbar() {
+  const { data: user } = useMe();
+  const navLinks = [
+    { href: roleHome(user?.role), label: "Trang chủ" },
+    { href: "/courses", label: "Khóa học" },
+    { href: "/posts", label: "Bài viết" },
+  ];
   return (
     <motion.header
       initial={{ opacity: 0, y: -16 }}
@@ -62,7 +69,7 @@ export function DarkNavbar() {
 
       {/* Nav links — absolute true center of header */}
       <nav className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-        {NAV_LINKS.map((l) => (
+        {navLinks.map((l) => (
           <Link
             key={l.href}
             href={l.href}
@@ -75,7 +82,7 @@ export function DarkNavbar() {
 
       {/* Auth — right */}
       <div className="ml-auto">
-        <DarkAuth />
+        <MainAuth />
       </div>
     </motion.header>
   );

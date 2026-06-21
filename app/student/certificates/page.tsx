@@ -3,6 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Award, ArrowRight } from "lucide-react";
+import { MainNavbar } from "@/app/_components/MainNavbar";
+import { Atmosphere } from "@/app/student/_components/Atmosphere";
+import { BackButton } from "@/app/student/_components/BackButton";
 import api from "@/lib/axios";
 
 interface CertificateListItem {
@@ -26,76 +30,76 @@ function useCertificates() {
   });
 }
 
+const C = {
+  ink: "#181d26",
+  inkSoft: "rgba(4,14,32,0.62)",
+  inkFaint: "rgba(4,14,32,0.40)",
+  border: "#DCE6F4",
+  blue: "#1b61c9",
+  blueDark: "#254fad",
+  canvas: "#EFF5FE",
+};
+const CARD_SHADOW = "rgba(27,60,120,0.05) 0px 8px 24px";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 0.61, 0.36, 1] as const } },
 };
-
-const stagger = (delay = 0.07) => ({
-  hidden: {},
-  show: { transition: { staggerChildren: delay } },
-});
+const stagger = (delay = 0.07) => ({ hidden: {}, show: { transition: { staggerChildren: delay } } });
 
 export default function CertificatesPage() {
   const { data: certificates, isLoading } = useCertificates();
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <motion.div
-          className="mb-8"
-          initial="hidden"
-          animate="show"
-          variants={stagger(0.06)}
-        >
-          <motion.h1 variants={fadeUp} className="text-2xl font-bold text-[#181d26] tracking-tight">
-            Chứng chỉ của tôi
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
+
+      <main className="mx-auto max-w-6xl px-6 py-10">
+        <BackButton />
+        <motion.div className="mb-8" initial="hidden" animate="show" variants={stagger(0.06)}>
+          <motion.div variants={fadeUp} className="mb-3 flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+            style={{ background: "rgba(27,97,201,0.10)", color: C.blue }}>
+            <Award size={13} /> Thành quả của bạn
+          </motion.div>
+          <motion.h1 variants={fadeUp} className="font-display text-[32px] font-light leading-tight">
+            Chứng chỉ <span className="font-semibold" style={{ color: C.blue }}>của tôi</span>
           </motion.h1>
-          <motion.p variants={fadeUp} className="text-sm text-[rgba(4,14,32,0.55)] mt-1">
-            Các khóa học bạn đã hoàn thành và nhận chứng chỉ
+          <motion.p variants={fadeUp} className="mt-2 text-[15px]" style={{ color: C.inkSoft }}>
+            Các khóa học bạn đã hoàn thành và nhận chứng chỉ.
           </motion.p>
         </motion.div>
 
         {isLoading && (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-[#1b61c9] border-t-transparent rounded-full animate-spin" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1b61c9] border-t-transparent" />
           </div>
         )}
 
         {!isLoading && (!certificates || certificates.length === 0) && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.96 }}
+            initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-            className="flex flex-col items-center justify-center py-20 gap-4"
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center gap-4 rounded-3xl bg-white py-16"
+            style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.15, duration: 0.5, ease: [0.34, 1.26, 0.64, 1] as const }}
-              className="w-16 h-16 bg-[#1b61c9]/8 rounded-2xl flex items-center justify-center"
+              className="grid h-16 w-16 place-items-center rounded-2xl"
+              style={{ background: "rgba(27,97,201,0.08)" }}
             >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="8" r="6" />
-                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-              </svg>
+              <Award size={28} style={{ color: C.blue }} />
             </motion.div>
-            <motion.p
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="text-[rgba(4,14,32,0.55)] text-sm"
-            >
-              Bạn chưa có chứng chỉ nào
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              <Link href="/student/dashboard" className="text-sm text-[#1b61c9] hover:underline font-medium">
+            <div className="text-center">
+              <p className="font-display text-lg font-semibold">Bạn chưa có chứng chỉ nào</p>
+              <p className="mt-1 text-sm" style={{ color: C.inkSoft }}>Hoàn thành một khóa học để nhận chứng chỉ đầu tiên!</p>
+            </div>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link href="/courses" className="rounded-xl px-5 py-2.5 text-sm font-medium text-white"
+                style={{ background: C.blue, boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}>
                 Khám phá khóa học
               </Link>
             </motion.div>
@@ -104,7 +108,7 @@ export default function CertificatesPage() {
 
         {!isLoading && certificates && certificates.length > 0 && (
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
             initial="hidden"
             animate="show"
             variants={stagger(0.08)}
@@ -113,50 +117,40 @@ export default function CertificatesPage() {
               <motion.div
                 key={cert.id}
                 variants={fadeUp}
-                whileHover={{
-                  y: -5,
-                  boxShadow: "rgba(15,48,106,0.14) 0px 12px 32px",
-                  transition: { duration: 0.2, ease: "easeOut" as const },
-                }}
-                className="bg-white rounded-xl border border-[#e0e2e6] overflow-hidden"
+                whileHover={{ y: -6, boxShadow: "rgba(27,60,120,0.14) 0px 16px 40px", transition: { duration: 0.2 } }}
+                className="group flex flex-col overflow-hidden rounded-3xl bg-white"
+                style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
               >
-                {cert.course.thumbnail ? (
-                  <div className="h-36 overflow-hidden bg-[#f0f4fc]">
-                    <motion.img
+                <div className="aspect-video overflow-hidden" style={{ background: "#E7EFFB" }}>
+                  {cert.course.thumbnail ? (
+                    <img
                       src={cert.course.thumbnail}
                       alt={cert.course.title}
-                      className="w-full h-full object-cover"
-                      whileHover={{ scale: 1.05, transition: { duration: 0.4 } }}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                  </div>
-                ) : (
-                  <div className="h-36 bg-[#f0f4fc] flex items-center justify-center">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="8" r="6" />
-                      <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                    </svg>
-                  </div>
-                )}
-                <div className="p-4">
-                  <p className="text-sm font-semibold text-[#181d26] line-clamp-2 leading-snug mb-1">
+                  ) : (
+                    <div className="grid h-full w-full place-items-center">
+                      <Award size={32} style={{ color: C.blue }} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="mb-1 line-clamp-2 font-display text-[16px] font-semibold leading-snug" style={{ color: C.ink }}>
                     {cert.course.title}
-                  </p>
-                  <p className="text-xs text-[rgba(4,14,32,0.45)] mb-3">
-                    {cert.course.instructor.name}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-[rgba(4,14,32,0.35)]">
+                  </h3>
+                  <p className="mb-4 text-xs" style={{ color: C.inkFaint }}>{cert.course.instructor.name}</p>
+                  <div className="mt-auto flex items-center justify-between border-t pt-3" style={{ borderColor: "#EAF1FC" }}>
+                    <span className="text-xs" style={{ color: C.inkFaint }}>
                       {new Date(cert.issued_at).toLocaleDateString("vi-VN")}
                     </span>
                     <motion.div whileHover={{ x: 2 }} whileTap={{ scale: 0.96 }}>
                       <Link
                         href={`/student/certificates/${cert.id}`}
-                        className="text-xs font-medium text-[#1b61c9] hover:text-[#254fad] px-3 py-1.5 rounded-lg hover:bg-[#1b61c9]/8 transition-colors flex items-center gap-1"
+                        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[#1b61c9]/8"
+                        style={{ color: C.blue }}
                       >
                         Xem chứng chỉ
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-                        </svg>
+                        <ArrowRight size={12} />
                       </Link>
                     </motion.div>
                   </div>
@@ -165,7 +159,7 @@ export default function CertificatesPage() {
             ))}
           </motion.div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
