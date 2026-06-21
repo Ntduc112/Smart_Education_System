@@ -6,12 +6,56 @@ import { pipeline } from "stream/promises";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import os from "os";
+import Groq from "groq-sdk";
 import { getObjectStream, uploadStream } from "../lib/storage/s3.js";
+import prisma from "../prisma/prisma.js";
 
 const execFileAsync = promisify(execFile);
 const ffmpegBin = path.join(process.cwd(), "node_modules/ffmpeg-static/ffmpeg");
 const PORT = process.env.PORT ?? "3001";
 const WORKER_SECRET = process.env.WORKER_SECRET;
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Trích lời nói trong video bằng Groq Whisper → lưu vào VideoTranscript.
+// Lỗi ở đây KHÔNG làm hỏng faststart (đã chạy xong trước đó).
+async function transcribe(videoKey: string, inputPath: string, tmpDir: string): Promise<void> {
+    await prisma.videoTranscript.upsert({
+        where: { video_key: videoKey },
+        create: { video_key: videoKey, status: "processing" },
+        update: { status: "processing", text: null },
+    });
+
+    try {
+        const audioPath = path.join(tmpDir, "audio.mp3");
+        // Audio mono 16kHz 32kbps: tối ưu cho Whisper, file nhỏ (~0.25MB/phút).
+        await execFileAsync(ffmpegBin, [
+            "-i", inputPath,
+            "-vn", "-ac", "1", "-ar", "16000", "-b:a", "32k",
+            "-y", audioPath,
+        ]);
+        const { size } = await fs.stat(audioPath);
+        console.log(`[transcribe] Audio ${(size / 1024 / 1024).toFixed(1)}MB — ${videoKey}`);
+
+        const result = await groq.audio.transcriptions.create({
+            file: createReadStream(audioPath),
+            model: "whisper-large-v3",
+            response_format: "text",
+        });
+        const text = (typeof result === "string" ? result : result.text ?? "").trim();
+
+        await prisma.videoTranscript.update({
+            where: { video_key: videoKey },
+            data: { status: "done", text },
+        });
+        console.log(`[transcribe] Done — ${videoKey} (${text.length} chars)`);
+    } catch (err) {
+        await prisma.videoTranscript.update({
+            where: { video_key: videoKey },
+            data: { status: "failed" },
+        }).catch(() => {});
+        throw err;
+    }
+}
 
 async function processFaststart(videoKey: string): Promise<void> {
     console.log(`[faststart] Start — key: ${videoKey}`);
@@ -36,6 +80,11 @@ async function processFaststart(videoKey: string): Promise<void> {
 
         await uploadStream(createReadStream(outputPath), videoKey, "video/mp4", outSize);
         console.log(`[faststart] Done — ${videoKey}`);
+
+        // Transcribe sau khi faststart xong. Lỗi transcribe không làm fail faststart.
+        await transcribe(videoKey, inputPath, tmpDir).catch(err =>
+            console.error(`[transcribe] Failed — ${videoKey}:`, err.message)
+        );
     } finally {
         await fs.rm(tmpDir, { recursive: true, force: true });
     }

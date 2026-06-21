@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type } from "@google/genai";
+import Groq from "groq-sdk";
 import { z } from "zod";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const BodySchema = z.object({
   questionContent: z.string().min(1).max(2000),
   sampleAnswer: z.string().max(2000).nullable().optional(),
   studentAnswer: z.string().min(1).max(4000),
   maxPoints: z.number().positive(),
+});
+
+const GradeSchema = z.object({
+  points: z.number(),
+  feedback: z.string().min(1),
 });
 
 export async function POST(request: NextRequest) {
@@ -38,30 +43,26 @@ ${studentAnswer}
 Yêu cầu:
 - Cho điểm từ 0 đến ${maxPoints} (có thể là số thập phân, bước 0.5)
 - Nhận xét ngắn gọn bằng tiếng Việt (2–4 câu): ưu điểm, thiếu sót, gợi ý cải thiện
-- Chấm công bằng, khuyến khích học sinh`;
+- Chấm công bằng, khuyến khích học sinh
+
+Trả về JSON đúng schema:
+{
+  "points": number,
+  "feedback": "nhận xét bằng tiếng Việt"
+}`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            points: { type: Type.NUMBER, description: "Điểm số từ 0 đến maxPoints" },
-            feedback: { type: Type.STRING, description: "Nhận xét bằng tiếng Việt" },
-          },
-          required: ["points", "feedback"],
-        },
-        maxOutputTokens: 512,
-      },
+    const completion = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
+      max_tokens: 512,
     });
 
-    const raw = response.text;
+    const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error("Empty response");
 
-    const parsed = JSON.parse(raw) as { points: number; feedback: string };
+    const parsed = GradeSchema.parse(JSON.parse(raw));
 
     // Clamp điểm trong khoảng hợp lệ
     const points = Math.min(maxPoints, Math.max(0, parsed.points));

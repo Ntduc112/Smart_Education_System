@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef, use } from "react";
+import { motion } from "framer-motion";
 import {
   Plus, Save,
   Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon,
 } from "lucide-react";
+import { MainNavbar } from "@/app/_components/MainNavbar";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
   useUpdateChapter, useUpdateLesson,
@@ -19,6 +21,27 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
 
+// ── Palette (cozy-blue, đồng bộ teacher/home) ─────────────────────────────────
+const C = { canvas:"#EFF5FE", ink:"#181d26", inkSoft:"rgba(4,14,32,0.62)", inkFaint:"rgba(4,14,32,0.40)", border:"#DCE6F4", blue:"#1b61c9", blueDark:"#254fad", sky:"#2E8BE6", emerald:"#0E9F6E", violet:"#7C5CFC", rose:"#E5484D" };
+
+function Atmosphere() {
+  const blobs = [
+    { c: "#BCD7FF", s: 460, top: "-8%", left: "-6%", dur: 22 },
+    { c: "#A7C8FF", s: 400, top: "12%", right: "-8%", dur: 26 },
+    { c: "#CFE0FA", s: 360, bottom: "-10%", left: "18%", dur: 30 },
+  ];
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10" aria-hidden>
+      {blobs.map((b, i) => (
+        <motion.div key={i} className="absolute rounded-full"
+          style={{ width: b.s, height: b.s, background: b.c, opacity: 0.28, filter: "blur(90px)", top: b.top, left: b.left, right: b.right, bottom: b.bottom }}
+          animate={{ y: [0, -26, 0], x: [0, 16, 0] }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.5 }} />
+      ))}
+    </div>
+  );
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface Category { id: string; name: string }
@@ -31,7 +54,7 @@ const LEVEL_OPTIONS = [
   { value: "ADVANCED",     label: "Nâng cao" },
 ];
 
-const inputCls = "w-full px-3 py-2 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all bg-white";
+const inputCls = "w-full px-3 py-2 text-sm border border-[#DCE6F4] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all bg-white";
 const labelCls = "block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5";
 
 // ── ThumbnailUploadSection ───────────────────────────────────────────────────
@@ -64,12 +87,12 @@ function ThumbnailUploadSection({
   // Uploading
   if (uploadThumbnail.isPending || (progress > 0 && progress < 100)) {
     return (
-      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+      <div className="px-4 py-4 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE] space-y-2.5">
         <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
           <span>Đang tải ảnh lên...</span>
           <span className="font-medium text-[#1b61c9]">{progress}%</span>
         </div>
-        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[#DCE6F4] rounded-full overflow-hidden">
           <div
             className="h-full bg-[#1b61c9] rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -86,18 +109,18 @@ function ThumbnailUploadSection({
         <img
           src={value}
           alt="thumbnail preview"
-          className="w-full h-40 object-cover rounded-xl border border-[#e0e2e6]"
+          className="w-full h-40 object-cover rounded-xl border border-[#DCE6F4]"
         />
         <div className="flex gap-2">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex-1 py-1.5 text-xs font-medium border border-[#e0e2e6] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+            className="flex-1 py-1.5 text-xs font-medium border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#F4F8FE] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
           >
             Thay thế ảnh
           </button>
           <button
             onClick={() => onChange("")}
-            className="flex-1 py-1.5 text-xs font-medium border border-[#e0e2e6] rounded-lg text-red-400 hover:bg-red-50 hover:border-red-300 transition-colors"
+            className="flex-1 py-1.5 text-xs font-medium border border-[#DCE6F4] rounded-lg text-red-400 hover:bg-red-50 hover:border-red-300 transition-colors"
           >
             Xóa ảnh
           </button>
@@ -113,7 +136,7 @@ function ThumbnailUploadSection({
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="w-full flex flex-col items-center gap-2 py-6 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
+        className="w-full flex flex-col items-center gap-2 py-6 border border-dashed border-[#C2D4EE] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
       >
         <div className="w-10 h-10 rounded-xl bg-[#1b61c9]/8 flex items-center justify-center">
           <ImageIcon size={18} className="text-[#1b61c9]" />
@@ -171,7 +194,7 @@ function CourseInfoPanel({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-[#181d26]">Thông tin khóa học</h2>
+      <h2 className="font-display text-lg font-semibold text-[#181d26]">Thông tin khóa học</h2>
 
       <div>
         <label className={labelCls}>Tên khóa học</label>
@@ -288,7 +311,7 @@ function ChapterPanel({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-[#181d26]">Chỉnh sửa chương</h2>
+      <h2 className="font-display text-lg font-semibold text-[#181d26]">Chỉnh sửa chương</h2>
       <div>
         <label className={labelCls}>Tên chương</label>
         <input
@@ -344,12 +367,12 @@ function VideoUploadSection({
   // ── Đang upload lên MinIO ──
   if (phase === "uploading") {
     return (
-      <div className="px-4 py-4 border border-[#e0e2e6] rounded-xl bg-[#f8fafc] space-y-2.5">
+      <div className="px-4 py-4 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE] space-y-2.5">
         <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
           <span>Đang tải lên MinIO...</span>
           <span className="font-medium text-[#1b61c9]">{uploadPct}%</span>
         </div>
-        <div className="h-1.5 bg-[#e0e2e6] rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[#DCE6F4] rounded-full overflow-hidden">
           <div className="h-full bg-[#1b61c9] rounded-full transition-all duration-300"
                style={{ width: `${uploadPct}%` }} />
         </div>
@@ -379,7 +402,7 @@ function VideoUploadSection({
   // ── Đã có video upload (R2) ──
   if (mode === "uploaded") {
     return (
-      <div className="flex items-center gap-3 px-3 py-2.5 border border-[#e0e2e6] rounded-xl bg-[#f8fafc]">
+      <div className="flex items-center gap-3 px-3 py-2.5 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE]">
         <div className="w-8 h-8 rounded-lg bg-[#1b61c9]/10 flex items-center justify-center shrink-0">
           <Video size={15} className="text-[#1b61c9]" />
         </div>
@@ -411,7 +434,7 @@ function VideoUploadSection({
   // ── Đã có URL (YouTube / khác) ──
   if (mode === "url" && !showUrlInput) {
     return (
-      <div className="flex items-center gap-3 px-3 py-2.5 border border-[#e0e2e6] rounded-xl bg-[#f8fafc]">
+      <div className="flex items-center gap-3 px-3 py-2.5 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE]">
         <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
           <Video size={15} className="text-red-500" />
         </div>
@@ -446,7 +469,7 @@ function VideoUploadSection({
         <div className="flex gap-2">
           <button
             onClick={() => setShowUrlInput(false)}
-            className="text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26] px-3 py-1.5 border border-[#e0e2e6] rounded-lg transition-colors"
+            className="text-xs text-[rgba(4,14,32,0.55)] hover:text-[#181d26] px-3 py-1.5 border border-[#DCE6F4] rounded-lg transition-colors"
           >
             Xong
           </button>
@@ -468,7 +491,7 @@ function VideoUploadSection({
       <div className="grid grid-cols-2 gap-2">
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center gap-2 py-4 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
+          className="flex flex-col items-center gap-2 py-4 border border-dashed border-[#C2D4EE] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
         >
           <div className="w-8 h-8 rounded-lg bg-[#1b61c9]/8 flex items-center justify-center">
             <Video size={16} className="text-[#1b61c9]" />
@@ -480,7 +503,7 @@ function VideoUploadSection({
         </button>
         <button
           onClick={() => setShowUrlInput(true)}
-          className="flex flex-col items-center gap-2 py-4 border border-dashed border-[#c0c8d5] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#e55] hover:text-red-500 hover:bg-red-50/40 transition-colors"
+          className="flex flex-col items-center gap-2 py-4 border border-dashed border-[#C2D4EE] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#e55] hover:text-red-500 hover:bg-red-50/40 transition-colors"
         >
           <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="#dc2626">
@@ -579,14 +602,14 @@ function LessonPanel({
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-[#181d26]">Chỉnh sửa bài học</h2>
+        <h2 className="font-display text-lg font-semibold text-[#181d26]">Chỉnh sửa bài học</h2>
         {/* is_free toggle */}
         <button
           onClick={() => setForm((f) => ({ ...f, is_free: !f.is_free }))}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
             form.is_free
               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-[#e0e2e6] bg-white text-[rgba(4,14,32,0.55)]"
+              : "border-[#DCE6F4] bg-white text-[rgba(4,14,32,0.55)]"
           }`}
         >
           {form.is_free ? "Miễn phí" : "Trả phí"}
@@ -632,7 +655,7 @@ function LessonPanel({
           <FileText size={12} /> Tài liệu PDF
         </label>
         {form.pdf_url ? (
-          <div className="flex items-center gap-3 px-3 py-2.5 border border-[#e0e2e6] rounded-xl bg-[#f8fafc]">
+          <div className="flex items-center gap-3 px-3 py-2.5 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE]">
             <FileText size={14} className="text-[#1b61c9] shrink-0" />
             <a
               href={form.pdf_url}
@@ -663,7 +686,7 @@ function LessonPanel({
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadPdf.isPending}
-              className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#c0c8d5] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[#C2D4EE] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors disabled:opacity-50"
             >
               {uploadPdf.isPending ? "Đang tải lên..." : "Tải lên PDF (tối đa 50MB)"}
             </button>
@@ -713,14 +736,14 @@ function LessonPanel({
       </button>
 
       {/* Quiz section */}
-      <div className="border-t border-[#f0f2f5] pt-5">
+      <div className="border-t border-[#DCE6F4] pt-5">
         <div className="flex items-center gap-2 mb-3">
           <ClipboardList size={15} className="text-[#1b61c9]" />
           <span className="text-sm font-semibold text-[#181d26]">Bài kiểm tra</span>
         </div>
 
         {hasQuiz ? (
-          <div className="px-4 py-3 bg-[#f8fafc] rounded-xl border border-[#e0e2e6]">
+          <div className="px-4 py-3 bg-[#F4F8FE] rounded-xl border border-[#DCE6F4]">
             {lesson.quiz.map((q) => (
               <div key={q.id} className="flex items-center justify-between">
                 <div>
@@ -732,7 +755,7 @@ function LessonPanel({
                 </div>
                 <Link
                   href={`/teacher/courses/${courseId}/quizzes/${q.id}`}
-                  className="text-xs px-3 py-1.5 border border-[#e0e2e6] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-white hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+                  className="text-xs px-3 py-1.5 border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-white hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
                 >
                   Chỉnh sửa
                 </Link>
@@ -740,7 +763,7 @@ function LessonPanel({
             ))}
           </div>
         ) : showQuizForm ? (
-          <div className="space-y-3 p-4 bg-[#f8fafc] rounded-xl border border-[#e0e2e6]">
+          <div className="space-y-3 p-4 bg-[#F4F8FE] rounded-xl border border-[#DCE6F4]">
             <input
               className={inputCls}
               placeholder="Tên bài kiểm tra"
@@ -761,7 +784,7 @@ function LessonPanel({
             <div className="flex gap-2">
               <button
                 onClick={() => setShowQuizForm(false)}
-                className="flex-1 py-2 text-sm border border-[#e0e2e6] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors"
+                className="flex-1 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors"
               >
                 Hủy
               </button>
@@ -778,7 +801,7 @@ function LessonPanel({
           <div className="flex gap-2">
             <button
               onClick={() => setShowQuizForm(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#c0c8d5] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#C2D4EE] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
             >
               <Plus size={14} />
               Thêm quiz
@@ -801,7 +824,6 @@ function LessonPanel({
           courseId={courseId}
           lessonId={lesson.id}
           lessonTitle={lesson.title}
-          lessonContent={lesson.content}
           onClose={() => setShowAIModal(false)}
           onSuccess={() => setShowAIModal(false)}
         />
@@ -814,54 +836,63 @@ function LessonPanel({
 
 function EditSkeleton() {
   return (
-    <div className="flex h-screen overflow-hidden animate-pulse">
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
+      <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
+        <div
+          className="flex overflow-hidden rounded-3xl bg-white animate-pulse"
+          style={{ height: "calc(100vh - 9rem)", border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
+        >
       {/* Left sidebar */}
-      <div className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] flex flex-col">
-        <div className="px-4 py-4 border-b border-[#e0e2e6] space-y-3">
-          <div className="h-3 w-28 bg-[#eef1f5] rounded" />
-          <div className="h-9 w-full bg-[#eef1f5] rounded-lg" />
+      <div className="w-72 shrink-0 bg-white border-r border-[#DCE6F4] flex flex-col">
+        <div className="px-4 py-4 border-b border-[#DCE6F4] space-y-3">
+          <div className="h-3 w-28 bg-[#E2ECF9] rounded" />
+          <div className="h-9 w-full bg-[#E2ECF9] rounded-lg" />
         </div>
         <div className="flex-1 px-3 py-4 space-y-2">
-          <div className="h-9 w-full bg-[#f2f4f7] rounded-xl mb-3" />
+          <div className="h-9 w-full bg-[#EAF1FC] rounded-xl mb-3" />
           {[64, 48, 56, 44, 60].map((w, i) => (
             <div key={i} className="space-y-1.5">
               <div className="flex items-center gap-2 px-2 py-2">
-                <div className="h-3.5 w-3.5 bg-[#eef1f5] rounded" />
-                <div className="h-3.5 bg-[#eef1f5] rounded" style={{ width: `${w}%` }} />
+                <div className="h-3.5 w-3.5 bg-[#E2ECF9] rounded" />
+                <div className="h-3.5 bg-[#E2ECF9] rounded" style={{ width: `${w}%` }} />
               </div>
               <div className="pl-8 pr-3">
-                <div className="h-3 w-3/5 bg-[#f2f4f7] rounded" />
+                <div className="h-3 w-3/5 bg-[#EAF1FC] rounded" />
               </div>
             </div>
           ))}
         </div>
-        <div className="border-t border-[#e0e2e6] px-4 py-4">
-          <div className="h-10 w-full bg-[#eef1f5] rounded-xl" />
+        <div className="border-t border-[#DCE6F4] px-4 py-4">
+          <div className="h-10 w-full bg-[#E2ECF9] rounded-xl" />
         </div>
       </div>
 
       {/* Right editor */}
-      <div className="flex-1 overflow-y-auto bg-[#f8fafc]">
+      <div className="flex-1 overflow-y-auto bg-[#F4F8FE]">
         <div className="max-w-xl mx-auto px-8 py-8 space-y-6">
-          <div className="h-5 w-44 bg-[#e7eaef] rounded" />
+          <div className="h-5 w-44 bg-[#E2ECF9] rounded" />
           <div className="space-y-2">
-            <div className="h-3 w-24 bg-[#e7eaef] rounded" />
-            <div className="h-10 w-full bg-white border border-[#e9ecf1] rounded-xl" />
+            <div className="h-3 w-24 bg-[#E2ECF9] rounded" />
+            <div className="h-10 w-full bg-white border border-[#DCE6F4] rounded-xl" />
           </div>
           <div className="space-y-2">
-            <div className="h-3 w-20 bg-[#e7eaef] rounded" />
-            <div className="h-24 w-full bg-white border border-[#e9ecf1] rounded-xl" />
+            <div className="h-3 w-20 bg-[#E2ECF9] rounded" />
+            <div className="h-24 w-full bg-white border border-[#DCE6F4] rounded-xl" />
           </div>
           <div className="space-y-2">
-            <div className="h-3 w-28 bg-[#e7eaef] rounded" />
+            <div className="h-3 w-28 bg-[#E2ECF9] rounded" />
             <div className="grid grid-cols-2 gap-3">
-              <div className="h-28 bg-white border border-[#e9ecf1] rounded-xl" />
-              <div className="h-28 bg-white border border-[#e9ecf1] rounded-xl" />
+              <div className="h-28 bg-white border border-[#DCE6F4] rounded-xl" />
+              <div className="h-28 bg-white border border-[#DCE6F4] rounded-xl" />
             </div>
           </div>
-          <div className="h-11 w-full bg-[#dbe4f3] rounded-xl" />
+          <div className="h-11 w-full bg-[#E2ECF9] rounded-xl" />
         </div>
       </div>
+        </div>
+      </main>
     </div>
   );
 }
@@ -876,7 +907,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
 
   const { data: categoriesData } = useQuery<{ categories: Category[] }>({
     queryKey: ["categories"],
-    queryFn:  async () => (await api.get("/admin/categories")).data,
+    queryFn:  async () => (await api.get("/categories")).data,
   });
   const categories = categoriesData?.categories ?? [];
 
@@ -898,8 +929,17 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
 
   if (!course) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-red-500">
-        Không tìm thấy khóa học.
+      <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+        <Atmosphere />
+        <MainNavbar />
+        <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
+          <div
+            className="flex items-center justify-center rounded-3xl bg-white py-20 text-sm"
+            style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px", color: C.rose }}
+          >
+            Không tìm thấy khóa học.
+          </div>
+        </main>
       </div>
     );
   }
@@ -907,11 +947,18 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   const isPublished = course.status === "PUBLISHED";
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
+      <Atmosphere />
+      <MainNavbar />
+      <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
+        <div
+          className="flex overflow-hidden rounded-3xl bg-white"
+          style={{ height: "calc(100vh - 9rem)", border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
+        >
       {/* ── Left panel: Outline ── */}
-      <div className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] flex flex-col overflow-hidden">
+      <div className="w-72 shrink-0 bg-white border-r border-[#DCE6F4] flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="px-4 py-4 border-b border-[#e0e2e6]">
+        <div className="px-4 py-4 border-b border-[#DCE6F4]">
           <Link
             href="/teacher/courses"
             className="group inline-flex items-center gap-1 text-xs text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors mb-3"
@@ -924,7 +971,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               selection.type === "info"
                 ? "bg-[#1b61c9]/8 text-[#1b61c9]"
-                : "text-[rgba(4,14,32,0.7)] hover:bg-[#f8fafc]"
+                : "text-[rgba(4,14,32,0.7)] hover:bg-[#F4F8FE]"
             }`}
           >
             <span className="line-clamp-1">{course.title}</span>
@@ -941,7 +988,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         />
 
         {/* Publish toggle */}
-        <div className="border-t border-[#e0e2e6] px-4 py-4">
+        <div className="border-t border-[#DCE6F4] px-4 py-4">
           <button
             onClick={() => togglePublish.mutate(undefined, {
               onSuccess: () => toast.success(isPublished ? "Đã chuyển khóa học về nháp" : "Đã công bố khóa học"),
@@ -950,7 +997,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             disabled={togglePublish.isPending}
             className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${
               isPublished
-                ? "border border-[#e0e2e6] text-[rgba(4,14,32,0.7)] hover:bg-[#f8fafc]"
+                ? "border border-[#DCE6F4] text-[rgba(4,14,32,0.7)] hover:bg-[#F4F8FE]"
                 : "bg-emerald-600 text-white hover:bg-emerald-700"
             }`}
           >
@@ -961,7 +1008,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* ── Right panel: Editor ── */}
-      <div className="flex-1 overflow-y-auto bg-[#f8fafc]">
+      <div className="flex-1 overflow-y-auto bg-[#F4F8FE]">
         <div className="max-w-xl mx-auto px-8 py-8">
           {selection.type === "info" && (
             <CourseInfoPanel courseId={id} course={course} categories={categories} />
@@ -977,6 +1024,8 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           )}
         </div>
       </div>
+        </div>
+      </main>
 
       {showBulkImport && (
         <BulkImportModal

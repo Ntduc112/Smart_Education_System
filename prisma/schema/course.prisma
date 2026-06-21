@@ -107,3 +107,11 @@ model Payment {
     created_at DateTime       @default(now())
     updated_at DateTime       @updatedAt
 }
+
+model VideoTranscript {
+    video_key  String   @id
+    text       String?
+    status     String   @default("processing") // processing | done | failed
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+}

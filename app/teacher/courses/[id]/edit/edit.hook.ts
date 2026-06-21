@@ -377,23 +377,28 @@ export interface AIQuestion {
   type: "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
   points: number;
   sample_answer?: string;
+  source_excerpt?: string;
   options?: { content: string; is_correct: boolean }[];
+}
+
+export interface AIGenerateResult {
+  questions: AIQuestion[];
+  sourcesUsed: { content: boolean; pdf: boolean; transcript: boolean };
 }
 
 export function useAIGenerateQuiz() {
   return useMutation({
     mutationFn: async ({
-      lessonTitle, lessonContent, questionCount,
+      lessonId, questionCount,
     }: {
-      lessonTitle: string;
-      lessonContent: string | null;
+      lessonId: string;
       questionCount: number;
     }) => {
-      const res = await api.post<{ questions: AIQuestion[] }>(
+      const res = await api.post<AIGenerateResult>(
         "/teacher/ai/generate-quiz",
-        { lessonTitle, lessonContent, questionCount }
+        { lessonId, questionCount }
       );
-      return res.data.questions;
+      return res.data;
     },
   });
 }
