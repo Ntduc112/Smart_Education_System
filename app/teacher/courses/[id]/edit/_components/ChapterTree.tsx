@@ -52,12 +52,24 @@ function SortableLesson({
       }`}
     >
       <GripVertical size={12} className="shrink-0 text-[rgba(4,14,32,0.25)] opacity-0 group-hover:opacity-100 transition-opacity" />
-      <BookOpen size={12} className="shrink-0" />
-      <span className="text-xs flex-1 truncate">{lesson.title}</span>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${selected || isDropTarget ? "bg-[#1b61c9]" : "bg-[#cdd8ea]"}`} />
+      <span className="text-[13px] flex-1 truncate">{lesson.title}</span>
       <div className="flex items-center gap-1 shrink-0">
-        {lesson.video_url && <Video size={10} className="text-[rgba(4,14,32,0.35)]" />}
-        {lesson.pdf_url   && <FileText size={10} className="text-[rgba(4,14,32,0.35)]" />}
-        {lesson.quiz.length > 0 && <ClipboardList size={10} className="text-[rgba(4,14,32,0.35)]" />}
+        {lesson.video_url && (
+          <span className="w-4 h-4 rounded grid place-items-center bg-[#1b61c9]/10" title="Video">
+            <Video size={9} className="text-[#1b61c9]" />
+          </span>
+        )}
+        {lesson.pdf_url && (
+          <span className="w-4 h-4 rounded grid place-items-center bg-[#7C5CFC]/12" title="PDF">
+            <FileText size={9} className="text-[#7C5CFC]" />
+          </span>
+        )}
+        {lesson.quiz.length > 0 && (
+          <span className="w-4 h-4 rounded grid place-items-center bg-emerald-500/12" title="Quiz">
+            <ClipboardList size={9} className="text-emerald-600" />
+          </span>
+        )}
         {lesson.is_free && (
           <span className="text-[9px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
             Free
@@ -77,13 +89,14 @@ function SortableLesson({
 // ── Sortable chapter (with nested lessons) ────────────────────────────────────
 
 function SortableChapter({
-  chapter, expanded, onToggle, selection, setSelection,
+  chapter, index, expanded, onToggle, selection, setSelection,
   isDropTarget, overLessonId,
   onDeleteChapter, onDeleteLesson,
   addLessonChapterId, setAddLessonChapterId,
   newLessonTitle, setNewLessonTitle, onAddLesson,
 }: {
   chapter:    BuilderChapter;
+  index:      number;
   expanded:   boolean;
   onToggle:   () => void;
   selection:  Selection;
@@ -124,12 +137,16 @@ function SortableChapter({
         <button onClick={(e) => { e.stopPropagation(); onToggle(); }} className="shrink-0">
           {expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         </button>
+        <span className="shrink-0 w-6 h-6 rounded-md grid place-items-center text-[11px] font-bold text-[#1b61c9] bg-[#1b61c9]/10">
+          {String(index + 1).padStart(2, "0")}
+        </span>
         <span
-          className="text-sm font-medium flex-1 truncate"
+          className="text-sm font-semibold flex-1 truncate"
           onClick={() => setSelection({ type: "chapter", id: chapter.id })}
         >
           {chapter.title}
         </span>
+        <span className="shrink-0 text-[11px] text-[rgba(4,14,32,0.4)] mr-1">{chapter.lessons.length} bài</span>
         <button
           onClick={(e) => { e.stopPropagation(); onDeleteChapter(chapter.id, chapter.title); }}
           className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"
@@ -140,7 +157,7 @@ function SortableChapter({
 
       {/* Lessons */}
       {expanded && (
-        <div className="mt-0.5">
+        <div className="mt-0.5 ml-[18px] border-l border-[#DCE6F4]">
           <SortableContext
             items={chapter.lessons.map((l) => l.id)}
             strategy={verticalListSortingStrategy}
@@ -391,10 +408,11 @@ export function ChapterTree({
         onDragCancel={clearOver}
       >
         <SortableContext items={localSections.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          {localSections.map((chapter) => (
+          {localSections.map((chapter, index) => (
             <SortableChapter
               key={chapter.id}
               chapter={chapter}
+              index={index}
               expanded={expanded.has(chapter.id)}
               onToggle={() => toggleExpand(chapter.id)}
               selection={selection}

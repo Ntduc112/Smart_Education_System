@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, use } from "react";
 import { motion } from "framer-motion";
 import {
   Plus, Save,
-  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings,
+  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings, BookOpen,
 } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
 import {
@@ -54,8 +54,28 @@ const LEVEL_OPTIONS = [
   { value: "ADVANCED",     label: "Nâng cao" },
 ];
 
-const inputCls = "w-full px-3 py-2 text-sm border border-[#DCE6F4] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all bg-white";
-const labelCls = "block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider mb-1.5";
+const inputCls = "w-full px-3.5 py-2.5 text-sm text-[#181d26] bg-[#FBFCFE] border border-[#DCE6F4] rounded-xl outline-none focus:border-[#1b61c9] focus:bg-white focus:ring-2 focus:ring-[#1b61c9]/10 transition-all";
+const labelCls = "block text-[13px] font-semibold text-[rgba(4,14,32,0.62)] mb-2";
+
+// Studio-editor surface chrome (đồng bộ mọi panel bên phải)
+const surfHeadCls = "flex items-center gap-3 px-7 py-5 border-b border-[#DCE6F4]";
+const sectionCls = "px-7 py-6 border-b border-[#DCE6F4] last:border-b-0";
+const sectionLabelCls = "text-[11px] font-bold tracking-[0.12em] uppercase text-[rgba(4,14,32,0.42)] mb-4";
+const footCls = "flex items-center gap-3 px-7 py-4 bg-[#FBFCFE]";
+
+function SurfaceHead({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
+  return (
+    <div className={surfHeadCls}>
+      <div className="w-10 h-10 rounded-xl bg-[#1b61c9]/[0.09] flex items-center justify-center text-[#1b61c9] shrink-0">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <h2 className="font-display text-[18px] font-semibold text-[#181d26] leading-tight">{title}</h2>
+        {subtitle && <p className="text-[13px] text-[rgba(4,14,32,0.4)] mt-0.5 truncate">{subtitle}</p>}
+      </div>
+    </div>
+  );
+}
 
 // ── ThumbnailUploadSection ───────────────────────────────────────────────────
 
@@ -102,27 +122,23 @@ function ThumbnailUploadSection({
     );
   }
 
-  // Has image
+  // Has image — 16:9 với overlay hành động
   if (value) {
     return (
-      <div className="space-y-2">
-        <img
-          src={value}
-          alt="thumbnail preview"
-          className="w-full h-40 object-cover rounded-xl border border-[#DCE6F4]"
-        />
-        <div className="flex gap-2">
+      <div className="relative aspect-video rounded-2xl overflow-hidden border border-[#DCE6F4] group">
+        <img src={value} alt="thumbnail preview" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 flex items-end justify-end gap-2 p-3.5 bg-gradient-to-t from-[rgba(8,20,40,0.55)] to-transparent">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex-1 py-1.5 text-xs font-medium border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#F4F8FE] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+            className="text-xs font-semibold px-3 py-2 rounded-lg border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 transition-colors"
           >
-            Thay thế ảnh
+            Thay ảnh khác
           </button>
           <button
             onClick={() => onChange("")}
-            className="flex-1 py-1.5 text-xs font-medium border border-[#DCE6F4] rounded-lg text-red-400 hover:bg-red-50 hover:border-red-300 transition-colors"
+            className="text-xs font-semibold px-3 py-2 rounded-lg border border-white/30 bg-white/15 text-white backdrop-blur-sm hover:bg-red-500/70 hover:border-red-300/50 transition-colors"
           >
-            Xóa ảnh
+            Xóa
           </button>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
@@ -130,20 +146,20 @@ function ThumbnailUploadSection({
     );
   }
 
-  // Empty
+  // Empty — dropzone 16:9
   return (
     <>
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="w-full flex flex-col items-center gap-2 py-6 border border-dashed border-[#C2D4EE] rounded-xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/4 transition-colors"
+        className="w-full aspect-video flex flex-col items-center justify-center gap-2.5 border border-dashed border-[#C2D4EE] rounded-2xl text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] hover:bg-[#1b61c9]/[0.03] transition-colors"
       >
-        <div className="w-10 h-10 rounded-xl bg-[#1b61c9]/8 flex items-center justify-center">
-          <ImageIcon size={18} className="text-[#1b61c9]" />
+        <div className="w-12 h-12 rounded-2xl bg-[#1b61c9]/8 flex items-center justify-center">
+          <ImageIcon size={20} className="text-[#1b61c9]" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium">Tải lên ảnh bìa</p>
-          <p className="text-xs text-[rgba(4,14,32,0.4)] mt-0.5">JPG · PNG · WebP · GIF (tối đa 10MB)</p>
+          <p className="text-sm font-semibold">Tải lên ảnh bìa</p>
+          <p className="text-xs text-[rgba(4,14,32,0.4)] mt-0.5">JPG · PNG · WebP · GIF · tối đa 10MB · tỉ lệ 16:9</p>
         </div>
       </button>
     </>
@@ -193,106 +209,133 @@ function CourseInfoPanel({
   );
 
   return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-semibold text-[#181d26]">Thông tin khóa học</h2>
+    <>
+      <SurfaceHead
+        icon={<Settings size={18} />}
+        title="Thông tin khóa học"
+        subtitle="Hiển thị trên trang giới thiệu cho học viên"
+      />
 
-      <div>
-        <label className={labelCls}>Tên khóa học</label>
-        <input
-          className={inputCls}
-          value={form.title}
-          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-        />
+      {/* Tổng quan */}
+      <div className={sectionCls}>
+        <p className={sectionLabelCls}>Tổng quan</p>
+        <div className="space-y-5">
+          <div>
+            <label className={labelCls}>Tên khóa học</label>
+            <input
+              className={inputCls}
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Mô tả</label>
+            <textarea
+              rows={4}
+              className={`${inputCls} resize-y leading-relaxed`}
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+        </div>
       </div>
 
-      <div>
-        <label className={labelCls}>Mô tả</label>
-        <textarea
-          rows={4}
-          className={`${inputCls} resize-none`}
-          value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-        />
-      </div>
-
-      <div>
-        <label className={labelCls} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <ImageIcon size={12} /> Ảnh bìa
-        </label>
+      {/* Ảnh bìa */}
+      <div className={sectionCls}>
+        <p className={sectionLabelCls}>Ảnh bìa</p>
         <ThumbnailUploadSection
           value={form.thumbnail}
           onChange={(url) => setForm((f) => ({ ...f, thumbnail: url }))}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelCls}>Danh mục</label>
-          <select
-            className={inputCls}
-            value={form.category_id}
-            onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Cấp độ</label>
-          <select
-            className={inputCls}
-            value={form.level}
-            onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
-          >
-            {LEVEL_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={labelCls}>Giá (VND)</label>
-          <input
-            type="number"
-            min={0}
-            step={1000}
-            className={inputCls}
-            value={form.price}
-            onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
-          />
-        </div>
-        <div>
-          <label className={labelCls}>Giảm giá (%)</label>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={1}
-            placeholder="0"
-            className={inputCls}
-            value={form.discount_percent || ""}
-            onChange={(e) => setForm((f) => ({ ...f, discount_percent: parseInt(e.target.value) || 0 }))}
-          />
-          {form.discount_percent > 0 && form.price > 0 && (
-            <p className="mt-1 text-xs text-emerald-600">
-              Giá sau giảm: {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(form.price * (1 - form.discount_percent / 100))}
-            </p>
-          )}
+      {/* Phân loại */}
+      <div className={sectionCls}>
+        <p className={sectionLabelCls}>Phân loại</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Danh mục</label>
+            <select
+              className={inputCls}
+              value={form.category_id}
+              onChange={(e) => setForm((f) => ({ ...f, category_id: e.target.value }))}
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Cấp độ</label>
+            <select
+              className={inputCls}
+              value={form.level}
+              onChange={(e) => setForm((f) => ({ ...f, level: e.target.value }))}
+            >
+              {LEVEL_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={updateCourse.isPending}
-        className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
-      >
-        <Save size={14} />
-        {updateCourse.isPending ? "Đang lưu..." : "Lưu thông tin"}
-      </button>
-    </div>
+      {/* Giá & ưu đãi */}
+      <div className={sectionCls}>
+        <p className={sectionLabelCls}>Giá &amp; ưu đãi</p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Giá gốc</label>
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                step={1000}
+                className={`${inputCls} pr-12`}
+                value={form.price}
+                onChange={(e) => setForm((f) => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[rgba(4,14,32,0.4)]">VND</span>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Giảm giá</label>
+            <div className="relative">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                placeholder="0"
+                className={`${inputCls} pr-10`}
+                value={form.discount_percent || ""}
+                onChange={(e) => setForm((f) => ({ ...f, discount_percent: parseInt(e.target.value) || 0 }))}
+              />
+              <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[rgba(4,14,32,0.4)]">%</span>
+            </div>
+            {form.discount_percent > 0 && form.price > 0 && (
+              <div className="mt-2.5 inline-flex items-center gap-2 text-[12.5px] font-semibold text-emerald-600 bg-emerald-500/10 px-3 py-1.5 rounded-lg">
+                Học viên trả: {new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(form.price * (1 - form.discount_percent / 100))}
+                <s className="text-[rgba(4,14,32,0.4)] font-medium">{new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(form.price)}</s>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer save */}
+      <div className={footCls}>
+        <button
+          onClick={handleSave}
+          disabled={updateCourse.isPending}
+          className="ml-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1b61c9] text-white text-sm font-semibold rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
+          style={{ boxShadow: "rgba(27,97,201,0.30) 0px 8px 22px" }}
+        >
+          <Save size={15} />
+          {updateCourse.isPending ? "Đang lưu..." : "Lưu thông tin"}
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -310,28 +353,34 @@ function ChapterPanel({
   useEffect(() => setTitle(chapter.title), [chapter.title]);
 
   return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-semibold text-[#181d26]">Chỉnh sửa chương</h2>
-      <div>
-        <label className={labelCls}>Tên chương</label>
-        <input
-          className={inputCls}
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+    <>
+      <SurfaceHead icon={<ClipboardList size={18} />} title="Chỉnh sửa chương" subtitle={chapter.title} />
+      <div className={sectionCls}>
+        <p className={sectionLabelCls}>Thông tin chương</p>
+        <div>
+          <label className={labelCls}>Tên chương</label>
+          <input
+            className={inputCls}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
       </div>
-      <button
-        onClick={() => updateChapter.mutate({ id: chapter.id, title }, {
-          onSuccess: () => toast.success("Đã lưu chương"),
-          onError:   () => toast.error("Lưu chương thất bại, vui lòng thử lại"),
-        })}
-        disabled={updateChapter.isPending}
-        className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1b61c9] text-white text-sm font-medium rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
-      >
-        <Save size={14} />
-        {updateChapter.isPending ? "Đang lưu..." : "Lưu chương"}
-      </button>
-    </div>
+      <div className={footCls}>
+        <button
+          onClick={() => updateChapter.mutate({ id: chapter.id, title }, {
+            onSuccess: () => toast.success("Đã lưu chương"),
+            onError:   () => toast.error("Lưu chương thất bại, vui lòng thử lại"),
+          })}
+          disabled={updateChapter.isPending}
+          className="ml-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-[#1b61c9] text-white text-sm font-semibold rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60"
+          style={{ boxShadow: "rgba(27,97,201,0.30) 0px 8px 22px" }}
+        >
+          <Save size={15} />
+          {updateChapter.isPending ? "Đang lưu..." : "Lưu chương"}
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -600,13 +649,19 @@ function LessonPanel({
   const hasQuiz = lesson.quiz.length > 0;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold text-[#181d26]">Chỉnh sửa bài học</h2>
+    <>
+      <div className={surfHeadCls}>
+        <div className="w-10 h-10 rounded-xl bg-[#1b61c9]/[0.09] flex items-center justify-center text-[#1b61c9] shrink-0">
+          <BookOpen size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-[18px] font-semibold text-[#181d26] leading-tight">Chỉnh sửa bài học</h2>
+          <p className="text-[13px] text-[rgba(4,14,32,0.4)] mt-0.5 truncate">{lesson.title}</p>
+        </div>
         {/* is_free toggle */}
         <button
           onClick={() => setForm((f) => ({ ...f, is_free: !f.is_free }))}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
             form.is_free
               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
               : "border-[#DCE6F4] bg-white text-[rgba(4,14,32,0.55)]"
@@ -616,6 +671,7 @@ function LessonPanel({
         </button>
       </div>
 
+      <div className={`${sectionCls} space-y-5`}>
       {/* Title */}
       <div>
         <label className={labelCls}>Tên bài học</label>
@@ -828,7 +884,8 @@ function LessonPanel({
           onSuccess={() => setShowAIModal(false)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -1024,23 +1081,21 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         </div>
       </aside>
 
-      {/* ── Right panel: Editor (card riêng) ── */}
-      <div className="flex-1 rounded-3xl bg-white p-7"
+      {/* ── Right panel: Editor surface (head · sections · footer) ── */}
+      <div className="flex-1 min-w-0 rounded-3xl bg-white overflow-hidden"
         style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
-        <div className="max-w-xl">
-          {selection.type === "info" && (
-            <CourseInfoPanel courseId={id} course={course} categories={categories} />
-          )}
-          {selection.type === "chapter" && selectedChapter && (
-            <ChapterPanel courseId={id} chapter={selectedChapter} />
-          )}
-          {selection.type === "lesson" && selectedLesson && (
-            <LessonPanel courseId={id} lesson={selectedLesson} />
-          )}
-          {selection.type === "lesson" && !selectedLesson && (
-            <p className="text-sm text-[rgba(4,14,32,0.4)]">Chọn bài học để chỉnh sửa.</p>
-          )}
-        </div>
+        {selection.type === "info" && (
+          <CourseInfoPanel courseId={id} course={course} categories={categories} />
+        )}
+        {selection.type === "chapter" && selectedChapter && (
+          <ChapterPanel courseId={id} chapter={selectedChapter} />
+        )}
+        {selection.type === "lesson" && selectedLesson && (
+          <LessonPanel courseId={id} lesson={selectedLesson} />
+        )}
+        {selection.type === "lesson" && !selectedLesson && (
+          <p className="p-7 text-sm text-[rgba(4,14,32,0.4)]">Chọn bài học để chỉnh sửa.</p>
+        )}
       </div>
         </div>
       </main>
