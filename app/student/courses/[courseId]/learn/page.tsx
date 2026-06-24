@@ -75,7 +75,7 @@ function ChapterItem({
     <div>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#f0f4fc] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[#F4F8FE] transition-colors"
       >
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-[#181d26] leading-snug line-clamp-2 tracking-[0.07px]">
@@ -114,7 +114,7 @@ function ChapterItem({
                         ? "opacity-50 cursor-not-allowed"
                         : active
                           ? "bg-[#1b61c9]/8 border-r-2 border-[#1b61c9]"
-                          : "hover:bg-[#f8fafc]"
+                          : "hover:bg-[#F4F8FE]"
                     }`}
                   >
                     <div className="shrink-0 mt-0.5">
@@ -125,7 +125,7 @@ function ChapterItem({
                           </svg>
                         </div>
                       ) : done ? (
-                        <div className="w-4 h-4 rounded-full bg-[#006400] flex items-center justify-center">
+                        <div className="w-4 h-4 rounded-full bg-[#0E9F6E] flex items-center justify-center">
                           <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
@@ -157,7 +157,7 @@ function ChapterItem({
                 <button
                   onClick={() => onSelectQuiz(quiz)}
                   className={`w-full flex items-start gap-3 px-4 py-2.5 pl-11 text-left transition-colors ${
-                    active ? "bg-[#f5f0ff] border-r-2 border-[#7c3aed]" : "hover:bg-[#f8fafc]"
+                    active ? "bg-[#f5f0ff] border-r-2 border-[#7c3aed]" : "hover:bg-[#F4F8FE]"
                   }`}
                 >
                   <div className="shrink-0 mt-0.5">
@@ -200,7 +200,7 @@ function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef }: { lessonId: stri
   }, [lessonId]);
 
   if (!src) return (
-    <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg flex items-center justify-center" style={{ paddingBottom: "62%" }}>
+    <div className="relative w-full bg-black rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(27,60,120,0.22)] flex items-center justify-center" style={{ paddingBottom: "62%" }}>
       <span className="absolute text-white/50 text-sm">Đang tải video...</span>
     </div>
   );
@@ -216,7 +216,7 @@ function VideoPlayer({ url, lessonId, onWatchPercent, videoRef }: { url: string;
   const ytId = extractYouTubeId(url);
   if (ytId) {
     return (
-      <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style={{ paddingBottom: "62%" }}>
+      <div className="relative w-full bg-black rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(27,60,120,0.22)]" style={{ paddingBottom: "62%" }}>
         <iframe
           src={`https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1`}
           title="Video bài học"
@@ -262,7 +262,7 @@ function NativePlayer({ src, onWatchPercent, videoRef: externalRef }: { src: str
   }, [src, onWatchPercent]);
 
   return (
-    <div className="relative w-full bg-black rounded-xl overflow-hidden shadow-lg" style={{ paddingBottom: "62%" }}>
+    <div className="relative w-full bg-black rounded-2xl overflow-hidden shadow-[0_12px_36px_rgba(27,60,120,0.22)]" style={{ paddingBottom: "62%" }}>
       <video ref={videoRef} src={src} controls className="absolute inset-0 w-full h-full" />
     </div>
   );
@@ -277,7 +277,7 @@ function PdfViewer({ url }: { url: string }) {
     <div className="mt-6">
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`w-full flex items-center justify-between px-4 py-3 border border-[#e0e2e6] bg-white hover:bg-[#f8fafc] transition-colors group ${open ? "rounded-t-xl border-b-0" : "rounded-xl"}`}
+        className={`w-full flex items-center justify-between px-4 py-3 border border-[#DCE6F4] bg-white hover:bg-[#F4F8FE] transition-colors group ${open ? "rounded-t-xl border-b-0" : "rounded-xl"}`}
       >
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center">
@@ -314,7 +314,7 @@ function PdfViewer({ url }: { url: string }) {
       </button>
 
       {open && (
-        <div className="rounded-b-xl overflow-hidden border border-[#e0e2e6] bg-[#f8fafc]">
+        <div className="rounded-b-xl overflow-hidden border border-[#DCE6F4] bg-[#F4F8FE]">
           <iframe src={url} title="Tài liệu PDF" className="w-full" style={{ height: "720px" }} />
         </div>
       )}
@@ -326,7 +326,7 @@ function PdfViewer({ url }: { url: string }) {
 
 function NoVideoPlaceholder({ content }: { content?: string | null }) {
   return (
-    <div className="w-full aspect-video bg-[#f0f4fc] rounded-xl flex flex-col items-center justify-center gap-4 border border-[#e0e2e6]">
+    <div className="w-full aspect-video bg-[#EAF1FC] rounded-2xl flex flex-col items-center justify-center gap-4 border border-[#DCE6F4]">
       <div className="w-14 h-14 bg-[#1b61c9]/10 rounded-2xl flex items-center justify-center">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="5 3 19 12 5 21 5 3" />
@@ -360,7 +360,7 @@ function QuestionItem({
     <div className={`rounded-xl border p-5 transition-colors ${
       submitted && question.type !== "SHORT_ANSWER"
         ? isCorrect ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"
-        : "border-[#e0e2e6] bg-white"
+        : "border-[#DCE6F4] bg-white"
     }`}>
       <div className="flex items-start gap-3 mb-4">
         <span className="shrink-0 w-6 h-6 rounded-full bg-[#7c3aed]/10 text-[#7c3aed] text-xs font-semibold flex items-center justify-center mt-0.5">
@@ -384,10 +384,10 @@ function QuestionItem({
                       ? "border-green-300 bg-green-50 text-green-800"
                       : isOptWrong
                         ? "border-red-300 bg-red-50 text-red-700"
-                        : "border-[#e0e2e6] text-[rgba(4,14,32,0.55)]"
+                        : "border-[#DCE6F4] text-[rgba(4,14,32,0.55)]"
                     : selected
                       ? "border-[#7c3aed] bg-[#f5f0ff]"
-                      : "border-[#e0e2e6] hover:border-[#7c3aed]/40 hover:bg-[#faf8ff]"
+                      : "border-[#DCE6F4] hover:border-[#7c3aed]/40 hover:bg-[#faf8ff]"
                 }`}
               >
                 <input
@@ -424,7 +424,7 @@ function QuestionItem({
             disabled={submitted}
             placeholder="Nhập câu trả lời..."
             rows={3}
-            className="w-full px-4 py-3 rounded-lg border border-[#e0e2e6] text-sm text-[#181d26] placeholder:text-[rgba(4,14,32,0.35)] focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]/30 resize-none disabled:bg-[#f8fafc] disabled:text-[rgba(4,14,32,0.55)]"
+            className="w-full px-4 py-3 rounded-lg border border-[#DCE6F4] text-sm text-[#181d26] placeholder:text-[rgba(4,14,32,0.35)] focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]/30 resize-none disabled:bg-[#F4F8FE] disabled:text-[rgba(4,14,32,0.55)]"
           />
           {submitted && (
             <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1.5">Câu trả lời tự luận sẽ được giáo viên chấm điểm</p>
@@ -501,7 +501,7 @@ function QuizView({ quizId }: { quizId: string }) {
         </div>
         <div className="flex-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#7c3aed] mb-1">Bài tập</p>
-          <h2 className="text-lg font-semibold text-[#181d26]">{quiz.title}</h2>
+          <h2 className="font-display text-lg font-semibold text-[#181d26]">{quiz.title}</h2>
           <div className="flex items-center gap-4 mt-2 flex-wrap">
             <span className="text-xs text-[rgba(4,14,32,0.55)]">{quiz.questions.length} câu hỏi</span>
             <span className="text-xs text-[rgba(4,14,32,0.55)]">Điểm qua: {quiz.pass_score}%</span>
@@ -649,14 +649,14 @@ function NavControls({
 }) {
   return (
     <div className="mb-5">
-      <h1 className="text-xl font-semibold text-[#181d26] tracking-[0.1px] leading-snug mb-4">
+      <h1 className="font-display text-2xl font-semibold text-[#181d26] tracking-[0.1px] leading-snug mb-4">
         {title}
       </h1>
-      <div className="flex items-center gap-3 pb-4 border-b border-[#e0e2e6]">
+      <div className="flex items-center gap-3 pb-4 border-b border-[#DCE6F4]">
         <button
           onClick={onPrev}
           disabled={!prevItem}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[#e0e2e6] text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[#DCE6F4] text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
@@ -685,7 +685,7 @@ function NavControls({
         )}
 
         {isLesson && isCurrentDone && (
-          <div className="flex items-center gap-1.5 bg-[#f0fdf4] text-[#006400] border border-[#bbf7d0] rounded-full px-3 py-1.5 text-sm font-medium">
+          <div className="flex items-center gap-1.5 bg-[#f0fdf4] text-[#0E9F6E] border border-[#bbf7d0] rounded-full px-3 py-1.5 text-sm font-medium">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -698,7 +698,7 @@ function NavControls({
         <button
           onClick={onNext}
           disabled={!nextItem || (isLesson && !isCurrentDone)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[#e0e2e6] text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[#DCE6F4] text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Bài sau
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -813,7 +813,7 @@ function LearnContent({
 
   if (courseLoading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(170deg,#EFF5FE,#F3F8FE,#EAF2FD)" }}>
         <div className="w-8 h-8 border-2 border-[#1b61c9] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -821,20 +821,20 @@ function LearnContent({
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "linear-gradient(170deg,#EFF5FE,#F3F8FE,#EAF2FD)" }}>
         <p className="text-[rgba(4,14,32,0.55)]">Không tìm thấy khóa học</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(170deg,#EFF5FE,#F3F8FE,#EAF2FD)" }}>
       {/* Navbar */}
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-white border-b border-[#e0e2e6] sticky top-0 z-20"
+        className="bg-white/80 backdrop-blur-xl border-b border-[#DCE6F4] sticky top-0 z-20"
       >
         <div className="h-14 px-4 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -842,7 +842,7 @@ function LearnContent({
             <span className="font-semibold text-[#1b61c9] text-sm hidden sm:block tracking-tight">Learnust</span>
           </Link>
 
-          <div className="w-px h-5 bg-[#e0e2e6] hidden sm:block" />
+          <div className="w-px h-5 bg-[#DCE6F4] hidden sm:block" />
 
           <p className="text-sm font-medium text-[#181d26] truncate flex-1 tracking-[0.07px]">
             {course.title}
@@ -850,7 +850,7 @@ function LearnContent({
 
           {progress && (
             <div className="hidden md:flex items-center gap-2 shrink-0">
-              <div className="w-24 h-1.5 bg-[#f0f2f5] rounded-full overflow-hidden">
+              <div className="w-24 h-1.5 bg-[#E2ECF9] rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-[#1b61c9] rounded-full"
                   initial={{ width: 0 }}
@@ -875,9 +875,9 @@ function LearnContent({
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-          className="w-72 shrink-0 bg-white border-r border-[#e0e2e6] overflow-y-auto hidden lg:block"
+          className="w-72 shrink-0 bg-white/70 backdrop-blur-xl border-r border-[#DCE6F4] overflow-y-auto hidden lg:block"
         >
-          <div className="px-4 py-4 border-b border-[#e0e2e6]">
+          <div className="px-4 py-4 border-b border-[#DCE6F4]">
             <p className="text-xs font-semibold uppercase tracking-widest text-[rgba(4,14,32,0.45)]">
               Nội dung khóa học
             </p>
