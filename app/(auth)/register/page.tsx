@@ -191,7 +191,7 @@ export default function RegisterPage() {
           {/* Logo */}
           <motion.div custom={0} variants={fieldVariants} initial="hidden" animate="visible" className="flex items-center gap-2.5 mb-7">
             <Logo size={34} />
-            <span className="text-[#181d26] font-semibold text-lg tracking-wide">SmartEdu</span>
+            <span className="text-[#181d26] font-semibold text-lg tracking-wide">Learnust</span>
           </motion.div>
 
           {/* Heading */}

@@ -839,7 +839,7 @@ function LearnContent({
         <div className="h-14 px-4 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Logo size={28} />
-            <span className="font-semibold text-[#1b61c9] text-sm hidden sm:block tracking-tight">SmartEdu</span>
+            <span className="font-semibold text-[#1b61c9] text-sm hidden sm:block tracking-tight">Learnust</span>
           </Link>
 
           <div className="w-px h-5 bg-[#e0e2e6] hidden sm:block" />

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
   const hasContent = !!lessonContent?.trim();
 
-  const systemPrompt = `Bạn là trợ lý học tập AI của SmartEdu.
+  const systemPrompt = `Bạn là trợ lý học tập AI của Learnust.
 
 Học sinh đang học bài: "${lessonTitle}"
 Thuộc chương: "${chapterTitle}" — Khóa học: "${courseTitle}"

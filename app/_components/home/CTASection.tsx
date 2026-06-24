@@ -56,7 +56,7 @@ export function CTASection() {
           </motion.h2>
 
           <motion.p variants={up} className="text-white/85 mb-10 max-w-lg mx-auto leading-relaxed">
-            Tham gia cùng hàng nghìn sinh viên đang học tập trên SmartEdu. Miễn phí hoàn toàn để bắt đầu.
+            Tham gia cùng hàng nghìn sinh viên đang học tập trên Learnust. Miễn phí hoàn toàn để bắt đầu.
           </motion.p>
 
           <motion.div variants={up} className="flex flex-col sm:flex-row items-center justify-center gap-3.5">

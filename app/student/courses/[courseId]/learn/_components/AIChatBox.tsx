@@ -318,7 +318,7 @@ export function AIChatBox({
             </button>
           </div>
           <p className="text-center text-[10px] text-[rgba(4,14,32,0.28)] mt-1.5">
-            Powered by Claude AI · SmartEdu
+            Powered by Claude AI · Learnust
           </p>
         </div>
       </div>

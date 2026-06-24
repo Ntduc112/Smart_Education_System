@@ -1,4 +1,4 @@
-# Admin Pages Design — Smart Education System
+# Admin Pages Design — Learnust
 
 **Date:** 2026-05-07  
 **Scope:** 3 trang admin còn placeholder: dashboard, users, categories

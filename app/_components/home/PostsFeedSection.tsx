@@ -290,7 +290,7 @@ export function PostsFeedSection() {
             <div className="flex items-end justify-between mb-7">
                 <div>
                     <h2 className="font-display text-3xl font-semibold text-[#181d26] tracking-tight">Cộng đồng</h2>
-                    <p className="text-sm text-[rgba(4,14,32,0.6)] mt-1.5">Chia sẻ, hỏi đáp và học hỏi cùng cộng đồng SmartEdu</p>
+                    <p className="text-sm text-[rgba(4,14,32,0.6)] mt-1.5">Chia sẻ, hỏi đáp và học hỏi cùng cộng đồng Learnust</p>
                 </div>
                 <Link href="/posts" className="text-sm text-[#1b61c9] font-medium hover:text-[#254fad] transition-colors shrink-0 ml-4">
                     Xem thêm →
@@ -325,7 +325,7 @@ export function PostsFeedFull() {
     return (
         <section className="max-w-4xl mx-auto px-6 py-12">
             <div className="text-center mb-7">
-                <h1 className="font-display text-4xl font-light text-[#181d26]">Cộng đồng <span className="font-semibold text-[#1b61c9]">SmartEdu</span></h1>
+                <h1 className="font-display text-4xl font-light text-[#181d26]">Cộng đồng <span className="font-semibold text-[#1b61c9]">Learnust</span></h1>
                 <p className="text-sm text-[rgba(4,14,32,0.6)] mt-1.5">Chia sẻ, hỏi đáp và cùng nhau tiến bộ mỗi ngày</p>
             </div>
 

@@ -64,7 +64,7 @@ export function FeaturesSection() {
           <span className="inline-block text-xs font-semibold text-[#1b61c9] uppercase tracking-widest mb-4">
             Tính năng nổi bật
           </span>
-          <h2 className="font-display text-4xl md:text-5xl font-light text-[#181d26] mb-3">Tại sao chọn <span className="font-semibold text-[#1b61c9]">SmartEdu?</span></h2>
+          <h2 className="font-display text-4xl md:text-5xl font-light text-[#181d26] mb-3">Tại sao chọn <span className="font-semibold text-[#1b61c9]">Learnust?</span></h2>
           <p className="text-[rgba(4,14,32,0.6)]">Tất cả những gì bạn cần để học tập hiệu quả</p>
         </motion.div>
 

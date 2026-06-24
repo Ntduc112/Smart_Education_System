@@ -4,9 +4,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendOtpEmail(email: string, code: string) {
     await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL ?? "SmartEdu <noreply@smartedu.dev>",
+        from: process.env.RESEND_FROM_EMAIL ?? "Learnust <noreply@learnust.dev>",
         to: email,
-        subject: "Mã xác thực đặt lại mật khẩu – SmartEdu",
+        subject: "Mã xác thực đặt lại mật khẩu – Learnust",
         html: `
 <!DOCTYPE html>
 <html>
@@ -16,7 +16,7 @@ export async function sendOtpEmail(email: string, code: string) {
       <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
         <tr>
           <td style="background:#1b61c9;padding:32px 40px">
-            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px">SmartEdu</h1>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px">Learnust</h1>
           </td>
         </tr>
         <tr>
@@ -40,7 +40,7 @@ export async function sendOtpEmail(email: string, code: string) {
         <tr>
           <td style="padding:20px 40px;border-top:1px solid #f0f2f5">
             <p style="margin:0;color:rgba(4,14,32,.35);font-size:11px;text-align:center">
-              © ${new Date().getFullYear()} SmartEdu. All rights reserved.
+              © ${new Date().getFullYear()} Learnust. All rights reserved.
             </p>
           </td>
         </tr>

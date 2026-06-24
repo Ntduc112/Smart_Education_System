@@ -120,7 +120,7 @@ async function main() {
   const teachers = await Promise.all(
     Array.from({ length: 8 }, (_, i) => {
       const num = String(i + 1).padStart(2, "0");
-      const email = `gv${num}@smartedu.vn`;
+      const email = `gv${num}@learnust.vn`;
       return prisma.user.create({
         data: {
           name: fullName(),
@@ -297,7 +297,7 @@ async function main() {
   console.log(`  • học giở:   ${stats.inProgress}`);
   console.log(`  • học hết:   ${stats.completed}`);
   console.log("✅ Bulk seed hoàn tất!");
-  console.log("   Teacher login: gv01@smartedu.vn .. gv08@smartedu.vn  /  Teacher@123");
+  console.log("   Teacher login: gv01@learnust.vn .. gv08@learnust.vn  /  Teacher@123");
   console.log("   Student login: stu001@student.vn .. stu100@student.vn /  Student@123");
 }
 

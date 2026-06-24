@@ -1,4 +1,4 @@
-# Q&A Per Lesson Design — Smart Education System
+# Q&A Per Lesson Design — Learnust
 
 **Date:** 2026-05-07
 **Sub-project:** 2 of 6 (Notification → **Q&A** → Wishlist → Search → Notes → Coupon)

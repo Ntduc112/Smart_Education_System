@@ -108,7 +108,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
           className="w-full flex flex-col items-center"
         >
           <motion.div variants={fadeUp} className="mb-6">
-            <span className="text-2xl font-extrabold text-[#1b61c9] tracking-tight">SmartEdu</span>
+            <span className="text-2xl font-extrabold text-[#1b61c9] tracking-tight">Learnust</span>
           </motion.div>
 
           <motion.div variants={fadeUp} className="w-16 h-px bg-[#e0e2e6] mb-6" />

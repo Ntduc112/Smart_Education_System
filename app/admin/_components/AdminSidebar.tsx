@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart2, LogOut, Loader2, ShieldCheck, LayoutDashboard, UsersRound, Tag, BookOpen, KeyRound, X, ChevronUp, FileText } from "lucide-react";
+import { BarChart2, LogOut, Loader2, ShieldCheck, LayoutDashboard, UsersRound, Tag, BookOpen, KeyRound, X, ChevronUp, FileText, Route } from "lucide-react";
 import { Logo } from "@/app/_components/Logo";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -14,6 +14,7 @@ const NAV = [
   { href: "/admin/dashboard",  label: "Tổng quan",  icon: LayoutDashboard },
   { href: "/admin/users",      label: "Người dùng", icon: UsersRound },
   { href: "/admin/courses",    label: "Khóa học",   icon: BookOpen },
+  { href: "/admin/roadmaps",   label: "Lộ trình",   icon: Route },
   { href: "/admin/categories", label: "Danh mục",   icon: Tag },
   { href: "/admin/posts",      label: "Bài viết",   icon: FileText },
   { href: "/admin/statistics", label: "Thống kê",   icon: BarChart2 },
@@ -126,7 +127,7 @@ export function AdminSidebar() {
       <div className="px-5 py-5 border-b border-[#e0e2e6]">
         <Link href="/admin/dashboard" className="flex items-center gap-2.5">
           <Logo size={32} />
-          <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
+          <span className="font-semibold text-[#181d26] tracking-[0.08px]">Learnust</span>
         </Link>
         <div className="flex items-center gap-1.5 mt-1 ml-0.5">
           <ShieldCheck size={10} className="text-[#1b61c9]" />

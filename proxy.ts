@@ -17,6 +17,7 @@ const PUBLIC_ROUTES = [
     "/forgot-password",
     "/api/payment/webhook",
     "/api/courses",
+    "/api/roadmaps",
     "/api/posts",
     "/api/categories",
     "/courses",

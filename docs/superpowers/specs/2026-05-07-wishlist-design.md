@@ -1,4 +1,4 @@
-# Wishlist Design — Smart Education System
+# Wishlist Design — Learnust
 
 **Date:** 2026-05-07
 **Sub-project:** 3 of 6 (Notification → Q&A → **Wishlist** → Search → Notes → Coupon)

@@ -1,4 +1,4 @@
-# Notification System Design — Smart Education System
+# Notification System Design — Learnust
 
 **Date:** 2026-05-07
 **Sub-project:** 1 of 6 (Notification → Q&A → Wishlist → Search → Notes → Coupon)

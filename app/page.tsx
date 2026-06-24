@@ -65,7 +65,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <Logo size={28} />
-                <span className="font-display font-bold text-[#181d26] text-lg tracking-tight">SmartEdu</span>
+                <span className="font-display font-bold text-[#181d26] text-lg tracking-tight">Learnust</span>
               </div>
               <p className="text-sm text-[rgba(4,14,32,0.45)] max-w-xs leading-relaxed">
                 Nền tảng học tập thông minh, cá nhân hóa trải nghiệm học của bạn.
@@ -86,7 +86,7 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-          <div className="pt-8 text-xs text-[rgba(4,14,32,0.3)]">© 2026 SmartEdu. All rights reserved.</div>
+          <div className="pt-8 text-xs text-[rgba(4,14,32,0.3)]">© 2026 Learnust. All rights reserved.</div>
         </div>
       </footer>
 

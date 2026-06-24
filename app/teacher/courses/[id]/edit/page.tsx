@@ -5,9 +5,10 @@ import { useState, useEffect, useRef, use } from "react";
 import { motion } from "framer-motion";
 import {
   Plus, Save,
-  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings, BookOpen,
+  Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings, BookOpen, Route,
 } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
+import { RoadmapModal } from "./_components/RoadmapModal";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
   useUpdateChapter, useUpdateLesson,
@@ -176,6 +177,7 @@ function CourseInfoPanel({
   categories: Category[];
 }) {
   const updateCourse = useUpdateCourse(courseId);
+  const [showRoadmap, setShowRoadmap] = useState(false);
   const [form, setForm] = useState({
     title:            course.title,
     description:      course.description,
@@ -323,6 +325,26 @@ function CourseInfoPanel({
         </div>
       </div>
 
+      {/* Lộ trình */}
+      <div className={sectionCls}>
+        <p className={sectionLabelCls}>Lộ trình học</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#1b61c9]/[0.09] flex items-center justify-center text-[#1b61c9] shrink-0">
+            <Route size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-[#181d26]">Đề xuất vào lộ trình</p>
+            <p className="text-xs text-[rgba(4,14,32,0.45)] mt-0.5">Gắn khóa học vào lộ trình học do admin tạo. Admin sẽ duyệt và sắp vị trí.</p>
+          </div>
+          <button
+            onClick={() => setShowRoadmap(true)}
+            className="shrink-0 text-sm font-semibold px-4 py-2 rounded-xl border border-[#DCE6F4] text-[#1b61c9] hover:bg-[#1b61c9]/6 transition-colors"
+          >
+            Chọn lộ trình
+          </button>
+        </div>
+      </div>
+
       {/* Footer save */}
       <div className={footCls}>
         <button
@@ -335,6 +357,8 @@ function CourseInfoPanel({
           {updateCourse.isPending ? "Đang lưu..." : "Lưu thông tin"}
         </button>
       </div>
+
+      {showRoadmap && <RoadmapModal courseId={courseId} onClose={() => setShowRoadmap(false)} />}
     </>
   );
 }

@@ -1,4 +1,4 @@
-# Note-Taking Design — Smart Education System
+# Note-Taking Design — Learnust
 
 **Date:** 2026-05-08
 **Sub-project:** 5 of 6 (Notification → Q&A → Wishlist → Search → **Notes** → Coupon)

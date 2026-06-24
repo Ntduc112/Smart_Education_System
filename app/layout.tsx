@@ -19,7 +19,7 @@ const display = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "SmartEdu — Nền tảng học tập thông minh",
+  title: "Learnust — Nền tảng học tập thông minh",
   description: "Học tập thông minh hơn với AI cá nhân hóa. 500+ khóa học, AI Tutor 24/7.",
   icons: {
     icon: "/logo.svg",

@@ -1,8 +1,8 @@
 import { Page, expect } from "@playwright/test";
 
 export const CREDS = {
-  ADMIN: { email: "admin@smartedu.vn", password: "Admin@123", home: "/admin/dashboard" },
-  TEACHER: { email: "an.nguyen@smartedu.vn", password: "Teacher@123", home: "/teacher/dashboard" },
+  ADMIN: { email: "admin@learnust.vn", password: "Admin@123", home: "/admin/dashboard" },
+  TEACHER: { email: "an.nguyen@learnust.vn", password: "Teacher@123", home: "/teacher/dashboard" },
   STUDENT: { email: "cuong@student.vn", password: "Student@123", home: "/" },
 } as const;
 

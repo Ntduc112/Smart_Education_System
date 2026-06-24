@@ -2,8 +2,8 @@ import { MainNavbar } from "@/app/_components/MainNavbar";
 import { PostsFeedFull } from "@/app/_components/home/PostsFeedSection";
 
 export const metadata = {
-  title: "Cộng đồng — SmartEdu",
-  description: "Bài viết, hỏi đáp và chia sẻ từ cộng đồng học tập SmartEdu.",
+  title: "Cộng đồng — Learnust",
+  description: "Bài viết, hỏi đáp và chia sẻ từ cộng đồng học tập Learnust.",
 };
 
 export default function PostsPage() {

@@ -1,4 +1,4 @@
-# Course Search Nâng Cao — Smart Education System
+# Course Search Nâng Cao — Learnust
 
 **Date:** 2026-05-08
 **Sub-project:** 4 of 6 (Notification → Q&A → Wishlist → **Search** → Notes → Coupon)

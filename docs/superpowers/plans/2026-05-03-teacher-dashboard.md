@@ -191,7 +191,7 @@ export function TeacherSidebar() {
       <div className="px-5 py-5 border-b border-[#e0e2e6]">
         <Link href="/teacher/dashboard" className="flex items-center gap-2.5">
           <Logo size={32} />
-          <span className="font-semibold text-[#181d26] tracking-[0.08px]">SmartEdu</span>
+          <span className="font-semibold text-[#181d26] tracking-[0.08px]">Learnust</span>
         </Link>
         <p className="text-[10px] text-[rgba(4,14,32,0.4)] mt-1 ml-0.5 tracking-wider uppercase">
           Giảng viên

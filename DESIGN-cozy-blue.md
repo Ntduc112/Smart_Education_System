@@ -1,4 +1,4 @@
-# SmartEdu — "Cozy-Blue" UI System
+# Learnust — "Cozy-Blue" UI System
 
 Hệ thiết kế cho giao diện hướng sinh viên (student/home, marketing landing, /posts).
 Kéo file này vào session khác để giữ phong cách nhất quán.

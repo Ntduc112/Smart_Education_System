@@ -40,7 +40,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: "Admin System",
-      email: "admin@smartedu.vn",
+      email: "admin@learnust.vn",
       password_hash: adminPw,
       role: "ADMIN",
     },
@@ -50,7 +50,7 @@ async function main() {
     prisma.user.create({
       data: {
         name: "Nguyễn Văn An",
-        email: "an.nguyen@smartedu.vn",
+        email: "an.nguyen@learnust.vn",
         password_hash: teacherPw,
         role: "TEACHER",
         avatar: "https://i.pravatar.cc/150?u=teacher1",
@@ -59,7 +59,7 @@ async function main() {
     prisma.user.create({
       data: {
         name: "Trần Thị Bình",
-        email: "binh.tran@smartedu.vn",
+        email: "binh.tran@learnust.vn",
         password_hash: teacherPw,
         role: "TEACHER",
         avatar: "https://i.pravatar.cc/150?u=teacher2",

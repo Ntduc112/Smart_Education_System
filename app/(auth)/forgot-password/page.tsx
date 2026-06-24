@@ -384,7 +384,7 @@ export default function ForgotPasswordPage() {
         <div className="relative">
           <Link href="/" className="flex items-center gap-2">
             <Logo size={36} />
-            <span className="text-white font-semibold text-lg tracking-[0.08px]">SmartEdu</span>
+            <span className="text-white font-semibold text-lg tracking-[0.08px]">Learnust</span>
           </Link>
         </div>
         <div className="relative">
@@ -417,7 +417,7 @@ export default function ForgotPasswordPage() {
         <div className="max-w-md w-full mx-auto">
           <Link href="/" className="flex items-center gap-2 mb-10 lg:hidden">
             <Logo size={32} />
-            <span className="font-semibold text-[#181d26]">SmartEdu</span>
+            <span className="font-semibold text-[#181d26]">Learnust</span>
           </Link>
 
           {step === "email"    && <StepEmail onNext={(e) => { setEmail(e); setStep("otp"); }} />}

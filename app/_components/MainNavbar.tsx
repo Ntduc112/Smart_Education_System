@@ -52,6 +52,7 @@ export function MainNavbar() {
   const navLinks = [
     { href: roleHome(user?.role), label: "Trang chủ" },
     { href: "/courses", label: "Khóa học" },
+    { href: "/roadmaps", label: "Lộ trình" },
     { href: "/posts", label: "Bài viết" },
   ];
   return (
@@ -64,7 +65,7 @@ export function MainNavbar() {
       {/* Logo — left */}
       <Link href="/" className="flex items-center gap-2.5 shrink-0">
         <Logo size={30} />
-        <span className="text-[#181d26] font-bold text-lg tracking-tight">SmartEdu</span>
+        <span className="text-[#181d26] font-bold text-lg tracking-tight">Learnust</span>
       </Link>
 
       {/* Nav links — absolute true center of header */}

@@ -1,0 +1,36 @@
+enum roadmap_status {
+    DRAFT
+    PUBLISHED
+}
+
+enum roadmap_item_status {
+    PENDING
+    APPROVED
+    REJECTED
+}
+
+model Roadmap {
+    id          String         @id @default(uuid())
+    title       String
+    description String
+    thumbnail   String?
+    status      roadmap_status @default(DRAFT)
+    created_at  DateTime       @default(now())
+    updated_at  DateTime       @updatedAt
+    items       RoadmapItem[]
+}
+
+model RoadmapItem {
+    id          String              @id @default(uuid())
+    roadmap_id  String
+    course_id   String
+    order       Int                 @default(0)
+    status      roadmap_item_status @default(PENDING)
+    proposed_by String?
+    created_at  DateTime            @default(now())
+    updated_at  DateTime            @updatedAt
+    roadmap     Roadmap             @relation(fields: [roadmap_id], references: [id], onDelete: Cascade)
+    course      Course              @relation(fields: [course_id], references: [id], onDelete: Cascade)
+
+    @@unique([roadmap_id, course_id])
+}
