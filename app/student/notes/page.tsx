@@ -78,7 +78,7 @@ function NoteRow({ note }: { note: AllNote }) {
 
       {note.video_time != null && (
         <Link
-          href={`/student/courses/${note.lesson.chapter.course.id}/learn?lesson=${note.lesson.id}`}
+          href={`/student/courses/${note.lesson.chapter.course.id}/learn?lesson=${note.lesson.id}&t=${note.video_time}`}
           className="mb-2 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:bg-[#1b61c9]/15"
           style={{ background: "rgba(27,97,201,0.08)", color: C.blue }}
         >

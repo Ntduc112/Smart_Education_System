@@ -29,6 +29,11 @@ export async function verifyWebhook(body: Webhook): Promise<WebhookData> {
     return getClient().webhooks.verify(body);
 }
 
+// Hỏi trạng thái trực tiếp từ PayOS (dùng khi webhook chưa về).
+export async function getPaymentInfo(orderCode: number) {
+    return getClient().paymentRequests.get(orderCode);
+}
+
 export function isPaymentSuccess(webhookData: WebhookData): boolean {
     return webhookData.code === "00";
 }

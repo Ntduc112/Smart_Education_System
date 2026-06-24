@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { editUserSchema, EditUserInput } from "./edit-user.schema";
 import {
   ArrowLeft, Pencil, Trash2, X, Check, Plus, Search,
-  Users, Lock, Unlock,
+  Users, Lock, Unlock, Loader2,
 } from "lucide-react";
 import {
   useAdminUser, useUpdateUser, useDeleteUser,
@@ -291,7 +291,7 @@ function StudentCoursesSection({ userId }: { userId: string }) {
 
       {/* Remove confirm */}
       {removeId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setRemoveId(null)}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => !removeEnrollment.isPending && setRemoveId(null)}>
           <div
             className="bg-white rounded-2xl p-6 w-96"
             style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 8px 32px" }}
@@ -300,12 +300,20 @@ function StudentCoursesSection({ userId }: { userId: string }) {
             <h3 className="text-base font-semibold text-[#181d26] mb-2">Xóa khỏi khóa học?</h3>
             <p className="text-sm text-[rgba(4,14,32,0.55)] mb-6">Học sinh sẽ mất quyền truy cập vào khóa học này.</p>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setRemoveId(null)} className="px-4 py-2 text-sm font-medium border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc]">Hủy</button>
               <button
-                onClick={() => { removeEnrollment.mutate(removeId); setRemoveId(null); }}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600"
+                onClick={() => setRemoveId(null)}
+                disabled={removeEnrollment.isPending}
+                className="px-4 py-2 text-sm font-medium border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc] disabled:opacity-50"
               >
-                Xóa
+                Hủy
+              </button>
+              <button
+                onClick={() => removeEnrollment.mutate(removeId, { onSuccess: () => setRemoveId(null) })}
+                disabled={removeEnrollment.isPending}
+                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 disabled:opacity-60 disabled:cursor-not-allowed min-w-[80px]"
+              >
+                {removeEnrollment.isPending && <Loader2 size={14} className="animate-spin" />}
+                {removeEnrollment.isPending ? "Đang xóa..." : "Xóa"}
               </button>
             </div>
           </div>

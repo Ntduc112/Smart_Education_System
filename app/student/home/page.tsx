@@ -99,7 +99,8 @@ function CourseCard({ course, progress, index }: {
     ? `/student/courses/${course.id}/learn?lesson=${progress.current_lesson_id}`
     : `/student/courses/${course.id}/learn`;
   return (
-    <motion.div variants={fadeUp} whileHover={{ y: -6 }} className="group flex flex-col overflow-hidden rounded-3xl bg-white"
+    <motion.div variants={fadeUp} whileHover={{ y: -6 }}>
+    <Link href={href} className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white"
       style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
       <div className="relative aspect-video overflow-hidden" style={{ background: "#E7EFFB" }}>
         <img src={course.thumbnail} alt={course.title}
@@ -140,16 +141,17 @@ function CourseCard({ course, progress, index }: {
               initial={{ width: 0 }} animate={{ width: `${pct}%` }}
               transition={{ duration: 0.9, ease: [0.22, 0.61, 0.36, 1], delay: 0.15 + index * 0.05 }} />
           </div>
-          <Link href={href}
+          <span
             className="flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-colors"
             style={done
               ? { background: "#EAF1FC", color: C.ink }
               : { background: C.blue, color: "#fff" }}>
             {done ? "Xem lại" : pct > 0 ? "Tiếp tục học" : "Bắt đầu học"}
             <ArrowRight size={15} />
-          </Link>
+          </span>
         </div>
       </div>
+    </Link>
     </motion.div>
   );
 }
@@ -277,10 +279,10 @@ export default function StudentHomePage() {
                 className="grid h-12 w-12 place-items-center rounded-2xl bg-white/20 text-2xl">🔥</motion.div>
               <div>
                 <p className="font-display text-4xl font-bold leading-none">{streak?.streak ?? 0}</p>
-                <p className="text-sm text-white/85">ngày học liên tiếp</p>
+                <p className="font-display text-sm text-white/85">ngày học liên tiếp</p>
               </div>
             </div>
-            <p className="mt-5 text-sm leading-relaxed text-white/90">
+            <p className="mt-5 font-display text-sm leading-relaxed text-white/90">
               {streak?.today_learned
                 ? "Bạn đã học hôm nay — giữ lửa nhé! 🎉"
                 : "Học ít nhất 1 bài hôm nay để giữ chuỗi."}
@@ -301,9 +303,13 @@ export default function StudentHomePage() {
         {resume && (
           <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25, duration: 0.55, ease: [0.22, 0.61, 0.36, 1] }}
+            whileHover={{ y: -6, transition: { duration: 0.2, ease: "easeOut" } }}
             className="mt-5 overflow-hidden rounded-3xl"
             style={{ background: C.ink, boxShadow: "rgba(36,31,24,0.22) 0px 18px 44px" }}>
-            <div className="flex flex-col md:flex-row">
+            <Link href={resume.p?.current_lesson_id
+              ? `/student/courses/${resume.c.id}/learn?lesson=${resume.p.current_lesson_id}`
+              : `/student/courses/${resume.c.id}/learn`}
+              className="flex flex-col md:flex-row">
               <div className="relative aspect-video w-full overflow-hidden md:aspect-auto md:w-72 md:shrink-0">
                 <img src={resume.c.thumbnail} alt={resume.c.title} className="h-full w-full object-cover" />
                 <div className="absolute inset-0 grid place-items-center bg-black/25">
@@ -325,15 +331,13 @@ export default function StudentHomePage() {
                   </div>
                   <span className="text-sm font-semibold text-white/90">{resume.p?.percentage ?? 0}%</span>
                 </div>
-                <Link href={resume.p?.current_lesson_id
-                  ? `/student/courses/${resume.c.id}/learn?lesson=${resume.p.current_lesson_id}`
-                  : `/student/courses/${resume.c.id}/learn`}
+                <span
                   className="mt-5 inline-flex w-fit items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold"
                   style={{ background: C.blue, color: "#fff" }}>
                   {(resume.p?.percentage ?? 0) > 0 ? "Tiếp tục học" : "Bắt đầu học"} <ArrowRight size={16} />
-                </Link>
+                </span>
               </div>
-            </div>
+            </Link>
           </motion.section>
         )}
 

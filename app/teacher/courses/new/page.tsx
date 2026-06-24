@@ -9,8 +9,8 @@ import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ImageIcon, ChevronLeft } from "lucide-react";
-import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
 import { MainNavbar } from "@/app/_components/MainNavbar";
+import { BackButton } from "@/app/student/_components/BackButton";
 import api from "@/lib/axios";
 
 // ── Palette (cozy-blue, đồng bộ teacher/home) ────────────────────────────────
@@ -139,12 +139,10 @@ export default function NewCoursePage() {
       <Atmosphere />
       <MainNavbar />
       <main className="mx-auto max-w-3xl px-6 py-10">
+      <BackButton back />
+
       {/* Header */}
       <div className="mb-8">
-        <Breadcrumb items={[
-          { label: "Khóa học", href: "/teacher/courses" },
-          { label: "Tạo khóa học mới" },
-        ]} />
         <h1 className="font-display text-3xl font-semibold" style={{ color: C.ink }}>Tạo khóa học mới</h1>
         <p className="text-sm mt-1" style={{ color: C.inkSoft }}>
           Điền thông tin cơ bản — thêm nội dung chi tiết ở bước tiếp theo

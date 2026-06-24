@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MainNavbar } from "@/app/_components/MainNavbar";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
 import { useCourses, useCategories, CourseInList, SortOption, PriceType } from "./courses.hook";
@@ -282,8 +282,10 @@ function CoursesContent() {
     router.replace(`/courses${p.toString() ? `?${p.toString()}` : ""}`, { scroll: false });
   }, [debouncedSearch, categoryId, level, sort, priceType, minPrice, maxPrice, page]);
 
-  // Debounce search
+  // Debounce search — bỏ qua lần mount đầu để không reset page (giữ trang khi back lại)
+  const searchMounted = useRef(false);
   useEffect(() => {
+    if (!searchMounted.current) { searchMounted.current = true; return; }
     const t = setTimeout(() => { setDebounced(search); setPage(1); }, 400);
     return () => clearTimeout(t);
   }, [search]);
@@ -547,26 +549,35 @@ function CoursesContent() {
               </svg>
             </button>
 
-            {Array.from({ length: pagination.totalPages }).map((_, i) => {
-              const p = i + 1;
-              const show = p === 1 || p === pagination.totalPages || Math.abs(p - page) <= 1;
-              const gap = p === 2 && page > 4;
-              const gap2 = p === pagination.totalPages - 1 && page < pagination.totalPages - 3;
-              if (!show && !gap && !gap2) return null;
-              if (gap || gap2) return <span key={p} className="text-sm" style={{ color: C.inkFaint }}>…</span>;
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className="w-9 h-9 rounded-xl text-sm font-medium transition-all"
-                  style={p === page
-                    ? { background: C.blue, color: "#fff" }
-                    : { background: C.card, color: C.inkSoft, border: `1px solid ${C.border}` }}
-                >
-                  {p}
-                </button>
+            {(() => {
+              const total = pagination.totalPages;
+              const items: (number | "…")[] = [];
+              let last = 0;
+              for (let p = 1; p <= total; p++) {
+                if (p === 1 || p === total || Math.abs(p - page) <= 1) {
+                  // chèn khoảng trống: nếu chỉ thiếu đúng 1 trang thì hiện số, ngược lại "…"
+                  if (last && p - last > 1) items.push(p - last === 2 ? last + 1 : "…");
+                  items.push(p);
+                  last = p;
+                }
+              }
+              return items.map((it, idx) =>
+                it === "…" ? (
+                  <span key={`gap-${idx}`} className="text-sm" style={{ color: C.inkFaint }}>…</span>
+                ) : (
+                  <button
+                    key={it}
+                    onClick={() => setPage(it)}
+                    className="w-9 h-9 rounded-xl text-sm font-medium transition-all"
+                    style={it === page
+                      ? { background: C.blue, color: "#fff" }
+                      : { background: C.card, color: C.inkSoft, border: `1px solid ${C.border}` }}
+                  >
+                    {it}
+                  </button>
+                )
               );
-            })}
+            })()}
 
             <button
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}

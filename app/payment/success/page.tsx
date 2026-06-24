@@ -102,7 +102,7 @@ function PaymentSuccessContent() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-md p-8 text-center">
 
                 {/* Loading */}
-                {(status === "loading" || status === "pending") && (
+                {(status === "loading" || (status === "pending" && attempts < 10)) && (
                     <>
                         <div className="flex justify-center mb-6">
                             <div className="w-20 h-20 rounded-full bg-blue-50 flex items-center justify-center">

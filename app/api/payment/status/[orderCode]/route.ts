@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
+import { getPaymentInfo } from "@/lib/payment/payos";
+import { fulfillPayment } from "@/lib/payment/fulfill";
 
 export async function GET(
     request: NextRequest,
@@ -24,6 +26,26 @@ export async function GET(
 
         if (!payment) {
             return NextResponse.json({ error: "Payment not found" }, { status: 404 });
+        }
+
+        // Webhook có thể chưa về (hoặc chưa cấu hình) — hỏi trực tiếp PayOS để đối soát.
+        if (payment.status === "PENDING") {
+            try {
+                const info = await getPaymentInfo(orderCode);
+                if (info.status === "PAID") {
+                    await fulfillPayment(orderCode);
+                    payment.status = "PAID";
+                } else if (["CANCELLED", "EXPIRED", "FAILED"].includes(info.status)) {
+                    await prisma.payment.update({
+                        where: { order_code: orderCode },
+                        data:  { status: "CANCELLED" },
+                    });
+                    payment.status = "CANCELLED";
+                }
+            } catch (e) {
+                console.error("PayOS reconcile failed:", e);
+                // Giữ nguyên PENDING, client sẽ poll lại.
+            }
         }
 
         return NextResponse.json({ payment }, { status: 200 });

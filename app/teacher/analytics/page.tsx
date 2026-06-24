@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus, Users, BookOpen, DollarSign } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
+import { BackButton } from "@/app/student/_components/BackButton";
 import { useTeacherAnalytics, MonthlyPoint, CourseStats } from "./analytics.hook";
 
 // ── Palette (đồng bộ với teacher/home) ───────────────────────────────────────
@@ -283,6 +284,8 @@ export default function AnalyticsPage() {
       <Atmosphere />
       <MainNavbar />
       <main className="mx-auto max-w-6xl px-6 py-10 space-y-6">
+        <BackButton href="/teacher/home" />
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

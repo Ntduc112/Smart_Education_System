@@ -41,3 +41,6 @@ next-env.d.ts
 # prisma 
 prisma/generated
 /generated/prisma
+
+# Báo cáo & tài liệu (không đẩy lên repo)
+báo cáo mới/

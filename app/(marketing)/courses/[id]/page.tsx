@@ -484,14 +484,26 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       <MainNavbar />
 
       <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm mb-8" style={{ color: C.inkFaint }}>
-          <Link href="/courses" className="hover:text-[#1b61c9] transition-colors">Khóa học</Link>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-          <span className="truncate max-w-xs" style={{ color: C.ink }}>{course?.title ?? "..."}</span>
-        </div>
+        {/* Back button — về trang vừa click dẫn đến */}
+        <motion.div
+          initial={{ opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.35 }}
+          whileHover={{ x: -3 }}
+          whileTap={{ scale: 0.96 }}
+          className="mb-8 w-fit"
+        >
+          <button
+            onClick={() => router.back()}
+            className="group flex items-center gap-2 rounded-xl bg-white py-2 pl-2.5 pr-4 text-sm font-medium transition-colors hover:text-[#254fad]"
+            style={{ border: `1px solid ${C.border}`, color: C.blue, boxShadow: CARD_SHADOW }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-0.5">
+              <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+            </svg>
+            Quay lại
+          </button>
+        </motion.div>
 
         {isLoading ? <DetailSkeleton /> : course ? (
           <motion.div initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-3 gap-10">

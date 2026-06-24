@@ -3,8 +3,8 @@
 import { use, useState, useCallback, useEffect, useRef, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Logo } from "@/app/_components/Logo";
-import { UserMenu } from "@/app/_components/UserMenu";
+import { MainNavbar } from "@/app/_components/MainNavbar";
+import { BackButton } from "@/app/student/_components/BackButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import api from "@/lib/axios";
@@ -191,7 +191,7 @@ function ChapterItem({
 
 // ── Video Player ───────────────────────────────────────────────────────────
 
-function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef, startTime }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -208,12 +208,12 @@ function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef }: { lessonId: stri
     </div>
   );
 
-  return <NativePlayer src={src} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
+  return <NativePlayer src={src} onWatchPercent={onWatchPercent} videoRef={videoRef} startTime={startTime} />;
 }
 
-function VideoPlayer({ url, lessonId, onWatchPercent, videoRef }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+function VideoPlayer({ url, lessonId, onWatchPercent, videoRef, startTime }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
   if (url.startsWith("r2:")) {
-    return <CFWorkerPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} />;
+    return <CFWorkerPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} startTime={startTime} />;
   }
 
   const ytId = extractYouTubeId(url);
@@ -232,14 +232,31 @@ function VideoPlayer({ url, lessonId, onWatchPercent, videoRef }: { url: string;
   }
 
   return (
-    <NativePlayer src={url} onWatchPercent={onWatchPercent} videoRef={videoRef} />
+    <NativePlayer src={url} onWatchPercent={onWatchPercent} videoRef={videoRef} startTime={startTime} />
   );
 }
 
-function NativePlayer({ src, onWatchPercent, videoRef: externalRef }: { src: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null> }) {
+function NativePlayer({ src, onWatchPercent, videoRef: externalRef, startTime }: { src: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
   const internalRef = useRef<HTMLVideoElement>(null);
   const videoRef    = externalRef ?? internalRef;
   const lastPctRef = useRef(0);
+
+  // Tua tới mốc thời gian từ URL (?t=) khi mở note có timestamp.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || startTime == null) return;
+    let done = false;
+    const seek = () => {
+      if (done) return;
+      done = true;
+      video.currentTime = startTime;
+      video.play().catch(() => {});
+    };
+    if (video.readyState >= 1) seek();
+    else video.addEventListener("loadedmetadata", seek, { once: true });
+    return () => video.removeEventListener("loadedmetadata", seek);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, startTime]);
 
   useEffect(() => {
     lastPctRef.current = 0;
@@ -645,6 +662,9 @@ function NavControls({
   isLesson,
   isCurrentDone,
   canGoNext,
+  canComplete,
+  hasVideo,
+  onComplete,
   onPrev,
   onNext,
 }: {
@@ -654,6 +674,9 @@ function NavControls({
   isLesson: boolean;
   isCurrentDone: boolean;
   canGoNext: boolean;
+  canComplete: boolean;
+  hasVideo: boolean;
+  onComplete: () => void;
   onPrev: () => void;
   onNext: () => void;
 }) {
@@ -674,16 +697,34 @@ function NavControls({
           Bài trước
         </button>
 
-        {isLesson && isCurrentDone && (
-          <div className="flex items-center gap-1.5 bg-[#f0fdf4] text-[#0E9F6E] border border-[#bbf7d0] rounded-full px-3 py-1.5 text-sm font-medium">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Đã hoàn thành
-          </div>
-        )}
-
         <div className="flex-1" />
+
+        {isLesson && (
+          isCurrentDone ? (
+            <div className="flex items-center gap-1.5 bg-[#f0fdf4] text-[#0E9F6E] border border-[#bbf7d0] rounded-full px-3 py-2 text-sm font-medium">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Đã hoàn thành
+            </div>
+          ) : (
+            <span
+              title={!canComplete && hasVideo ? "Cần xem 80% video để hoàn thành" : undefined}
+              className={!canComplete ? "cursor-not-allowed" : undefined}
+            >
+              <button
+                onClick={onComplete}
+                disabled={!canComplete}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-[#0E9F6E]/40 bg-[#f0fdf4] text-[#0E9F6E] hover:bg-[#dcfce7] hover:border-[#0E9F6E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none disabled:hover:bg-[#f0fdf4]"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Hoàn thành bài
+              </button>
+            </span>
+          )
+        )}
 
         <button
           onClick={onNext}
@@ -713,6 +754,7 @@ function LearnContent({
   const router = useRouter();
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [watchPercent, setWatchPercent] = useState(0);
 
   const { data: user } = useMe();
   const { data: course, isLoading: courseLoading } = useCourseDetail(courseId);
@@ -725,6 +767,12 @@ function LearnContent({
 
   const lessonIdFromUrl = searchParams.get("lesson");
   const quizIdFromUrl = searchParams.get("quiz");
+  const startTimeFromUrl = (() => {
+    const raw = searchParams.get("t");
+    if (raw == null) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  })();
 
   const selectedItem: NavItem | null = (() => {
     if (quizIdFromUrl) {
@@ -748,6 +796,10 @@ function LearnContent({
   );
   const isLesson = selectedItem?.kind === "lesson";
   const isCurrentDone = isLesson && selectedItem ? completedIds.has(selectedItem.item.id) : false;
+
+  // Nút "Hoàn thành bài": bài không video bật ngay; bài có video cần xem ≥80%.
+  const currentHasVideo = selectedItem?.kind === "lesson" ? !!selectedItem.item.video_url : false;
+  const canComplete = isLesson && (!currentHasVideo || watchPercent >= 80);
 
   // Một item "thỏa" = bài học đã hoàn thành, hoặc quiz đã thỏa điều kiện gate.
   const isItemSatisfied = (nav: NavItem | null): boolean => {
@@ -788,6 +840,7 @@ function LearnContent({
   const handleWatchPercent = useCallback(
     (pct: number) => {
       if (!selectedItem || selectedItem.kind !== "lesson") return;
+      setWatchPercent((p) => Math.max(p, pct));
       reportWatchProgress.mutate({ lessonId: selectedItem.item.id, watchPercent: pct });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -805,12 +858,19 @@ function LearnContent({
     [courseId, router]
   );
 
-  // Bài không có video (text/pdf): tự đánh dấu hoàn thành khi mở.
-  useEffect(() => {
-    if (selectedItem?.kind === "lesson" && !selectedItem.item.video_url && !isCurrentDone) {
-      reportWatchProgress.mutate({ lessonId: selectedItem.item.id, watchPercent: 100 });
-    }
+  // Nút "Hoàn thành bài": đánh dấu xong rồi chuyển sang bài tiếp theo.
+  const completeLesson = useCallback(() => {
+    if (!selectedItem || selectedItem.kind !== "lesson") return;
+    reportWatchProgress.mutate(
+      { lessonId: selectedItem.item.id, watchPercent: 100 },
+      { onSuccess: () => { if (nextItem) navigateToItem(nextItem); } }
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem?.item.id, nextItem, navigateToItem]);
+
+  // Reset tiến độ xem cục bộ khi đổi bài.
+  useEffect(() => {
+    setWatchPercent(0);
   }, [selectedItem?.item.id]);
 
   if (courseLoading) {
@@ -831,44 +891,8 @@ function LearnContent({
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(170deg,#EFF5FE,#F3F8FE,#EAF2FD)" }}>
-      {/* Navbar */}
-      <motion.header
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-white/80 backdrop-blur-xl border-b border-[#DCE6F4] sticky top-0 z-20"
-      >
-        <div className="h-14 px-4 flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <Logo size={28} />
-            <span className="font-semibold text-[#1b61c9] text-sm hidden sm:block tracking-tight">Learnust</span>
-          </Link>
-
-          <div className="w-px h-5 bg-[#DCE6F4] hidden sm:block" />
-
-          <p className="text-sm font-medium text-[#181d26] truncate flex-1 tracking-[0.07px]">
-            {course.title}
-          </p>
-
-          {progress && (
-            <div className="hidden md:flex items-center gap-2 shrink-0">
-              <div className="w-24 h-1.5 bg-[#E2ECF9] rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-[#1b61c9] rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress.percentage}%` }}
-                  transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-                />
-              </div>
-              <span className="text-xs text-[rgba(4,14,32,0.55)] tracking-[0.07px]">
-                {progress.percentage}%
-              </span>
-            </div>
-          )}
-
-          <UserMenu user={user ?? null} />
-        </div>
-      </motion.header>
+      {/* Navbar dùng chung */}
+      <MainNavbar />
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
@@ -880,14 +904,23 @@ function LearnContent({
           className="w-72 shrink-0 bg-white/70 backdrop-blur-xl border-r border-[#DCE6F4] overflow-y-auto hidden lg:block"
         >
           <div className="px-4 py-4 border-b border-[#DCE6F4]">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[rgba(4,14,32,0.45)]">
-              Nội dung khóa học
+            <BackButton />
+            <p className="font-display text-base font-semibold text-[#181d26] leading-snug line-clamp-2">
+              {course.title}
             </p>
-            {progress && (
-              <p className="text-xs text-[rgba(4,14,32,0.55)] mt-1">
-                {progress.completed_lessons}/{progress.total_lessons} bài đã hoàn thành
+            <div className="mt-2">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#E2ECF9]">
+                <motion.div
+                  className="h-full rounded-full bg-[#1b61c9]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress?.percentage ?? 0}%` }}
+                  transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const }}
+                />
+              </div>
+              <p className="mt-1.5 text-xs text-[rgba(4,14,32,0.55)]">
+                Đã học {progress?.completed_lessons ?? 0}/{progress?.total_lessons ?? 0} bài · {progress?.percentage ?? 0}%
               </p>
-            )}
+            </div>
           </div>
 
           {course.sections.map((chapter) => (
@@ -966,6 +999,9 @@ function LearnContent({
                   isLesson={isLesson}
                   isCurrentDone={isCurrentDone}
                   canGoNext={isItemSatisfied(selectedItem)}
+                  canComplete={canComplete}
+                  hasVideo={currentHasVideo}
+                  onComplete={completeLesson}
                   onPrev={() => prevItem && navigateToItem(prevItem)}
                   onNext={() => nextItem && navigateToItem(nextItem)}
                 />
@@ -977,7 +1013,7 @@ function LearnContent({
                       {/* Left column: video, pdf, content */}
                       <div className="flex-1 min-w-0">
                         {selectedItem.item.video_url ? (
-                          <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} videoRef={videoRef} />
+                          <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} videoRef={videoRef} startTime={selectedItem.item.id === lessonIdFromUrl ? startTimeFromUrl : null} />
                         ) : (
                           <NoVideoPlaceholder content={selectedItem.item.content} />
                         )}

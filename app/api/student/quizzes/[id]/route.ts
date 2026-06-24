@@ -12,6 +12,11 @@ export async function GET(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        // Đã làm ≥1 lần → lộ is_correct để review kết quả. Chưa làm → ẩn (chống gian lận).
+        const reveal = (await prisma.quizAttempt.count({
+            where: { quiz_id: id, user_id: userId },
+        })) > 0;
+
         const quiz = await prisma.quiz.findUnique({
             where: { id },
             include: {
@@ -21,7 +26,7 @@ export async function GET(
                     include: {
                         options: {
                             orderBy: { order: "asc" },
-                            select: { id: true, content: true, order: true },
+                            select: { id: true, content: true, order: true, is_correct: reveal },
                         },
                     },
                 },

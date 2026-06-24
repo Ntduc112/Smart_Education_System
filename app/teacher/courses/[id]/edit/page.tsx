@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, use } from "react";
 import { motion } from "framer-motion";
 import {
@@ -981,6 +982,7 @@ function EditSkeleton() {
 
 export default function EditCoursePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
 
   const { data: course, isLoading } = useCourseBuilder(id);
   const togglePublish  = useTogglePublish(id, course);
@@ -1033,18 +1035,23 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
       <main className="mx-auto max-w-6xl px-6 py-8">
         {/* Header */}
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <nav className="mb-1.5 flex items-center gap-1.5 text-sm">
-              <Link href="/teacher/courses" className="transition-colors hover:text-[#1b61c9]" style={{ color: C.inkFaint }}>Khóa học</Link>
-              <span style={{ color: C.inkFaint }}>/</span>
-              <span className="font-medium" style={{ color: C.inkSoft }}>Chỉnh sửa</span>
-            </nav>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
+              style={{ border: `1px solid ${C.border}`, color: C.ink }}
+            >
+              <ChevronLeft size={16} />
+              Quay lại
+            </button>
+            <div>
             <div className="flex items-center gap-3">
               <h1 className="font-display text-2xl font-semibold" style={{ color: C.ink }}>{course.title}</h1>
               <span className="rounded-full px-2.5 py-1 text-xs font-semibold"
                 style={isPublished ? { background: "rgba(14,159,110,0.12)", color: C.emerald } : { background: "#EAF1FC", color: C.inkSoft }}>
                 {isPublished ? "Đã công bố" : "Nháp"}
               </span>
+            </div>
             </div>
           </div>
           <Link href={`/courses/${id}`} target="_blank"
