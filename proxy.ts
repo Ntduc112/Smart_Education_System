@@ -60,7 +60,11 @@ export async function proxy(request: NextRequest){
         return NextResponse.next();
     }
     // Landing marketing: chỉ guest mới thấy. Đã đăng nhập → vào thẳng home theo role.
+    // Ngoại lệ: user chủ động bấm link "Giới thiệu" (/?view=landing) thì cho xem.
     if(pathName === "/"){
+        if(request.nextUrl.searchParams.get("view") === "landing"){
+            return NextResponse.next();
+        }
         const token = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
         let s: TokenPayload | null = token ? await verifyAccessToken(token) : null;
         let refreshed: string | null = null;

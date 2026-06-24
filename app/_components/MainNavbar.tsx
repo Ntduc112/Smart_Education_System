@@ -54,6 +54,8 @@ export function MainNavbar() {
     { href: "/courses", label: "Khóa học" },
     { href: "/roadmaps", label: "Lộ trình" },
     { href: "/posts", label: "Bài viết" },
+    // User đã login mới cần link quay lại marketing (guest đã ở "/" sẵn).
+    ...(user ? [{ href: "/?view=landing", label: "Giới thiệu" }] : []),
   ];
   return (
     <motion.header
