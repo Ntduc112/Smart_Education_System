@@ -7,9 +7,10 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRegister } from "./register.hook";
+import { useLogin } from "../login/login.hook";
 import { registerSchema, RegisterInput } from "./register.schema";
 import { getApiError } from "@/lib/api/error";
-import { motion, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 const ROLES: { value: "STUDENT" | "TEACHER"; label: string; icon: string; desc: string }[] = [
   { value: "STUDENT", label: "Học viên", icon: "🎓", desc: "Tôi muốn học các khóa học" },
@@ -108,7 +109,11 @@ const inputCls = (hasError: boolean) =>
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [creds, setCreds] = useState<{ email: string; password: string } | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { mutateAsync: register, isPending } = useRegister();
+  const { mutateAsync: login, isPending: loggingIn } = useLogin();
 
   const {
     register: field,
@@ -124,9 +129,26 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterInput) => {
     try {
       await register(data);
-      router.push("/login");
+      setCreds({ email: data.email, password: data.password });
+      setSuccess(true);
     } catch (err) {
       setError("root", { message: getApiError(err, "Đăng ký thất bại") });
+    }
+  };
+
+  const handleLoginNow = async () => {
+    if (!creds) return;
+    setLoginError(null);
+    try {
+      const result = await login(creds);
+      const role = result.user?.role;
+      if (role === "ADMIN") router.push("/admin/dashboard");
+      else if (role === "TEACHER") router.push("/teacher/home");
+      else router.push("/");
+    } catch (err) {
+      // Auto-login lỗi → để họ tự đăng nhập
+      setLoginError(getApiError(err, "Đăng nhập tự động thất bại"));
+      router.push("/login");
     }
   };
 
@@ -359,6 +381,58 @@ export default function RegisterPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Success modal */}
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-[#0a1633]/40 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.97 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="relative z-10 w-full max-w-sm bg-white rounded-3xl p-8 text-center border border-[#e4eaf5]"
+              style={{ boxShadow: "0 20px 60px rgba(59,130,246,0.18)" }}
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.12, type: "spring", stiffness: 240, damping: 16 }}
+                className="mx-auto mb-5 w-16 h-16 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(14,159,110,0.12)" }}
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0E9F6E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </motion.div>
+              <h2 className="text-xl font-semibold text-[#181d26] mb-1.5">Đăng ký thành công!</h2>
+              <p className="text-sm text-[rgba(4,14,32,0.55)] mb-6">
+                Tài khoản của bạn đã được tạo. Đăng nhập để bắt đầu học nào.
+              </p>
+              <motion.button
+                type="button"
+                onClick={handleLoginNow}
+                disabled={loggingIn}
+                whileHover={{ scale: loggingIn ? 1 : 1.01 }}
+                whileTap={{ scale: loggingIn ? 1 : 0.98 }}
+                className="w-full bg-blue-600 text-white font-medium text-sm py-3 rounded-xl transition-colors hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ boxShadow: "0 4px 14px rgba(59,130,246,0.35)" }}
+              >
+                {loggingIn ? "Đang đăng nhập..." : "Đăng nhập ngay"}
+              </motion.button>
+              {loginError && (
+                <p className="mt-3 text-xs text-red-500">{loginError}</p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
