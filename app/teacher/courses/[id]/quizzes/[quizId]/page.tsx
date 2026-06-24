@@ -23,7 +23,7 @@ type QuestionType = "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
 
 interface Option   { id: string; content: string; is_correct: boolean; order: number }
 interface Question { id: string; content: string; type: QuestionType; points: number; order: number; sample_answer?: string | null; options: Option[] }
-interface Quiz     { id: string; title: string; pass_score: number; time_limit?: number | null; questions: Question[] }
+interface Quiz     { id: string; title: string; pass_score: number; require_pass: boolean; max_attempts?: number | null; time_limit?: number | null; questions: Question[] }
 
 // ── Palette (đồng bộ teacher/home) ────────────────────────────────────────────
 const C = {
@@ -79,7 +79,7 @@ function useQuiz(quizId: string) {
 function useUpdateQuiz(quizId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { title?: string; pass_score?: number; time_limit?: number | null }) =>
+    mutationFn: (data: { title?: string; pass_score?: number; require_pass?: boolean; max_attempts?: number | null; time_limit?: number | null }) =>
       api.put(`/teacher/quizzes/${quizId}`, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "quiz", quizId] }),
   });
@@ -457,11 +457,19 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
 
   const [title, setTitle]         = useState("");
   const [passScore, setPassScore] = useState(70);
+  const [requirePass, setRequirePass] = useState(false);
+  const [maxAttempts, setMaxAttempts] = useState<string>(""); // "" = không giới hạn
   const [titleEditing, setTitleEditing] = useState(false);
   const [showAddForm, setShowAddForm]   = useState(false);
 
   const handleSaveMeta = () => {
-    updateQuiz.mutate({ title: title || quiz?.title, pass_score: passScore });
+    const parsed = parseInt(maxAttempts);
+    updateQuiz.mutate({
+      title: title || quiz?.title,
+      pass_score: passScore,
+      require_pass: requirePass,
+      max_attempts: maxAttempts.trim() === "" || isNaN(parsed) ? null : parsed,
+    });
     setTitleEditing(false);
   };
 
@@ -485,7 +493,7 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
         </Link>
         <h1 className="font-display text-3xl font-semibold text-[#181d26]">Chỉnh sửa bài kiểm tra</h1>
         <p className="text-sm text-[rgba(4,14,32,0.45)] mt-1">
-          {quiz.questions.length} câu hỏi · {totalPoints} điểm · đạt từ {quiz.pass_score}%
+          {quiz.questions.length} câu hỏi · {totalPoints} điểm · {quiz.require_pass ? `đạt từ ${quiz.pass_score}%` : "không cần điểm qua"}
         </p>
       </div>
 
@@ -495,11 +503,31 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
         {titleEditing ? (
           <div className="space-y-3">
             <input className={inputCls} value={title} onChange={e => setTitle(e.target.value)} placeholder="Tên bài kiểm tra" />
+
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <span className="text-xs text-[rgba(4,14,32,0.55)]">Yêu cầu đạt điểm để qua bài</span>
+              <button type="button" onClick={() => setRequirePass(v => !v)}
+                className={`relative rounded-full transition-colors ${requirePass ? "bg-[#1b61c9]" : "bg-[#C5D4EA]"}`}
+                style={{ height: 22, width: 40 }}>
+                <span className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white transition-transform ${requirePass ? "translate-x-[18px]" : ""}`} />
+              </button>
+            </label>
+
+            {requirePass && (
+              <div className="flex items-center gap-3">
+                <label className="text-xs text-[rgba(4,14,32,0.55)]">Điểm đạt (%)</label>
+                <input type="number" min={0} max={100} className={`${inputCls} w-24`}
+                  value={passScore} onChange={e => setPassScore(parseInt(e.target.value) || 0)} />
+              </div>
+            )}
+
             <div className="flex items-center gap-3">
-              <label className="text-xs text-[rgba(4,14,32,0.55)]">Điểm đạt (%)</label>
-              <input type="number" min={0} max={100} className={`${inputCls} w-24`}
-                value={passScore} onChange={e => setPassScore(parseInt(e.target.value) || 70)} />
+              <label className="text-xs text-[rgba(4,14,32,0.55)]">Số lần làm tối đa</label>
+              <input type="number" min={1} className={`${inputCls} w-24`} placeholder="∞"
+                value={maxAttempts} onChange={e => setMaxAttempts(e.target.value)} />
+              <span className="text-xs text-[rgba(4,14,32,0.4)]">để trống = không giới hạn</span>
             </div>
+
             <div className="flex gap-2">
               <button onClick={() => setTitleEditing(false)}
                 className="flex-1 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-[#EAF1FC] transition-colors">
@@ -516,11 +544,18 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
             <div>
               <p className="text-base font-semibold text-[#181d26]">{quiz.title}</p>
               <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1">
-                Điểm đạt: {quiz.pass_score}%
+                {quiz.require_pass ? `Cần đạt ${quiz.pass_score}% để qua` : "Không cần điểm qua môn"}
+                {` · ${quiz.max_attempts ? `${quiz.max_attempts} lần làm` : "không giới hạn lượt"}`}
                 {quiz.time_limit ? ` · ${quiz.time_limit} phút` : ""}
               </p>
             </div>
-            <button onClick={() => { setTitle(quiz.title); setPassScore(quiz.pass_score); setTitleEditing(true); }}
+            <button onClick={() => {
+                setTitle(quiz.title);
+                setPassScore(quiz.pass_score);
+                setRequirePass(quiz.require_pass);
+                setMaxAttempts(quiz.max_attempts != null ? String(quiz.max_attempts) : "");
+                setTitleEditing(true);
+              }}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#EAF1FC] hover:border-[#1b61c9]/40 transition-colors">
               <Pencil size={12} /> Sửa
             </button>

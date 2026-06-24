@@ -36,33 +36,13 @@ export async function PATCH(
 
     // watch_percent chỉ tăng, không giảm (tránh seek backwards reset tiến độ)
     const finalPct = Math.max(existing?.watch_percent ?? 0, newPct);
-    const finalCompleted = (existing?.is_completed ?? false) || finalPct >= 80;
+    // Bài có video: đạt 80%. Bài không video (text/pdf): hoàn thành ngay khi mở.
+    const finalCompleted = (existing?.is_completed ?? false) || finalPct >= 80 || !lesson.video_url;
 
     const progress = await prisma.lessonProgress.upsert({
         where: { user_id_lesson_id: { user_id: userId, lesson_id: id } },
         create: { user_id: userId, lesson_id: id, watch_percent: finalPct, is_completed: finalCompleted, last_watched_at: new Date() },
         update: { watch_percent: finalPct, is_completed: finalCompleted, last_watched_at: new Date() },
-    });
-
-    return NextResponse.json({ progress }, { status: 200 });
-}
-
-// POST: mark lesson as manually completed
-export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const { id } = await params;
-    const userId = request.headers.get("x-user-id");
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const lesson = await verifyEnrollment(userId, id);
-    if (!lesson) return NextResponse.json({ error: "Not found or not enrolled" }, { status: 403 });
-
-    const progress = await prisma.lessonProgress.upsert({
-        where: { user_id_lesson_id: { user_id: userId, lesson_id: id } },
-        create: { user_id: userId, lesson_id: id, is_completed: true, watch_percent: 100, last_watched_at: new Date() },
-        update: { is_completed: true, watch_percent: 100, last_watched_at: new Date() },
     });
 
     return NextResponse.json({ progress }, { status: 200 });

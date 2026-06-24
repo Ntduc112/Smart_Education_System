@@ -45,6 +45,27 @@ export async function GET(
         // Bài đang học = bài đầu tiên chưa hoàn thành (theo thứ tự), hoặc bài cuối nếu xong hết
         const currentLesson = lessons.find((l) => !completedSet.has(l.id)) ?? lessons.at(-1);
 
+        // Trạng thái "thỏa" của từng quiz để gate bài kế tiếp (xem quy tắc gate)
+        const quizzes = await prisma.quiz.findMany({
+            where:  { lesson: { chapter: { course_id: id } } },
+            select: {
+                id:           true,
+                max_attempts: true,
+                require_pass: true,
+                attempts:     { where: { user_id: userId }, select: { is_passed: true } },
+            },
+        });
+        const quizStates = quizzes.map((q) => {
+            const used      = q.attempts.length;
+            const hasPassed = q.attempts.some((a) => a.is_passed === true);
+            const satisfied =
+                used === 0                                       ? false
+              : q.max_attempts != null && used >= q.max_attempts ? true   // hết lượt thì cho qua
+              : !q.require_pass                                  ? true   // chỉ cần nộp
+              :                                                    hasPassed;
+            return { quiz_id: q.id, satisfied };
+        });
+
         return NextResponse.json({
             progress: {
                 total_lessons:        totalLessons,
@@ -52,6 +73,7 @@ export async function GET(
                 percentage,
                 completed_lesson_ids: [...completedSet],
                 current_lesson_id:    currentLesson?.id ?? null,
+                quiz_states:          quizStates,
             },
         }, { status: 200 });
     } catch (error) {

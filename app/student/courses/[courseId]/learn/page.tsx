@@ -11,7 +11,6 @@ import api from "@/lib/axios";
 import {
   useCourseDetail,
   useCourseProgress,
-  useMarkLessonComplete,
   useReportWatchProgress,
   useQuizDetail,
   useQuizAttempts,
@@ -152,12 +151,16 @@ function ChapterItem({
 
             // Quiz item
             const quiz = navItem.item;
+            const quizLocked = lockedIds.has(id);
             return (
               <li key={`quiz-${id}`}>
                 <button
-                  onClick={() => onSelectQuiz(quiz)}
+                  onClick={() => !quizLocked && onSelectQuiz(quiz)}
+                  title={quizLocked ? "Hoàn thành bài trước để mở khóa" : undefined}
                   className={`w-full flex items-start gap-3 px-4 py-2.5 pl-11 text-left transition-colors ${
-                    active ? "bg-[#f5f0ff] border-r-2 border-[#7c3aed]" : "hover:bg-[#F4F8FE]"
+                    quizLocked
+                      ? "opacity-50 cursor-not-allowed"
+                      : active ? "bg-[#f5f0ff] border-r-2 border-[#7c3aed]" : "hover:bg-[#F4F8FE]"
                   }`}
                 >
                   <div className="shrink-0 mt-0.5">
@@ -437,10 +440,10 @@ function QuestionItem({
 
 // ── Quiz View ──────────────────────────────────────────────────────────────
 
-function QuizView({ quizId }: { quizId: string }) {
+function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
   const { data: quiz, isLoading } = useQuizDetail(quizId);
   const { data: attempts } = useQuizAttempts(quizId);
-  const submit = useSubmitQuizAttempt(quizId);
+  const submit = useSubmitQuizAttempt(quizId, courseId);
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -448,6 +451,8 @@ function QuizView({ quizId }: { quizId: string }) {
   const [retrying, setRetrying] = useState(false);
 
   const lastAttempt = attempts?.[0] ?? null;
+  const attemptsUsed = attempts?.length ?? 0;
+  const exhausted = !!quiz && quiz.max_attempts != null && attemptsUsed >= quiz.max_attempts;
 
   const handleSubmit = () => {
     if (!quiz) return;
@@ -504,7 +509,12 @@ function QuizView({ quizId }: { quizId: string }) {
           <h2 className="font-display text-lg font-semibold text-[#181d26]">{quiz.title}</h2>
           <div className="flex items-center gap-4 mt-2 flex-wrap">
             <span className="text-xs text-[rgba(4,14,32,0.55)]">{quiz.questions.length} câu hỏi</span>
-            <span className="text-xs text-[rgba(4,14,32,0.55)]">Điểm qua: {quiz.pass_score}%</span>
+            <span className="text-xs text-[rgba(4,14,32,0.55)]">
+              {quiz.require_pass ? `Điểm qua: ${quiz.pass_score}%` : "Không cần điểm qua"}
+            </span>
+            <span className="text-xs text-[rgba(4,14,32,0.55)]">
+              {quiz.max_attempts != null ? `Lượt: ${attemptsUsed}/${quiz.max_attempts}` : "Không giới hạn lượt"}
+            </span>
             {quiz.time_limit && (
               <span className="text-xs text-[rgba(4,14,32,0.55)]">{quiz.time_limit} phút</span>
             )}
@@ -543,9 +553,10 @@ function QuizView({ quizId }: { quizId: string }) {
           </div>
           <button
             onClick={handleRetry}
-            className="shrink-0 text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/8 transition-colors"
+            disabled={exhausted}
+            className="shrink-0 text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
-            Làm lại
+            {exhausted ? "Đã hết lượt" : "Làm lại"}
           </button>
         </div>
       )}
@@ -579,9 +590,10 @@ function QuizView({ quizId }: { quizId: string }) {
           </div>
           <button
             onClick={handleRetry}
-            className="shrink-0 text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/8 transition-colors"
+            disabled={exhausted}
+            className="shrink-0 text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
-            Làm lại
+            {exhausted ? "Đã hết lượt" : "Làm lại"}
           </button>
         </div>
       )}
@@ -601,7 +613,7 @@ function QuizView({ quizId }: { quizId: string }) {
       </div>
 
       {/* Submit */}
-      {!showingResult && (
+      {!showingResult && !exhausted && (
         <button
           onClick={handleSubmit}
           disabled={submit.isPending}
@@ -632,20 +644,18 @@ function NavControls({
   nextItem,
   isLesson,
   isCurrentDone,
-  isPending,
+  canGoNext,
   onPrev,
   onNext,
-  onMarkComplete,
 }: {
   title: string;
   prevItem: NavItem | null;
   nextItem: NavItem | null;
   isLesson: boolean;
   isCurrentDone: boolean;
-  isPending: boolean;
+  canGoNext: boolean;
   onPrev: () => void;
   onNext: () => void;
-  onMarkComplete: () => void;
 }) {
   return (
     <div className="mb-5">
@@ -664,26 +674,6 @@ function NavControls({
           Bài trước
         </button>
 
-        {isLesson && !isCurrentDone && (
-          <button
-            onClick={onMarkComplete}
-            disabled={isPending}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors disabled:opacity-60"
-            style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
-          >
-            {isPending ? (
-              <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            )}
-            {nextItem ? "Hoàn thành & Tiếp theo" : "Hoàn thành khóa học"}
-          </button>
-        )}
-
         {isLesson && isCurrentDone && (
           <div className="flex items-center gap-1.5 bg-[#f0fdf4] text-[#0E9F6E] border border-[#bbf7d0] rounded-full px-3 py-1.5 text-sm font-medium">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -697,7 +687,8 @@ function NavControls({
 
         <button
           onClick={onNext}
-          disabled={!nextItem || (isLesson && !isCurrentDone)}
+          disabled={!nextItem || !canGoNext}
+          title={!canGoNext && nextItem ? (isLesson ? "Hoàn thành bài này để tiếp tục" : "Làm bài kiểm tra để tiếp tục") : undefined}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-[#DCE6F4] text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           Bài sau
@@ -726,7 +717,6 @@ function LearnContent({
   const { data: user } = useMe();
   const { data: course, isLoading: courseLoading } = useCourseDetail(courseId);
   const { data: progress } = useCourseProgress(courseId);
-  const markComplete         = useMarkLessonComplete(courseId);
   const reportWatchProgress  = useReportWatchProgress(courseId);
   const { data: certificate } = useCourseCertificate(courseId);
   const issueCertificate = useIssueCertificate(courseId);
@@ -753,21 +743,34 @@ function LearnContent({
   const nextItem = selectedIdx < allNavItems.length - 1 ? allNavItems[selectedIdx + 1] : null;
 
   const completedIds = new Set(progress?.completed_lesson_ids ?? []);
+  const quizSatisfiedSet = new Set(
+    (progress?.quiz_states ?? []).filter((q) => q.satisfied).map((q) => q.quiz_id)
+  );
   const isLesson = selectedItem?.kind === "lesson";
   const isCurrentDone = isLesson && selectedItem ? completedIds.has(selectedItem.item.id) : false;
 
-  // Tính lockedIds: bài N bị khóa nếu bài N-1 chưa hoàn thành
+  // Một item "thỏa" = bài học đã hoàn thành, hoặc quiz đã thỏa điều kiện gate.
+  const isItemSatisfied = (nav: NavItem | null): boolean => {
+    if (!nav) return false;
+    return nav.kind === "lesson"
+      ? completedIds.has(nav.item.id)
+      : quizSatisfiedSet.has(nav.item.id);
+  };
+
+  // Item bị khóa nếu có bất kỳ item nào trước nó (bài học HOẶC quiz) chưa thỏa.
   const lockedIds = useMemo(() => {
     const locked = new Set<string>();
-    const lessonItems = allNavItems.filter((n) => n.kind === "lesson");
-    for (let i = 1; i < lessonItems.length; i++) {
-      const prev = lessonItems[i - 1].item;
-      if (!completedIds.has(prev.id) || locked.has(prev.id)) {
-        locked.add(lessonItems[i].item.id);
-      }
+    let blocked = false;
+    for (const nav of allNavItems) {
+      if (blocked) locked.add(nav.item.id);
+      const satisfied = nav.kind === "lesson"
+        ? completedIds.has(nav.item.id)
+        : quizSatisfiedSet.has(nav.item.id);
+      if (!satisfied) blocked = true;
     }
     return locked;
-  }, [allNavItems, completedIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allNavItems, progress?.completed_lesson_ids, progress?.quiz_states]);
 
   const getVideoTime = useCallback((): number | null => {
     const t = videoRef.current?.currentTime;
@@ -802,14 +805,13 @@ function LearnContent({
     [courseId, router]
   );
 
-  const handleMarkComplete = () => {
-    if (!selectedItem || selectedItem.kind !== "lesson" || isCurrentDone) return;
-    markComplete.mutate(selectedItem.item.id, {
-      onSuccess: () => {
-        if (nextItem) navigateToItem(nextItem);
-      },
-    });
-  };
+  // Bài không có video (text/pdf): tự đánh dấu hoàn thành khi mở.
+  useEffect(() => {
+    if (selectedItem?.kind === "lesson" && !selectedItem.item.video_url && !isCurrentDone) {
+      reportWatchProgress.mutate({ lessonId: selectedItem.item.id, watchPercent: 100 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem?.item.id]);
 
   if (courseLoading) {
     return (
@@ -963,10 +965,9 @@ function LearnContent({
                   nextItem={nextItem}
                   isLesson={isLesson}
                   isCurrentDone={isCurrentDone}
-                  isPending={markComplete.isPending}
+                  canGoNext={isItemSatisfied(selectedItem)}
                   onPrev={() => prevItem && navigateToItem(prevItem)}
                   onNext={() => nextItem && navigateToItem(nextItem)}
-                  onMarkComplete={handleMarkComplete}
                 />
 
                 {selectedItem.kind === "lesson" ? (
@@ -1028,7 +1029,7 @@ function LearnContent({
                     })()}
                   </>
                 ) : (
-                  <QuizView quizId={selectedItem.item.id} />
+                  <QuizView quizId={selectedItem.item.id} courseId={courseId} />
                 )}
               </>
             ) : (

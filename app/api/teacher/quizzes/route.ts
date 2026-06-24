@@ -18,9 +18,11 @@ const QuestionSchema = z.object({
 const CreateQuizSchema = z.object({
     lesson_id:  z.string().uuid(),
     title:      z.string().min(1),
-    pass_score: z.number().int().min(0).max(100).default(70),
-    time_limit: z.number().int().min(1).optional(),
-    questions:  z.array(QuestionSchema).optional(),
+    pass_score:   z.number().int().min(0).max(100).default(70),
+    require_pass: z.boolean().optional(),
+    max_attempts: z.number().int().positive().nullable().optional(),
+    time_limit:   z.number().int().min(1).optional(),
+    questions:    z.array(QuestionSchema).optional(),
 });
 
 export async function POST(request: NextRequest) {

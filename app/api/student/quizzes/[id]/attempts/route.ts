@@ -44,6 +44,16 @@ export async function POST(
             return NextResponse.json({ error: "Not enrolled in this course" }, { status: 403 });
         }
 
+        // Chặn vượt số lần làm tối đa (null = không giới hạn)
+        if (quiz.max_attempts != null) {
+            const used = await prisma.quizAttempt.count({
+                where: { quiz_id: id, user_id: userId },
+            });
+            if (used >= quiz.max_attempts) {
+                return NextResponse.json({ error: "Đã hết số lần làm" }, { status: 403 });
+            }
+        }
+
         const body = await request.json();
         const { answers } = SubmitAttemptSchema.parse(body);
 

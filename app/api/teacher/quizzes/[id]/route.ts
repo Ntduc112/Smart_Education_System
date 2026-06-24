@@ -3,9 +3,11 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 
 const UpdateQuizSchema = z.object({
-    title:      z.string().min(1).optional(),
-    pass_score: z.number().int().min(0).max(100).optional(),
-    time_limit: z.number().int().min(1).nullable().optional(),
+    title:        z.string().min(1).optional(),
+    pass_score:   z.number().int().min(0).max(100).optional(),
+    require_pass: z.boolean().optional(),
+    max_attempts: z.number().int().positive().nullable().optional(),
+    time_limit:   z.number().int().min(1).nullable().optional(),
 });
 
 async function verifyOwnership(quizId: string, userId: string) {

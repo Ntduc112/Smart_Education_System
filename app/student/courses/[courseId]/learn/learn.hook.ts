@@ -51,12 +51,18 @@ export interface CourseDetail {
   sections: Chapter[];
 }
 
+export interface QuizState {
+  quiz_id: string;
+  satisfied: boolean;
+}
+
 export interface CourseProgress {
   total_lessons: number;
   completed_lessons: number;
   percentage: number;
   completed_lesson_ids: string[];
   current_lesson_id: string | null;
+  quiz_states: QuizState[];
 }
 
 // ── Quiz detail types ──────────────────────────────────────────────────────
@@ -83,6 +89,8 @@ export interface QuizDetail {
   id: string;
   title: string;
   pass_score: number;
+  require_pass: boolean;
+  max_attempts: number | null;
   time_limit: number | null;
   lesson_id: string;
   questions: QuizQuestion[];
@@ -125,17 +133,6 @@ export function useCourseProgress(courseId: string) {
   });
 }
 
-export function useMarkLessonComplete(courseId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (lessonId: string) =>
-      api.post(`/student/lessons/${lessonId}/progress`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["course-progress", courseId] });
-    },
-  });
-}
-
 export function useReportWatchProgress(courseId: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -172,13 +169,15 @@ export function useQuizAttempts(quizId: string | null) {
   });
 }
 
-export function useSubmitQuizAttempt(quizId: string) {
+export function useSubmitQuizAttempt(quizId: string, courseId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (answers: { question_id: string; answer: string }[]) =>
       api.post(`/student/quizzes/${quizId}/attempts`, { answers }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["quiz-attempts", quizId] });
+      // Cập nhật trạng thái gate (quiz_states) cho điều hướng bài học
+      qc.invalidateQueries({ queryKey: ["course-progress", courseId] });
     },
   });
 }

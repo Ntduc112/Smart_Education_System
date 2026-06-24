@@ -8,10 +8,12 @@ model Quiz {
     id         String   @id @default(uuid())
     lesson_id  String
     lesson     Lesson   @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
-    title      String
-    pass_score Int      @default(70)
-    time_limit Int?
-    created_at DateTime @default(now())
+    title        String
+    pass_score   Int      @default(70)
+    require_pass Boolean  @default(false)
+    max_attempts Int?
+    time_limit   Int?
+    created_at   DateTime @default(now())
     updated_at DateTime @updatedAt
 
     questions Question[]
