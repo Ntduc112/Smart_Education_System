@@ -3,7 +3,7 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendOtpEmail(email: string, code: string) {
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "Learnust <noreply@learnust.dev>",
         to: email,
         subject: "Mã xác thực đặt lại mật khẩu – Learnust",
@@ -50,4 +50,9 @@ export async function sendOtpEmail(email: string, code: string) {
 </body>
 </html>`,
     });
+
+    if (error) {
+        throw new Error(`Resend gửi mail thất bại: ${error.name} – ${error.message}`);
+    }
+    return data;
 }

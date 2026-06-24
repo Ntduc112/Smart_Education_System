@@ -47,7 +47,7 @@ function PaymentSuccessContent() {
                 if (p.status === "PAID") {
                     setPayment(p);
                     setStatus("paid");
-                } else if (p.status === "FAILED") {
+                } else if (p.status === "FAILED" || p.status === "CANCELLED") {
                     setStatus("failed");
                 } else {
                     // PENDING — webhook chưa về, poll thêm
@@ -75,7 +75,7 @@ function PaymentSuccessContent() {
                 if (p.status === "PAID") {
                     setPayment(p);
                     setStatus("paid");
-                } else if (p.status === "FAILED") {
+                } else if (p.status === "FAILED" || p.status === "CANCELLED") {
                     setStatus("failed");
                 } else {
                     setAttempts((a) => a + 1);
