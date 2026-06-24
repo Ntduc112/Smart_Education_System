@@ -22,6 +22,7 @@ const PUBLIC_ROUTES = [
     "/api/categories",
     "/courses",
     "/posts",
+    "/roadmaps",
     "/payment/success",
     "/payment/cancel",
 ];
