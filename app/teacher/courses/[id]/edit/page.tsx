@@ -7,13 +7,14 @@ import { motion } from "framer-motion";
 import {
   Plus, Save,
   Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings, BookOpen, Route,
+  Loader2, CheckCircle2, AlertTriangle,
 } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
 import { RoadmapModal } from "./_components/RoadmapModal";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
   useUpdateChapter, useUpdateLesson,
-  useUploadPdf, useUploadVideo, useUploadThumbnail, useCreateQuiz,
+  useUploadPdf, useUploadVideo, useUploadThumbnail, useCreateQuiz, useTranscriptStatus,
   BuilderChapter, BuilderLesson,
 } from "./edit.hook";
 import { AIQuizModal } from "./_components/AIQuizModal";
@@ -84,9 +85,11 @@ function SurfaceHead({ icon, title, subtitle }: { icon: React.ReactNode; title: 
 function ThumbnailUploadSection({
   value,
   onChange,
+  onUploaded,
 }: {
-  value:    string;
-  onChange: (url: string) => void;
+  value:       string;
+  onChange:    (url: string) => void;
+  onUploaded?: (url: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
@@ -99,7 +102,9 @@ function ThumbnailUploadSection({
     setProgress(0);
     try {
       const url = await uploadThumbnail.mutateAsync(file);
+      // onUploaded chạy sau onChange: lưu thumbnail ngay (khỏi bấm Lưu).
       onChange(url);
+      onUploaded?.(url);
     } catch {
       // error handled by mutation
     }
@@ -211,6 +216,15 @@ function CourseInfoPanel({
     }
   );
 
+  // Lưu ảnh bìa ngay sau khi upload xong — giống auto-save của video.
+  const persistThumbnail = (url: string) => updateCourse.mutate(
+    { ...form, thumbnail: url, discount_percent: form.discount_percent > 0 ? form.discount_percent : null },
+    {
+      onSuccess: () => toast.success("Đã lưu ảnh bìa"),
+      onError:   () => toast.error("Lưu ảnh bìa thất bại, vui lòng bấm Lưu"),
+    }
+  );
+
   return (
     <>
       <SurfaceHead
@@ -249,6 +263,7 @@ function CourseInfoPanel({
         <ThumbnailUploadSection
           value={form.thumbnail}
           onChange={(url) => setForm((f) => ({ ...f, thumbnail: url }))}
+          onUploaded={persistThumbnail}
         />
       </div>
 
@@ -422,9 +437,11 @@ function videoMode(url: string): VideoMode {
 function VideoUploadSection({
   value,
   onChange,
+  onUploaded,
 }: {
-  value:    string;
-  onChange: (url: string) => void;
+  value:       string;
+  onChange:    (url: string) => void;
+  onUploaded?: (url: string) => void;
 }) {
   const fileInputRef        = useRef<HTMLInputElement>(null);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -435,7 +452,9 @@ function VideoUploadSection({
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    upload(file, (url) => onChange(url));
+    // onUploaded chạy sau onChange: lưu video_url ngay (khỏi bấm Lưu lần 1)
+    // và kích hoạt theo dõi trích lời giảng.
+    upload(file, (url) => { onChange(url); onUploaded?.(url); });
   };
 
   // ── Đang upload lên MinIO ──
@@ -617,9 +636,12 @@ function LessonPanel({
   });
   const [showQuizForm, setShowQuizForm]   = useState(false);
   const [showAIModal, setShowAIModal]     = useState(false);
+  const [showAIWarn, setShowAIWarn]       = useState(false);
   const [quizTitle, setQuizTitle]         = useState("");
   const [quizScore, setQuizScore]         = useState(70);
   const [saveStatus, setSaveStatus]       = useState<"idle" | "success" | "error">("idle");
+
+  const transcript = useTranscriptStatus(lesson.id, form.video_url || null);
 
   useEffect(() => {
     setForm({
@@ -659,6 +681,33 @@ function LessonPanel({
     );
   };
 
+  // Lưu video_url ngay sau khi upload xong — bỏ "lưu lần 1" để pipeline transcript chạy.
+  const persistVideoUrl = (url: string) => {
+    updateLesson.mutate(
+      {
+        id:        lesson.id,
+        title:     form.title,
+        is_free:   form.is_free,
+        content:   form.content || null,
+        video_url: url || null,
+        pdf_url:   form.pdf_url || null,
+        pdf_text:  form.pdf_text || null,
+      },
+      {
+        onSuccess: () => toast.success("Đã lưu video — đang trích lời giảng"),
+        onError:   () => toast.error("Lưu video thất bại, vui lòng bấm Lưu bài học"),
+      }
+    );
+  };
+
+  // Trích lời giảng thất bại → enqueue lại job faststart/transcribe.
+  const retryTranscribe = () => {
+    const videoKey = form.video_url.replace(/^r2:/, "");
+    api.post("/teacher/upload-video/confirm", { videoKey })
+      .then(() => { toast.success("Đang trích lại lời giảng"); transcript.refetch(); })
+      .catch(() => toast.error("Không gửi được yêu cầu, thử lại sau"));
+  };
+
   const handlePdfUpload = async (file: File) => {
     const { url, pdfText } = await uploadPdf.mutateAsync(file);
     setForm((f) => ({ ...f, pdf_url: url, pdf_text: pdfText ?? "" }));
@@ -673,6 +722,16 @@ function LessonPanel({
 
   const hasQuiz = lesson.quiz.length > 0;
 
+  // Gating "Tạo với AI" theo nguồn nội dung + trạng thái lời giảng.
+  const hasText           = !!(form.content.trim() || form.pdf_text.trim() || form.pdf_url);
+  const isR2Video         = !!form.video_url && form.video_url.startsWith("r2:");
+  const transcriptReady   = transcript.data === "done";
+  const transcriptPending = isR2Video && !transcriptReady;          // processing/failed/đang load
+  const aiBlocked         = transcriptPending && !hasText;          // chỉ có video, chưa trích xong
+  const aiWarn            = transcriptPending && hasText;           // có text nhưng video chưa trích
+
+  const openAI = () => (aiWarn ? setShowAIWarn(true) : setShowAIModal(true));
+
   return (
     <>
       <div className={surfHeadCls}>
@@ -683,17 +742,6 @@ function LessonPanel({
           <h2 className="font-display text-[18px] font-semibold text-[#181d26] leading-tight">Chỉnh sửa bài học</h2>
           <p className="text-[13px] text-[rgba(4,14,32,0.4)] mt-0.5 truncate">{lesson.title}</p>
         </div>
-        {/* is_free toggle */}
-        <button
-          onClick={() => setForm((f) => ({ ...f, is_free: !f.is_free }))}
-          className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-            form.is_free
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-[#DCE6F4] bg-white text-[rgba(4,14,32,0.55)]"
-          }`}
-        >
-          {form.is_free ? "Miễn phí" : "Trả phí"}
-        </button>
       </div>
 
       <div className={`${sectionCls} space-y-5`}>
@@ -705,6 +753,23 @@ function LessonPanel({
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
         />
+      </div>
+
+      {/* Free preview toggle */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[#DCE6F4] bg-[#F4F8FE] px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-[#181d26]">Cho học viên xem thử (miễn phí)</p>
+          <p className="text-xs text-[rgba(4,14,32,0.5)] mt-0.5">Bài này xem được dù chưa mua khóa học.</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={form.is_free}
+          onClick={() => setForm((f) => ({ ...f, is_free: !f.is_free }))}
+          className={`relative shrink-0 h-6 w-11 rounded-full transition-colors ${form.is_free ? "bg-emerald-500" : "bg-[#cdd8ea]"}`}
+        >
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${form.is_free ? "left-[22px]" : "left-0.5"}`} />
+        </button>
       </div>
 
       {/* Content */}
@@ -722,18 +787,37 @@ function LessonPanel({
       {/* Video */}
       <div>
         <label className={labelCls} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Video size={12} /> Video bài học
+          <Video size={12} /> Video bài học <span className="text-[rgba(4,14,32,0.4)] font-normal">(tuỳ chọn)</span>
         </label>
         <VideoUploadSection
           value={form.video_url}
           onChange={(url) => setForm((f) => ({ ...f, video_url: url }))}
+          onUploaded={persistVideoUrl}
         />
+        {isR2Video && (
+          <div className="mt-2">
+            {transcript.data === "done" ? (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+                <CheckCircle2 size={13} /> Lời giảng sẵn sàng — tạo quiz AI được rồi
+              </p>
+            ) : transcript.data === "failed" ? (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-red-500">
+                <AlertTriangle size={13} /> Trích lời giảng thất bại
+                <button onClick={retryTranscribe} className="underline hover:text-red-600">Thử lại</button>
+              </p>
+            ) : (
+              <p className="flex items-center gap-1.5 text-xs font-medium text-[#1b61c9]">
+                <Loader2 size={13} className="animate-spin" /> Đang trích lời giảng video…
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* PDF */}
       <div>
         <label className={labelCls} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <FileText size={12} /> Tài liệu PDF
+          <FileText size={12} /> Tài liệu PDF <span className="text-[rgba(4,14,32,0.4)] font-normal">(tuỳ chọn)</span>
         </label>
         {form.pdf_url ? (
           <div className="flex items-center gap-3 px-3 py-2.5 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE]">
@@ -888,8 +972,16 @@ function LessonPanel({
               Thêm quiz
             </button>
             <button
-              onClick={() => setShowAIModal(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#1b61c9]/40 rounded-xl text-sm text-[#1b61c9] hover:bg-[#1b61c9]/6 transition-colors"
+              onClick={openAI}
+              disabled={aiBlocked}
+              title={
+                aiBlocked
+                  ? "Đợi trích lời giảng xong (chưa có nội dung khác)"
+                  : aiWarn
+                  ? "Lời giảng video chưa trích xong — quiz sẽ thiếu phần video"
+                  : undefined
+              }
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#1b61c9]/40 rounded-xl text-sm text-[#1b61c9] hover:bg-[#1b61c9]/6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
@@ -908,6 +1000,36 @@ function LessonPanel({
           onClose={() => setShowAIModal(false)}
           onSuccess={() => setShowAIModal(false)}
         />
+      )}
+
+      {showAIWarn && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowAIWarn(false)}>
+          <div className="bg-white rounded-2xl p-6 w-[26rem]"
+            style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 8px 32px" }}
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 text-base font-semibold text-[#181d26] mb-2">
+              <AlertTriangle size={17} className="text-amber-500" /> Lời giảng video chưa trích xong
+            </h3>
+            <p className="text-sm text-[rgba(4,14,32,0.6)] mb-6">
+              Tạo quiz bây giờ sẽ chỉ dựa trên nội dung text/PDF, <b>không gồm lời giảng trong video</b>. Bạn muốn?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowAIWarn(false)}
+                className="px-4 py-2 text-sm font-medium text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc] transition-colors"
+              >
+                Đợi lời giảng
+              </button>
+              <button
+                onClick={() => { setShowAIWarn(false); setShowAIModal(true); }}
+                className="px-4 py-2 text-sm font-medium text-white bg-[#1b61c9] rounded-xl hover:bg-[#254fad] transition-colors"
+              >
+                Tạo luôn
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       </div>
     </>

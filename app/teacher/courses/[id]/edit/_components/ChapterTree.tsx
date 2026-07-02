@@ -399,6 +399,29 @@ export function ChapterTree({
         </button>
       </div>
 
+      {/* Empty state: chưa có chương nào */}
+      {localSections.length === 0 && !showNewChapter && (
+        <div className="mx-2 my-3 rounded-2xl border border-dashed border-[#C2D4EE] bg-[#F4F8FE] px-4 py-6 text-center">
+          <div className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#1b61c9]/10">
+            <BookOpen size={20} className="text-[#1b61c9]" />
+          </div>
+          <p className="text-sm font-semibold text-[#181d26]">Chưa có chương nào</p>
+          <p className="mt-1 text-xs text-[rgba(4,14,32,0.5)]">Bắt đầu xây nội dung khóa học của bạn.</p>
+          <button
+            onClick={() => setShowNewChapter(true)}
+            className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1b61c9] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#254fad]"
+          >
+            <Plus size={14} /> Thêm chương đầu tiên
+          </button>
+          <button
+            onClick={onOpenImport}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#DCE6F4] bg-white py-2.5 text-sm font-medium text-[rgba(4,14,32,0.7)] transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
+          >
+            <FolderUp size={14} /> Import từ folder
+          </button>
+        </div>
+      )}
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}

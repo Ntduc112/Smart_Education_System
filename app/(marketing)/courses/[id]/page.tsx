@@ -484,33 +484,25 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
       <MainNavbar />
 
       <main className="max-w-6xl mx-auto px-6 py-10">
-        {/* Back button — về trang vừa click dẫn đến */}
-        <motion.div
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.35 }}
-          whileHover={{ x: -3 }}
-          whileTap={{ scale: 0.96 }}
-          className="mb-8 w-fit"
-        >
-          <button
-            onClick={() => router.back()}
-            className="group flex items-center gap-2 rounded-xl bg-white py-2 pl-2.5 pr-4 text-sm font-medium transition-colors hover:text-[#254fad]"
-            style={{ border: `1px solid ${C.border}`, color: C.blue, boxShadow: CARD_SHADOW }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-0.5">
-              <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-            </svg>
-            Quay lại
-          </button>
-        </motion.div>
-
         {isLoading ? <DetailSkeleton /> : course ? (
           <motion.div initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             {/* ── Left: Content ── */}
             <div className="lg:col-span-2">
-              {/* Badges */}
-              <div className="flex items-center gap-2 mb-4">
+              {/* Meta row: back + badges */}
+              <div className="flex items-center gap-3 mb-4">
+                <motion.button
+                  onClick={() => router.back()}
+                  whileHover={{ x: -2 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="group flex items-center gap-1.5 rounded-lg bg-white py-1.5 pl-2 pr-3 text-xs font-medium transition-colors hover:text-[#254fad]"
+                  style={{ border: `1px solid ${C.border}`, color: C.blue, boxShadow: CARD_SHADOW }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:-translate-x-0.5">
+                    <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                  </svg>
+                  Quay lại
+                </motion.button>
+                <span className="h-4 w-px shrink-0" style={{ background: C.border }} />
                 <span className="rounded-full px-2.5 py-1 text-xs font-medium" style={{ color: C.blue, background: "rgba(27,97,201,0.09)" }}>
                   {course.category.name}
                 </span>

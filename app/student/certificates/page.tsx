@@ -114,47 +114,41 @@ export default function CertificatesPage() {
             variants={stagger(0.08)}
           >
             {certificates.map((cert) => (
-              <motion.div
-                key={cert.id}
-                variants={fadeUp}
-                whileHover={{ y: -6, boxShadow: "rgba(27,60,120,0.14) 0px 16px 40px", transition: { duration: 0.2 } }}
-                className="group flex flex-col overflow-hidden rounded-3xl bg-white"
-                style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
-              >
-                <div className="aspect-video overflow-hidden" style={{ background: "#E7EFFB" }}>
-                  {cert.course.thumbnail ? (
-                    <img
-                      src={cert.course.thumbnail}
-                      alt={cert.course.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="grid h-full w-full place-items-center">
-                      <Award size={32} style={{ color: C.blue }} />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  <h3 className="mb-1 line-clamp-2 font-display text-[16px] font-semibold leading-snug" style={{ color: C.ink }}>
-                    {cert.course.title}
-                  </h3>
-                  <p className="mb-4 text-xs" style={{ color: C.inkFaint }}>{cert.course.instructor.name}</p>
-                  <div className="mt-auto flex items-center justify-between border-t pt-3" style={{ borderColor: "#EAF1FC" }}>
-                    <span className="text-xs" style={{ color: C.inkFaint }}>
-                      {new Date(cert.issued_at).toLocaleDateString("vi-VN")}
-                    </span>
-                    <motion.div whileHover={{ x: 2 }} whileTap={{ scale: 0.96 }}>
-                      <Link
-                        href={`/student/certificates/${cert.id}`}
-                        className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[#1b61c9]/8"
-                        style={{ color: C.blue }}
-                      >
-                        Xem chứng chỉ
-                        <ArrowRight size={12} />
-                      </Link>
-                    </motion.div>
+              <motion.div key={cert.id} variants={fadeUp} whileHover={{ y: -6 }}>
+                <Link
+                  href={`/student/certificates/${cert.id}`}
+                  className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white transition-shadow hover:shadow-[rgba(27,60,120,0.14)_0px_16px_40px]"
+                  style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
+                >
+                  <div className="aspect-video overflow-hidden" style={{ background: "#E7EFFB" }}>
+                    {cert.course.thumbnail ? (
+                      <img
+                        src={cert.course.thumbnail}
+                        alt={cert.course.title}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center">
+                        <Award size={32} style={{ color: C.blue }} />
+                      </div>
+                    )}
                   </div>
-                </div>
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="mb-1 line-clamp-2 font-display text-[16px] font-semibold leading-snug transition-colors group-hover:text-[#1b61c9]" style={{ color: C.ink }}>
+                      {cert.course.title}
+                    </h3>
+                    <p className="mb-4 text-xs" style={{ color: C.inkFaint }}>{cert.course.instructor.name}</p>
+                    <div className="mt-auto flex items-center justify-between border-t pt-3" style={{ borderColor: "#EAF1FC" }}>
+                      <span className="text-xs" style={{ color: C.inkFaint }}>
+                        {new Date(cert.issued_at).toLocaleDateString("vi-VN")}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs font-medium" style={{ color: C.blue }}>
+                        Xem chứng chỉ
+                        <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>

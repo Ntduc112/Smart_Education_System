@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Plus, BookOpen, Users, ArrowRight, Sparkles, BarChart2,
@@ -142,9 +143,13 @@ function Kpi({ icon, tint, fg, value, label, growth, spark, sparkColor }: {
 // ── Recent course row ──────────────────────────────────────────────────────────
 function CourseRow({ course }: { course: RecentCourse }) {
   const published = course.status === "PUBLISHED";
+  const router = useRouter();
   return (
     <motion.div variants={fadeUp}
-      className="flex items-center gap-4 rounded-2xl px-3 py-2.5 transition-colors hover:bg-[#F4F8FE]">
+      role="link" tabIndex={0}
+      onClick={() => router.push(`/teacher/courses/${course.id}/edit`)}
+      onKeyDown={(e) => { if (e.key === "Enter") router.push(`/teacher/courses/${course.id}/edit`); }}
+      className="flex cursor-pointer items-center gap-4 rounded-2xl px-3 py-2.5 transition-colors hover:bg-[#F4F8FE]">
       <div className="h-11 w-16 shrink-0 overflow-hidden rounded-lg" style={{ background: "#E7EFFB" }}>
         <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
       </div>
@@ -161,11 +166,10 @@ function CourseRow({ course }: { course: RecentCourse }) {
       </div>
       <div className="flex shrink-0 items-center gap-3">
         {published && (
-          <Link href={`/teacher/courses/${course.id}/students`}
+          <Link href={`/teacher/courses/${course.id}/students`} onClick={(e) => e.stopPropagation()}
             className="whitespace-nowrap text-xs font-medium" style={{ color: C.violet }}>Học viên →</Link>
         )}
-        <Link href={`/teacher/courses/${course.id}/edit`}
-          className="whitespace-nowrap text-xs font-medium" style={{ color: C.blue }}>Chỉnh sửa →</Link>
+        <span className="whitespace-nowrap text-xs font-medium" style={{ color: C.blue }}>Chỉnh sửa →</span>
       </div>
     </motion.div>
   );

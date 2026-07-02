@@ -4,9 +4,10 @@ import Link from "next/link";
 import { use } from "react";
 import { motion } from "framer-motion";
 import { MainNavbar } from "@/app/_components/MainNavbar";
-import { ChevronLeft, Route, Check, Users, ArrowRight } from "lucide-react";
+import { Route, Check, Users, ArrowRight } from "lucide-react";
 import { useRoadmap, type RoadmapCourse } from "../roadmaps.hook";
 import { useMe, useStudentCourses } from "@/app/student/dashboard/dashboard.hook";
+import { BackButton } from "@/app/student/_components/BackButton";
 
 const C = {
   canvas: "#EFF5FE", card: "#FFFFFF", ink: "#181d26",
@@ -130,9 +131,7 @@ export default function RoadmapDetailPage({ params }: { params: Promise<{ id: st
       <MainNavbar />
 
       <main className="max-w-3xl mx-auto px-6 py-10">
-        <Link href="/roadmaps" className="inline-flex items-center gap-1 text-sm mb-6 transition-colors hover:text-[#1b61c9]" style={{ color: C.inkFaint }}>
-          <ChevronLeft size={15} /> Tất cả lộ trình
-        </Link>
+        <BackButton href="/roadmaps" label="Tất cả lộ trình" />
 
         {isLoading ? (
           <div className="animate-pulse space-y-4">

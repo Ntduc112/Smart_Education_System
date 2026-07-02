@@ -355,6 +355,23 @@ export function useUploadVideo() {
   return { phase, uploadPct, processPct: 0, errorMsg, upload, reset };
 }
 
+export type TranscriptStatus = "processing" | "done" | "failed" | "none";
+
+/**
+ * Poll trạng thái trích lời giảng video của bài học.
+ * Chỉ chạy khi video là file R2; tự dừng poll khi done/failed/none.
+ */
+export function useTranscriptStatus(lessonId: string, videoUrl: string | null) {
+  const isR2 = !!videoUrl && videoUrl.startsWith("r2:");
+  return useQuery<TranscriptStatus>({
+    queryKey: ["teacher", "transcript-status", lessonId, videoUrl],
+    queryFn:  async () =>
+      (await api.get<{ status: TranscriptStatus }>(`/teacher/lessons/${lessonId}/transcript-status`)).data.status,
+    enabled:  isR2,
+    refetchInterval: (q) => (q.state.data === "processing" || q.state.data === undefined ? 4000 : false),
+  });
+}
+
 export function useCreateQuiz(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -27,6 +27,7 @@ async function main() {
   // chọn 1 khóa học có dữ liệu để đo engagement/students
   const course = await prisma.course.findFirst({
     where: { enrollments: { some: {} } },
+    orderBy: { enrollments: { _count: "desc" } },
     select: { id: true, instructor_id: true, title: true },
   });
 

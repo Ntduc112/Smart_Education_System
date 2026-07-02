@@ -4,7 +4,20 @@ import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Atmosphere } from "@/app/student/_components/Atmosphere";
+import { BackButton } from "@/app/student/_components/BackButton";
 import api from "@/lib/axios";
+
+const C = {
+  ink: "#181d26",
+  inkSoft: "rgba(4,14,32,0.62)",
+  inkFaint: "rgba(4,14,32,0.40)",
+  border: "#DCE6F4",
+  blue: "#1b61c9",
+  blueDark: "#254fad",
+  canvas: "#EFF5FE",
+};
+const CARD_SHADOW = "rgba(27,60,120,0.05) 0px 8px 24px";
 
 interface Certificate {
   id: string;
@@ -40,7 +53,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: C.canvas }}>
         <div className="w-8 h-8 border-2 border-[#1b61c9] border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -48,9 +61,9 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
 
   if (!cert) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center gap-4">
-        <p className="text-[rgba(4,14,32,0.55)]">Không tìm thấy chứng chỉ</p>
-        <Link href="/student/certificates" className="text-sm text-[#1b61c9] hover:underline">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: C.canvas }}>
+        <p style={{ color: C.inkSoft }}>Không tìm thấy chứng chỉ</p>
+        <Link href="/student/certificates" className="text-sm hover:underline" style={{ color: C.blue }}>
           Quay lại danh sách chứng chỉ
         </Link>
       </div>
@@ -64,27 +77,20 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
   });
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="print:hidden mb-6 flex items-center gap-4"
-      >
-        <Link
-          href="/student/certificates"
-          className="text-sm text-[rgba(4,14,32,0.55)] hover:text-[#181d26] transition-colors flex items-center gap-1.5"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-          </svg>
-          Danh sách chứng chỉ
-        </Link>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12" style={{ background: C.canvas, color: C.ink }}>
+      <div className="print:hidden"><Atmosphere /></div>
+
+      <div className="print:hidden mb-6 flex items-center gap-3">
+        <BackButton href="/student/certificates" label="Danh sách chứng chỉ" />
         <motion.button
+          initial={{ opacity: 0, x: 8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.35 }}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors"
+          className="mb-5 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors hover:bg-[#254fad]"
+          style={{ background: C.blue, boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 6 2 18 2 18 9" />
@@ -93,13 +99,14 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
           </svg>
           In chứng chỉ
         </motion.button>
-      </motion.div>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.93, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] as const }}
-        className="w-full max-w-2xl bg-white rounded-2xl ring-4 ring-[#1b61c9]/20 outline outline-8 outline-[#f0f4fc] shadow-lg px-10 py-12 flex flex-col items-center text-center"
+        className="w-full max-w-2xl bg-white rounded-3xl ring-1 ring-[#1b61c9]/15 outline outline-8 outline-[#EAF1FC] px-10 py-12 flex flex-col items-center text-center"
+        style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}
       >
         <motion.div
           initial="hidden"
@@ -108,16 +115,16 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
           className="w-full flex flex-col items-center"
         >
           <motion.div variants={fadeUp} className="mb-6">
-            <span className="text-2xl font-extrabold text-[#1b61c9] tracking-tight">Learnust</span>
+            <span className="font-display text-2xl font-extrabold text-[#1b61c9] tracking-tight">Learnust</span>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="w-16 h-px bg-[#e0e2e6] mb-6" />
+          <motion.div variants={fadeUp} className="w-16 h-px bg-[#DCE6F4] mb-6" />
 
           <motion.p variants={fadeUp} className="text-xs font-semibold uppercase tracking-[0.2em] text-[rgba(4,14,32,0.45)] mb-3">
             Chứng nhận
           </motion.p>
 
-          <motion.h1 variants={fadeUp} className="text-2xl font-bold text-[#181d26] tracking-tight mb-6">
+          <motion.h1 variants={fadeUp} className="font-display text-2xl font-bold text-[#181d26] tracking-tight mb-6">
             CHỨNG CHỈ HOÀN THÀNH
           </motion.h1>
 
@@ -127,7 +134,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
 
           <motion.p
             variants={fadeUp}
-            className="text-3xl font-bold text-[#181d26] mb-4 tracking-tight"
+            className="font-display text-3xl font-bold text-[#181d26] mb-4 tracking-tight"
           >
             {cert.user.name}
           </motion.p>
@@ -138,7 +145,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
 
           <motion.p
             variants={fadeUp}
-            className="text-xl font-semibold text-[#1b61c9] mb-4 leading-snug px-4"
+            className="font-display text-xl font-semibold text-[#1b61c9] mb-4 leading-snug px-4"
           >
             {cert.course.title}
           </motion.p>
@@ -147,7 +154,7 @@ export default function CertificatePage({ params }: { params: Promise<{ id: stri
             Giảng viên: <span className="font-medium text-[#181d26]">{cert.course.instructor.name}</span>
           </motion.p>
 
-          <motion.div variants={fadeUp} className="w-16 h-px bg-[#e0e2e6] mb-6" />
+          <motion.div variants={fadeUp} className="w-16 h-px bg-[#DCE6F4] mb-6" />
 
           <motion.p variants={fadeUp} className="text-sm text-[rgba(4,14,32,0.55)] mb-1">
             Ngày cấp
