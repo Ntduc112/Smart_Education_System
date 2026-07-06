@@ -34,6 +34,14 @@ model Course {
     reviews       Review[]
     certificates  Certificate[]
     roadmapItems  RoadmapItem[]
+
+    // Course-listing filters always pin status=PUBLISHED, then combine with a
+    // sort/filter dimension. Composite [status, X] indexes let Postgres avoid a
+    // seq scan on the published-course listing (/courses).
+    @@index([status, created_at])
+    @@index([status, category_id])
+    @@index([status, level])
+    @@index([status, price])
 }
 
 
