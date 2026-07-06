@@ -1,0 +1,11 @@
+// Persisted "mastered" flashcards. When a student taps "Đã nhớ" on a flashcard,
+// the underlying question is recorded here and excluded from future decks.
+model FlashcardMastered {
+    id          String   @id @default(uuid())
+    user_id     String
+    question_id String
+    created_at  DateTime @default(now())
+
+    @@unique([user_id, question_id])
+    @@index([user_id])
+}
