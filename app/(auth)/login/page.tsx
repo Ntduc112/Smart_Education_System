@@ -11,80 +11,67 @@ import { loginSchema, LoginInput } from "./login.schema";
 import { getApiError } from "@/lib/api/error";
 import { motion, type Variants } from "framer-motion";
 
-const orbs = [
-  { w: 600, h: 600, top: "-20%", left: "-12%", color: "rgba(59,130,246,0.10)", blur: 130, duration: 18 },
-  { w: 480, h: 480, top: "55%",  left: "62%",  color: "rgba(99,102,241,0.08)", blur: 110, duration: 22 },
-  { w: 340, h: 340, top: "28%",  left: "42%",  color: "rgba(14,165,233,0.06)", blur: 90,  duration: 15 },
-];
+// ── Palette (cozy-blue) ──────────────────────────────────────────────────────
+const C = {
+  card: "#FFFFFF",
+  ink: "#181d26",
+  inkSoft: "rgba(4,14,32,0.62)",
+  inkFaint: "rgba(4,14,32,0.40)",
+  border: "#DCE6F4",
+  blue: "#1b61c9",
+  blueDark: "#254fad",
+};
+const CARD_SHADOW = "rgba(27,60,120,0.05) 0px 8px 24px";
+const BTN_SHADOW = "rgba(27,97,201,0.34) 0px 10px 28px";
+const GRAIN =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
-// Education icons scattered in background
-const BG_ICONS = [
-  { top: "8%",  left: "6%",  size: 36, rotate: -15, delay: 0,   duration: 6,  icon: "book" },
-  { top: "15%", left: "88%", size: 28, rotate: 12,  delay: 1.2, duration: 7,  icon: "graduation" },
-  { top: "72%", left: "5%",  size: 32, rotate: 8,   delay: 0.5, duration: 8,  icon: "pencil" },
-  { top: "80%", left: "88%", size: 30, rotate: -10, delay: 2,   duration: 6,  icon: "laptop" },
-  { top: "45%", left: "3%",  size: 24, rotate: 20,  delay: 1.5, duration: 9,  icon: "star" },
-  { top: "38%", left: "91%", size: 26, rotate: -8,  delay: 0.8, duration: 7,  icon: "award" },
-  { top: "60%", left: "92%", size: 22, rotate: 15,  delay: 2.5, duration: 8,  icon: "pencil" },
-  { top: "90%", left: "45%", size: 26, rotate: -5,  delay: 1,   duration: 6,  icon: "book" },
-];
-
-function BgIcon({ type, size }: { type: string; size: number }) {
-  const color = "rgba(99,132,246,0.18)";
-  const s = size;
-  if (type === "book") return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-    </svg>
-  );
-  if (type === "graduation") return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
-    </svg>
-  );
-  if (type === "pencil") return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-  );
-  if (type === "laptop") return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/>
-    </svg>
-  );
-  if (type === "star") return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-    </svg>
-  );
-  // award
+// ── Atmosphere (blobs + grain, per DESIGN-cozy-blue) ─────────────────────────
+function Atmosphere() {
+  const blobs = [
+    { c: "#BCD7FF", s: 520, top: "-12%", left: "-10%", dur: 22 },
+    { c: "#A7C8FF", s: 440, top: "45%", right: "-12%", dur: 26 },
+    { c: "#CFE0FA", s: 380, bottom: "-14%", left: "20%", dur: 30 },
+  ] as const;
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-    </svg>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      {blobs.map((b, i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: b.s, height: b.s, background: b.c, opacity: 0.46, filter: "blur(110px)",
+            top: "top" in b ? b.top : undefined, left: "left" in b ? b.left : undefined,
+            right: "right" in b ? b.right : undefined, bottom: "bottom" in b ? b.bottom : undefined,
+          }}
+          animate={{ y: [0, -26, 0], x: [0, 16, 0] }}
+          transition={{ duration: b.dur, repeat: Infinity, ease: "easeInOut", delay: i * 1.5 }}
+        />
+      ))}
+      <div className="absolute inset-0 opacity-[0.035] mix-blend-multiply" style={{ backgroundImage: GRAIN }} />
+    </div>
   );
 }
 
 const cardVariants: Variants = {
-  hidden: { opacity: 0, y: 32, scale: 0.97 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+  hidden: { opacity: 0, y: 24, scale: 0.98 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.22, 0.61, 0.36, 1] } },
 };
 
 const fieldVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  hidden: { opacity: 0, y: 14 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: 0.15 + i * 0.07, duration: 0.4, ease: "easeOut" },
+    transition: { delay: 0.12 + i * 0.07, duration: 0.4, ease: "easeOut" },
   }),
 };
 
 const inputCls = (hasError: boolean) =>
-  `w-full px-4 py-3 text-sm text-[#181d26] bg-white border rounded-xl outline-none transition-all placeholder:text-[rgba(4,14,32,0.3)] ${
+  `w-full px-4 py-3 text-sm text-[#181d26] bg-white border rounded-xl outline-none transition-all placeholder:text-[rgba(4,14,32,0.32)] ${
     hasError
       ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10"
-      : "border-[#dde3f0] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+      : "border-[#DCE6F4] focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/15"
   }`;
 
 export default function LoginPage() {
@@ -112,60 +99,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #eef4ff 0%, #f4f7ff 50%, #f0f5ff 100%)" }}
+    <div
+      className="min-h-screen flex items-center justify-center relative overflow-hidden"
+      style={{ background: "linear-gradient(170deg,#EFF5FE,#F3F8FE,#EAF2FD)" }}
     >
-      {/* Ambient orbs */}
-      {orbs.map((orb, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full pointer-events-none"
-          style={{ width: orb.w, height: orb.h, top: orb.top, left: orb.left, background: orb.color, filter: `blur(${orb.blur}px)` }}
-          animate={{ scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }}
-          transition={{ duration: orb.duration, repeat: Infinity, ease: "easeInOut" }}
-        />
-      ))}
-
-      {/* Floating education icons */}
-      {BG_ICONS.map((ic, i) => (
-        <motion.div
-          key={i}
-          className="absolute pointer-events-none"
-          style={{ top: ic.top, left: ic.left, rotate: ic.rotate }}
-          animate={{ y: [0, -10, 0], rotate: [ic.rotate, ic.rotate + 5, ic.rotate] }}
-          transition={{ duration: ic.duration, delay: ic.delay, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <BgIcon type={ic.icon} size={ic.size} />
-        </motion.div>
-      ))}
-
-      {/* Dot grid */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: "radial-gradient(circle, rgba(99,132,246,0.12) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
+      <Atmosphere />
 
       {/* Card */}
       <motion.div variants={cardVariants} initial="hidden" animate="visible" className="relative z-10 w-full max-w-md mx-4">
-        <div
-          className="bg-white rounded-3xl p-8 border border-[#e4eaf5]"
-          style={{ boxShadow: "0 4px 6px rgba(59,130,246,0.04), 0 20px 60px rgba(59,130,246,0.08), 0 0 0 1px rgba(99,132,246,0.06)" }}
-        >
+        <div className="bg-white rounded-3xl p-8" style={{ border: `1px solid ${C.border}`, boxShadow: CARD_SHADOW }}>
           {/* Logo */}
           <motion.div custom={0} variants={fieldVariants} initial="hidden" animate="visible" className="flex items-center gap-2.5 mb-8">
             <Logo size={34} />
-            <span className="text-[#181d26] font-semibold text-lg tracking-wide">Learnust</span>
+            <span className="font-display text-lg font-semibold tracking-wide" style={{ color: C.ink }}>Learnust</span>
           </motion.div>
 
           {/* Heading */}
           <motion.div custom={1} variants={fieldVariants} initial="hidden" animate="visible" className="mb-7">
-            <h1 className="text-2xl font-semibold text-[#181d26] mb-1.5">Đăng nhập</h1>
-            <p className="text-[rgba(4,14,32,0.55)] text-sm">
+            <h1 className="font-display text-[26px] font-semibold mb-1.5" style={{ color: C.ink }}>Đăng nhập</h1>
+            <p className="text-sm" style={{ color: C.inkSoft }}>
               Chưa có tài khoản?{" "}
-              <Link href="/register" className="text-blue-600 hover:text-blue-700 transition-colors font-medium">
+              <Link href="/register" className="font-medium text-[#1b61c9] hover:text-[#254fad] transition-colors">
                 Đăng ký ngay
               </Link>
             </p>
@@ -185,7 +139,7 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             {/* Email */}
             <motion.div custom={2} variants={fieldVariants} initial="hidden" animate="visible">
-              <label htmlFor="email" className="block text-sm font-medium text-[rgba(4,14,32,0.7)] mb-1.5">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium mb-1.5" style={{ color: C.inkSoft }}>Email</label>
               <input id="email" type="email" autoComplete="email" placeholder="name@example.com"
                 {...register("email")} className={inputCls(!!errors.email)} />
               {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
@@ -193,13 +147,13 @@ export default function LoginPage() {
 
             {/* Password */}
             <motion.div custom={3} variants={fieldVariants} initial="hidden" animate="visible">
-              <label htmlFor="password" className="block text-sm font-medium text-[rgba(4,14,32,0.7)] mb-1.5">Mật khẩu</label>
+              <label htmlFor="password" className="block text-sm font-medium mb-1.5" style={{ color: C.inkSoft }}>Mật khẩu</label>
               <div className="relative">
                 <input id="password" type={showPassword ? "text" : "password"} autoComplete="current-password"
                   placeholder="••••••••" {...register("password")}
                   className={inputCls(!!errors.password) + " pr-12"} />
                 <button type="button" aria-label={showPassword ? "Ẩn" : "Hiện"} onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.3)] hover:text-[rgba(4,14,32,0.65)] transition-colors">
+                  className="absolute right-4 top-1/2 -translate-y-1/2 transition-colors" style={{ color: C.inkFaint }}>
                   {showPassword ? (
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
@@ -216,7 +170,7 @@ export default function LoginPage() {
               </div>
               {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
               <div className="flex justify-end mt-2">
-                <Link href="/forgot-password" className="text-xs text-[rgba(4,14,32,0.4)] hover:text-blue-600 transition-colors">
+                <Link href="/forgot-password" className="text-xs transition-colors hover:text-[#1b61c9]" style={{ color: C.inkFaint }}>
                   Quên mật khẩu?
                 </Link>
               </div>
@@ -226,8 +180,8 @@ export default function LoginPage() {
             <motion.div custom={4} variants={fieldVariants} initial="hidden" animate="visible">
               <motion.button type="submit" disabled={isPending}
                 whileHover={{ scale: isPending ? 1 : 1.01 }} whileTap={{ scale: isPending ? 1 : 0.98 }}
-                className="w-full bg-blue-600 text-white font-medium text-sm py-3 rounded-xl transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mt-1"
-                style={{ boxShadow: "0 4px 14px rgba(59,130,246,0.35)" }}
+                className="w-full text-white font-medium text-sm py-3 rounded-xl transition-colors hover:bg-[#254fad] disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+                style={{ background: C.blue, boxShadow: BTN_SHADOW }}
               >
                 {isPending ? "Đang đăng nhập..." : "Đăng nhập"}
               </motion.button>
@@ -236,15 +190,16 @@ export default function LoginPage() {
 
           {/* Divider */}
           <motion.div custom={5} variants={fieldVariants} initial="hidden" animate="visible" className="flex items-center gap-3 my-5">
-            <div className="h-px bg-[#e8edf5] flex-1" />
-            <span className="text-xs text-[rgba(4,14,32,0.35)]">hoặc</span>
-            <div className="h-px bg-[#e8edf5] flex-1" />
+            <div className="h-px flex-1" style={{ background: C.border }} />
+            <span className="text-xs" style={{ color: C.inkFaint }}>hoặc</span>
+            <div className="h-px flex-1" style={{ background: C.border }} />
           </motion.div>
 
           {/* Google */}
           <motion.div custom={6} variants={fieldVariants} initial="hidden" animate="visible">
             <motion.button type="button" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-[#dde3f0] text-[rgba(4,14,32,0.75)] font-medium text-sm py-3 rounded-xl hover:bg-[#f8faff] hover:border-blue-200 transition-all"
+              className="w-full flex items-center justify-center gap-3 bg-white font-medium text-sm py-3 rounded-xl transition-all hover:bg-[#EAF1FC] hover:border-[#A7C8FF]"
+              style={{ color: C.inkSoft, border: `1px solid ${C.border}` }}
             >
               <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
                 <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />

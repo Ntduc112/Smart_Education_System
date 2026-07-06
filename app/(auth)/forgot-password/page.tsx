@@ -53,7 +53,7 @@ function StepEmail({ onNext }: { onNext: (email: string) => void }) {
         <Mail size={22} className="text-[#1b61c9]" />
       </div>
       <div>
-        <h1 className="text-2xl font-semibold text-[#181d26] tracking-tight mb-1">Quên mật khẩu?</h1>
+        <h1 className="font-display text-2xl font-semibold text-[#181d26] tracking-tight mb-1">Quên mật khẩu?</h1>
         <p className="text-sm text-[rgba(4,14,32,.55)] leading-relaxed">
           Nhập email đăng ký của bạn. Chúng tôi sẽ gửi mã xác thực 6 số.
         </p>
@@ -73,7 +73,7 @@ function StepEmail({ onNext }: { onNext: (email: string) => void }) {
           autoFocus
           placeholder="name@example.com"
           {...register("email")}
-          className={`w-full px-4 py-3 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,.35)] ${errors.email ? "border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
+          className={`w-full px-4 py-3 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,.35)] ${errors.email ? "border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"}`}
         />
         {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
       </div>
@@ -82,7 +82,7 @@ function StepEmail({ onNext }: { onNext: (email: string) => void }) {
         type="submit"
         disabled={isSubmitting}
         className="w-full flex items-center justify-center gap-2 bg-[#1b61c9] text-white font-medium text-sm py-3 rounded-xl hover:bg-[#254fad] transition-all disabled:opacity-60"
-        style={{ boxShadow: "rgba(45,127,249,.28) 0px 1px 3px, rgba(0,0,0,.32) 0px 0px 1px" }}
+        style={{ boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
       >
         {isSubmitting && <Loader2 size={15} className="animate-spin" />}
         {isSubmitting ? "Đang gửi..." : "Gửi mã xác thực"}
@@ -162,7 +162,7 @@ function StepOtp({
         <KeyRound size={22} className="text-[#1b61c9]" />
       </div>
       <div>
-        <h1 className="text-2xl font-semibold text-[#181d26] tracking-tight mb-1">Nhập mã xác thực</h1>
+        <h1 className="font-display text-2xl font-semibold text-[#181d26] tracking-tight mb-1">Nhập mã xác thực</h1>
         <p className="text-sm text-[rgba(4,14,32,.55)] leading-relaxed">
           Chúng tôi đã gửi mã 6 số đến{" "}
           <span className="font-medium text-[#181d26]">{email}</span>
@@ -188,7 +188,7 @@ function StepOtp({
             onKeyDown={(e) => handleKeyDown(i, e)}
             disabled={loading}
             className={`w-12 h-14 text-center text-xl font-bold border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all
-              ${error ? "border-red-300" : d ? "border-[#1b61c9] bg-[#f0f4fb]" : "border-[#e0e2e6] focus:border-[#1b61c9]"}
+              ${error ? "border-red-300" : d ? "border-[#1b61c9] bg-[#EAF1FC]" : "border-[#DCE6F4] focus:border-[#1b61c9]"}
               disabled:opacity-50`}
           />
         ))}
@@ -258,7 +258,7 @@ function StepNewPassword({
         <Lock size={22} className="text-[#1b61c9]" />
       </div>
       <div>
-        <h1 className="text-2xl font-semibold text-[#181d26] tracking-tight mb-1">Mật khẩu mới</h1>
+        <h1 className="font-display text-2xl font-semibold text-[#181d26] tracking-tight mb-1">Mật khẩu mới</h1>
         <p className="text-sm text-[rgba(4,14,32,.55)]">Đặt mật khẩu mới cho tài khoản của bạn.</p>
       </div>
 
@@ -288,7 +288,7 @@ function StepNewPassword({
         type="submit"
         disabled={isSubmitting}
         className="w-full flex items-center justify-center gap-2 bg-[#1b61c9] text-white font-medium text-sm py-3 rounded-xl hover:bg-[#254fad] transition-all disabled:opacity-60"
-        style={{ boxShadow: "rgba(45,127,249,.28) 0px 1px 3px, rgba(0,0,0,.32) 0px 0px 1px" }}
+        style={{ boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
       >
         {isSubmitting && <Loader2 size={15} className="animate-spin" />}
         {isSubmitting ? "Đang lưu..." : "Đặt lại mật khẩu"}
@@ -316,7 +316,7 @@ function PasswordField({
           autoFocus={autoFocus}
           placeholder="••••••••"
           {...registration}
-          className={`w-full px-4 py-3 pr-11 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,.35)] ${error ? "border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
+          className={`w-full px-4 py-3 pr-11 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,.35)] ${error ? "border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"}`}
         />
         <button
           type="button"
@@ -344,11 +344,11 @@ function PasswordField({
 function StepDone() {
   return (
     <div className="text-center space-y-5">
-      <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mx-auto">
-        <CheckCircle size={32} className="text-green-500" />
+      <div className="flex items-center justify-center w-16 h-16 rounded-full mx-auto" style={{ background: "rgba(14,159,110,0.12)" }}>
+        <CheckCircle size={32} style={{ color: "#0E9F6E" }} />
       </div>
       <div>
-        <h1 className="text-2xl font-semibold text-[#181d26] mb-2">Thành công!</h1>
+        <h1 className="font-display text-2xl font-semibold text-[#181d26] mb-2">Thành công!</h1>
         <p className="text-sm text-[rgba(4,14,32,.55)]">
           Mật khẩu của bạn đã được đặt lại.<br />Hãy đăng nhập với mật khẩu mới.
         </p>
@@ -356,7 +356,7 @@ function StepDone() {
       <Link
         href="/login"
         className="inline-flex items-center justify-center w-full bg-[#1b61c9] text-white font-medium text-sm py-3 rounded-xl hover:bg-[#254fad] transition-all"
-        style={{ boxShadow: "rgba(45,127,249,.28) 0px 1px 3px, rgba(0,0,0,.32) 0px 0px 1px" }}
+        style={{ boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
       >
         Đăng nhập ngay
       </Link>
@@ -388,7 +388,7 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
         <div className="relative">
-          <h2 className="text-3xl font-light text-white leading-snug mb-4">
+          <h2 className="font-display text-3xl font-light text-white leading-snug mb-4">
             Quên mật khẩu?<br />
             <span className="font-bold">Không sao cả!</span>
           </h2>

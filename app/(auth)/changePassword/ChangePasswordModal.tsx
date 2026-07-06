@@ -55,8 +55,8 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="relative w-full max-w-sm bg-white rounded-2xl p-6"
-        style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.12) 0px 8px 32px" }}
+        className="relative w-full max-w-sm bg-white rounded-3xl p-6"
+        style={{ border: "1px solid #DCE6F4", boxShadow: "rgba(27,60,120,0.18) 0px 20px 60px" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
@@ -64,7 +64,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
             <div className="w-8 h-8 rounded-xl bg-[#1b61c9]/10 flex items-center justify-center">
               <Lock size={15} className="text-[#1b61c9]" />
             </div>
-            <h2 className="text-base font-semibold text-[#181d26]">Đổi mật khẩu</h2>
+            <h2 className="font-display text-base font-semibold text-[#181d26]">Đổi mật khẩu</h2>
           </div>
           <button
             onClick={onClose}
@@ -77,8 +77,8 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         {/* Success state */}
         {success ? (
           <div className="flex flex-col items-center py-6 gap-3">
-            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
-              <CheckCircle size={24} className="text-green-500" />
+            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(14,159,110,0.12)" }}>
+              <CheckCircle size={24} style={{ color: "#0E9F6E" }} />
             </div>
             <p className="text-sm font-medium text-[#181d26]">Đổi mật khẩu thành công!</p>
           </div>
@@ -100,7 +100,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
                   type={showCurrent ? "text" : "password"}
                   placeholder="••••••••"
                   {...register("currentPassword")}
-                  className={`w-full px-4 py-2.5 pr-10 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.currentPassword ? "border-red-400 focus:border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
+                  className={`w-full px-4 py-2.5 pr-10 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.currentPassword ? "border-red-400 focus:border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"}`}
                 />
                 <button type="button" onClick={() => setShowCurrent((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26] transition-colors">
@@ -120,7 +120,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
                   type={showNew ? "text" : "password"}
                   placeholder="••••••••"
                   {...register("newPassword")}
-                  className={`w-full px-4 py-2.5 pr-10 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.newPassword ? "border-red-400 focus:border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
+                  className={`w-full px-4 py-2.5 pr-10 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.newPassword ? "border-red-400 focus:border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"}`}
                 />
                 <button type="button" onClick={() => setShowNew((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26] transition-colors">
@@ -140,7 +140,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
                   type={showConfirm ? "text" : "password"}
                   placeholder="••••••••"
                   {...register("confirmPassword")}
-                  className={`w-full px-4 py-2.5 pr-10 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.confirmPassword ? "border-red-400 focus:border-red-400" : "border-[#e0e2e6] focus:border-[#1b61c9]"}`}
+                  className={`w-full px-4 py-2.5 pr-10 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.confirmPassword ? "border-red-400 focus:border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"}`}
                 />
                 <button type="button" onClick={() => setShowConfirm((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26] transition-colors">
@@ -162,7 +162,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
                 type="submit"
                 disabled={isPending}
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-[#1b61c9] rounded-xl hover:bg-[#254fad] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(45,127,249,0.28) 0px 1px 3px" }}
+                style={{ boxShadow: "rgba(27,97,201,0.34) 0px 10px 28px" }}
               >
                 {isPending ? "Đang lưu..." : "Lưu"}
               </button>
