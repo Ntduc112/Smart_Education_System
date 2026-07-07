@@ -114,3 +114,32 @@ export function useRemoveItem(roadmapId: string) {
     onSuccess:  () => qc.invalidateQueries({ queryKey: ["admin", "roadmap", roadmapId] }),
   });
 }
+
+// ── Creation proposals: teacher đề xuất tạo lộ trình mới (chưa tồn tại) ────────
+
+export interface RoadmapCreationProposal {
+  id:          string;
+  title:       string;
+  description: string;
+  status:      RoadmapItemStatus;
+  course:      { id: string; title: string; thumbnail: string; instructor: { id: string; name: string } } | null;
+}
+
+export function useCreationProposals() {
+  return useQuery<RoadmapCreationProposal[]>({
+    queryKey: ["admin", "roadmap-creation-proposals"],
+    queryFn:  async () => (await api.get<{ proposals: RoadmapCreationProposal[] }>("/admin/roadmap-creation-proposals")).data.proposals,
+  });
+}
+
+export function useReviewCreationProposal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "APPROVED" | "REJECTED" }) =>
+      (await api.put<{ roadmap_id: string | null }>(`/admin/roadmap-creation-proposals/${id}`, { status })).data,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "roadmap-creation-proposals"] });
+      qc.invalidateQueries({ queryKey: ["admin", "roadmaps"] });
+    },
+  });
+}

@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Route, Plus, Loader2, X, BookOpen } from "lucide-react";
-import { useRoadmaps, useCreateRoadmap } from "./roadmaps.hook";
+import { Route, Plus, Loader2, X, BookOpen, Check, Clock } from "lucide-react";
+import {
+  useRoadmaps, useCreateRoadmap, useCreationProposals, useReviewCreationProposal,
+  type RoadmapCreationProposal,
+} from "./roadmaps.hook";
 
 const inputCls = "w-full px-3 py-2.5 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10 transition-all";
 
@@ -69,6 +72,36 @@ function CreateModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ── Pending "create new roadmap" proposal row ─────────────────────────────────
+
+function CreationProposalRow({ proposal }: { proposal: RoadmapCreationProposal }) {
+  const review = useReviewCreationProposal();
+  return (
+    <div className="flex items-center gap-3 bg-white rounded-2xl border border-amber-200 p-4" style={{ boxShadow: "rgba(15,48,106,0.04) 0px 0px 14px" }}>
+      <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+        <Route size={18} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-[#181d26] line-clamp-1">{proposal.title}</p>
+        <p className="text-xs text-[rgba(4,14,32,0.45)] line-clamp-1 mt-0.5">
+          {proposal.description}
+          {proposal.course && ` — từ khóa học "${proposal.course.title}" (${proposal.course.instructor.name})`}
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button onClick={() => review.mutate({ id: proposal.id, status: "APPROVED" })} disabled={review.isPending}
+          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+          <Check size={13} /> Duyệt
+        </button>
+        <button onClick={() => review.mutate({ id: proposal.id, status: "REJECTED" })} disabled={review.isPending}
+          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-[#e0e2e6] text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
+          <X size={13} /> Từ chối
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Skeleton() {
   return (
     <div className="px-8 py-8 animate-pulse space-y-6">
@@ -83,6 +116,7 @@ function Skeleton() {
 export default function AdminRoadmapsPage() {
   const router = useRouter();
   const { data: roadmaps, isLoading } = useRoadmaps();
+  const { data: proposals } = useCreationProposals();
   const [showCreate, setShowCreate] = useState(false);
 
   if (isLoading && !roadmaps) return <Skeleton />;
@@ -102,6 +136,19 @@ export default function AdminRoadmapsPage() {
           <Plus size={16} /> Tạo lộ trình
         </button>
       </div>
+
+      {/* Pending "create new roadmap" proposals */}
+      {(proposals?.length ?? 0) > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <Clock size={15} className="text-amber-500" />
+            <h2 className="text-sm font-semibold text-[#181d26]">Đề xuất lộ trình mới ({proposals!.length})</h2>
+          </div>
+          <div className="space-y-2.5">
+            {proposals!.map((p) => <CreationProposalRow key={p.id} proposal={p} />)}
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       {(roadmaps?.length ?? 0) === 0 ? (

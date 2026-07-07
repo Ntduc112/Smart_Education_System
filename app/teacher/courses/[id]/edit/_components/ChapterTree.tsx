@@ -305,7 +305,10 @@ export function ChapterTree({
 
   const handleAddChapter = () => {
     if (!newChapterTitle.trim()) return;
-    createChapter.mutate({ title: newChapterTitle.trim(), order: sections.length + 1 });
+    createChapter.mutate(
+      { title: newChapterTitle.trim(), order: sections.length + 1 },
+      { onSuccess: (chapter) => setExpanded((prev) => new Set(prev).add(chapter.id)) }
+    );
     setNewChapterTitle("");
     setShowNewChapter(false);
   };
@@ -390,14 +393,16 @@ export function ChapterTree({
   return (
     <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden py-3">
       {/* Import từ folder */}
-      <div className="px-2 mb-2 pb-2 border-b border-[#f0f2f5]">
-        <button
-          onClick={onOpenImport}
-          className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[rgba(4,14,32,0.5)] hover:text-[#1b61c9] hover:bg-[#f8fafc] rounded-xl transition-colors"
-        >
-          <FolderUp size={13} /> Import từ folder
-        </button>
-      </div>
+      {localSections.length > 0 && (
+        <div className="px-2 mb-2 pb-2 border-b border-[#f0f2f5]">
+          <button
+            onClick={onOpenImport}
+            className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[rgba(4,14,32,0.5)] hover:text-[#1b61c9] hover:bg-[#f8fafc] rounded-xl transition-colors"
+          >
+            <FolderUp size={13} /> Import từ folder
+          </button>
+        </div>
+      )}
 
       {/* Empty state: chưa có chương nào */}
       {localSections.length === 0 && !showNewChapter && (
@@ -485,14 +490,14 @@ export function ChapterTree({
               Thêm
             </button>
           </div>
-        ) : (
+        ) : localSections.length > 0 ? (
           <button
             onClick={() => setShowNewChapter(true)}
             className="flex items-center gap-2 w-full px-3 py-2 text-xs text-[rgba(4,14,32,0.5)] hover:text-[#1b61c9] hover:bg-[#f8fafc] rounded-xl transition-colors"
           >
             <Plus size={13} /> Thêm chương
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Modal xác nhận xóa */}

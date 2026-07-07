@@ -1,6 +1,7 @@
 "use client";
 
-import { X, Route, Loader2, Check, Clock } from "lucide-react";
+import { useState } from "react";
+import { X, Route, Loader2, Check, Clock, Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import { toast } from "sonner";
@@ -13,6 +14,13 @@ interface RoadmapOption {
   description:     string;
   thumbnail:       string | null;
   proposal_status: ProposalStatus;
+}
+
+interface NewRoadmapProposal {
+  id:          string;
+  title:       string;
+  description: string;
+  status:      Exclude<ProposalStatus, null>;
 }
 
 function StatusTag({ status }: { status: Exclude<ProposalStatus, null> }) {
@@ -31,10 +39,17 @@ function StatusTag({ status }: { status: Exclude<ProposalStatus, null> }) {
 export function RoadmapModal({ courseId, onClose }: { courseId: string; onClose: () => void }) {
   const qc = useQueryClient();
   const queryKey = ["teacher", "roadmap-proposals", courseId];
+  const newRoadmapKey = ["teacher", "roadmap-creation-proposal", courseId];
 
   const { data: roadmaps = [], isLoading } = useQuery<RoadmapOption[]>({
     queryKey,
     queryFn: async () => (await api.get<{ roadmaps: RoadmapOption[] }>(`/teacher/courses/${courseId}/roadmap-proposals`)).data.roadmaps,
+  });
+
+  const { data: newRoadmapProposal } = useQuery<NewRoadmapProposal | null>({
+    queryKey: newRoadmapKey,
+    queryFn: async () =>
+      (await api.get<{ proposal: NewRoadmapProposal | null }>(`/teacher/courses/${courseId}/roadmap-proposals/new-roadmap`)).data.proposal,
   });
 
   const propose = useMutation({
@@ -43,6 +58,26 @@ export function RoadmapModal({ courseId, onClose }: { courseId: string; onClose:
     onSuccess: () => {
       toast.success("Đã gửi đề xuất, chờ admin duyệt");
       qc.invalidateQueries({ queryKey });
+    },
+    onError: () => toast.error("Gửi đề xuất thất bại, vui lòng thử lại"),
+  });
+
+  const [showNewRoadmapForm, setShowNewRoadmapForm] = useState(false);
+  const [newTitle, setNewTitle]             = useState("");
+  const [newDescription, setNewDescription] = useState("");
+
+  const proposeNewRoadmap = useMutation({
+    mutationFn: async () =>
+      api.post(`/teacher/courses/${courseId}/roadmap-proposals/new-roadmap`, {
+        title:       newTitle.trim(),
+        description: newDescription.trim(),
+      }),
+    onSuccess: () => {
+      toast.success("Đã gửi đề xuất lộ trình mới, chờ admin duyệt");
+      setShowNewRoadmapForm(false);
+      setNewTitle("");
+      setNewDescription("");
+      qc.invalidateQueries({ queryKey: newRoadmapKey });
     },
     onError: () => toast.error("Gửi đề xuất thất bại, vui lòng thử lại"),
   });
@@ -90,6 +125,58 @@ export function RoadmapModal({ courseId, onClose }: { courseId: string; onClose:
                 )}
               </div>
             ))
+          )}
+        </div>
+
+        {/* Đề xuất tạo lộ trình mới (chưa có sẵn) */}
+        <div className="px-6 py-4 border-t border-[#DCE6F4]">
+          {newRoadmapProposal?.status === "PENDING" ? (
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-[#DCE6F4]">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-[#181d26] line-clamp-1">{newRoadmapProposal.title}</p>
+                <p className="text-xs text-[rgba(4,14,32,0.45)] line-clamp-1 mt-0.5">{newRoadmapProposal.description}</p>
+              </div>
+              <StatusTag status="PENDING" />
+            </div>
+          ) : showNewRoadmapForm ? (
+            <div className="space-y-2.5">
+              <input
+                autoFocus
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Tên lộ trình mới..."
+                className="w-full px-3 py-2 text-sm border border-[#DCE6F4] rounded-xl outline-none focus:border-[#1b61c9]"
+              />
+              <textarea
+                rows={2}
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Mô tả ngắn về lộ trình..."
+                className="w-full px-3 py-2 text-sm border border-[#DCE6F4] rounded-xl outline-none resize-none focus:border-[#1b61c9]"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowNewRoadmapForm(false)}
+                  className="px-3 py-1.5 text-xs font-medium text-[rgba(4,14,32,0.6)] rounded-lg hover:bg-[#f0f2f5] transition-colors"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={() => proposeNewRoadmap.mutate()}
+                  disabled={!newTitle.trim() || !newDescription.trim() || proposeNewRoadmap.isPending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#1b61c9] text-white hover:bg-[#254fad] transition-colors disabled:opacity-50"
+                >
+                  {proposeNewRoadmap.isPending && <Loader2 size={13} className="animate-spin" />} Gửi đề xuất
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewRoadmapForm(true)}
+              className="flex items-center justify-center gap-1.5 w-full px-3 py-2.5 text-sm font-medium text-[#1b61c9] border border-dashed border-[#1b61c9]/40 rounded-xl hover:bg-[#1b61c9]/5 transition-colors"
+            >
+              <Plus size={15} /> Đề xuất lộ trình mới
+            </button>
           )}
         </div>
       </div>

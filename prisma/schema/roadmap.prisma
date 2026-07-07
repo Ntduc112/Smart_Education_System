@@ -34,3 +34,17 @@ model RoadmapItem {
 
     @@unique([roadmap_id, course_id])
 }
+
+// Đề xuất tạo lộ trình mới (chưa tồn tại Roadmap), khác với RoadmapItem
+// vốn đề xuất gắn course vào 1 roadmap đã có sẵn.
+model RoadmapCreationProposal {
+    id          String              @id @default(uuid())
+    title       String
+    description String
+    course_id   String?
+    proposed_by String
+    status      roadmap_item_status @default(PENDING)
+    created_at  DateTime            @default(now())
+    updated_at  DateTime            @updatedAt
+    course      Course?             @relation(fields: [course_id], references: [id], onDelete: SetNull)
+}
