@@ -24,9 +24,54 @@ function extractYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+// ── Modal mời đăng nhập/đăng ký (guest bấm vào bài có video R2) ──────────────
+
+function AuthPromptModal({ loginHref, onClose }: { loginHref: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full p-7 text-center"
+        style={{ maxWidth: 400 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-4" style={{ background: "rgba(27,97,201,0.09)" }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.blue} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" />
+          </svg>
+        </div>
+        <h2 className="font-display text-lg font-semibold mb-1.5" style={{ color: C.ink }}>
+          Xem thử bài giảng miễn phí
+        </h2>
+        <p className="text-sm mb-6" style={{ color: C.inkSoft }}>
+          Đăng nhập để xem bài giảng này — hoàn toàn miễn phí. Chưa có tài khoản? Đăng ký chỉ mất một phút.
+        </p>
+        <div className="space-y-2.5">
+          <Link
+            href={loginHref}
+            className="block w-full py-2.5 rounded-xl text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ background: C.blue }}
+          >
+            Đăng nhập
+          </Link>
+          <Link
+            href="/register"
+            className="block w-full py-2.5 rounded-xl text-sm font-medium transition-colors hover:bg-[#F4F8FE]"
+            style={{ color: C.blue, border: `1px solid ${C.border}` }}
+          >
+            Đăng ký tài khoản miễn phí
+          </Link>
+          <button onClick={onClose} className="w-full py-2 text-xs transition-colors hover:text-[#254fad]" style={{ color: C.inkFaint }}>
+            Để sau
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Player (rút gọn từ trang learn: R2 token / YouTube / không video) ────────
 
-function PreviewPlayer({ lesson, isLoggedIn }: { lesson: Lesson; isLoggedIn: boolean }) {
+function PreviewPlayer({ lesson, isLoggedIn, loginHref }: { lesson: Lesson; isLoggedIn: boolean; loginHref: string }) {
   const isR2 = !!lesson.video_url?.startsWith("r2:");
   const ytId = lesson.video_url ? extractYouTubeId(lesson.video_url) : null;
   const [src, setSrc]     = useState<string | null>(null);
@@ -54,7 +99,7 @@ function PreviewPlayer({ lesson, isLoggedIn }: { lesson: Lesson; isLoggedIn: boo
     return (
       <div className="w-full rounded-2xl bg-white border p-10 text-center space-y-3" style={{ borderColor: C.border }}>
         <p className="text-sm" style={{ color: C.inkSoft }}>Đăng nhập để xem thử bài học này.</p>
-        <Link href="/login" className="inline-block px-5 py-2 rounded-xl text-sm font-medium text-white" style={{ background: C.blue }}>
+        <Link href={loginHref} className="inline-block px-5 py-2 rounded-xl text-sm font-medium text-white" style={{ background: C.blue }}>
           Đăng nhập
         </Link>
       </div>
@@ -112,6 +157,14 @@ function PreviewContent({ params }: { params: Promise<{ id: string }> }) {
   const lessonIdFromUrl = searchParams.get("lesson");
   const selectedLesson =
     freeLessons.find((l) => l.id === lessonIdFromUrl) ?? freeLessons[0] ?? null;
+
+  // Guest gặp bài video R2 → mời đăng nhập/đăng ký; "Để sau" thì thôi cho tới khi đổi bài.
+  const [authDismissedFor, setAuthDismissedFor] = useState<string | null>(null);
+  const needsAuth = !isLoggedIn && !!selectedLesson?.video_url?.startsWith("r2:");
+  const showAuthModal = needsAuth && authDismissedFor !== selectedLesson?.id;
+  const loginHref = selectedLesson && course
+    ? `/login?redirect=${encodeURIComponent(`/courses/${course.id}/preview?lesson=${selectedLesson.id}`)}`
+    : "/login";
 
   // Đã enroll thì học thật luôn, khỏi xem thử
   useEffect(() => {
@@ -240,7 +293,7 @@ function PreviewContent({ params }: { params: Promise<{ id: string }> }) {
                 {selectedLesson.title}
               </h1>
               {/* key = lesson.id: đổi bài thì player remount, tự reset src/error */}
-              <PreviewPlayer key={selectedLesson.id} lesson={selectedLesson} isLoggedIn={isLoggedIn} />
+              <PreviewPlayer key={selectedLesson.id} lesson={selectedLesson} isLoggedIn={isLoggedIn} loginHref={loginHref} />
               {selectedLesson.content && selectedLesson.video_url && (
                 <p className="mt-4 text-sm leading-relaxed whitespace-pre-line" style={{ color: C.inkSoft }}>
                   {selectedLesson.content}
@@ -280,6 +333,13 @@ function PreviewContent({ params }: { params: Promise<{ id: string }> }) {
           )}
         </main>
       </div>
+
+      {showAuthModal && selectedLesson && (
+        <AuthPromptModal
+          loginHref={loginHref}
+          onClose={() => setAuthDismissedFor(selectedLesson.id)}
+        />
+      )}
     </div>
   );
 }

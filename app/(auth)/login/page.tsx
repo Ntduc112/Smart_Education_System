@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLogin } from "./login.hook";
@@ -74,8 +74,12 @@ const inputCls = (hasError: boolean) =>
       : "border-[#DCE6F4] focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/15"
   }`;
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Chỉ nhận path nội bộ ("/..."), chặn "//host" để tránh open-redirect.
+  const rawRedirect = searchParams.get("redirect");
+  const redirect = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : null;
   const [showPassword, setShowPassword] = useState(false);
   const { mutateAsync: login, isPending } = useLogin();
 
@@ -90,7 +94,8 @@ export default function LoginPage() {
     try {
       const result = await login(data);
       const role = result.user?.role;
-      if (role === "ADMIN") router.push("/admin/dashboard");
+      if (redirect) router.push(redirect);
+      else if (role === "ADMIN") router.push("/admin/dashboard");
       else if (role === "TEACHER") router.push("/teacher/home");
       else router.push("/");
     } catch (err) {
@@ -213,5 +218,13 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }
