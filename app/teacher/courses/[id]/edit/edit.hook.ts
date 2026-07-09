@@ -368,7 +368,9 @@ export function useTranscriptStatus(lessonId: string, videoUrl: string | null) {
     queryFn:  async () =>
       (await api.get<{ status: TranscriptStatus }>(`/teacher/lessons/${lessonId}/transcript-status`)).data.status,
     enabled:  isR2,
-    refetchInterval: (q) => (q.state.data === "processing" || q.state.data === undefined ? 4000 : false),
+    // Poll tiếp cả khi "none": ngay sau upload, save lesson có thể chưa kịp ghi DB
+    // nên server tạm trả "none" — dừng poll ở đây là spinner xoay vĩnh viễn.
+    refetchInterval: (q) => (q.state.data === "done" || q.state.data === "failed" ? false : 4000),
   });
 }
 
