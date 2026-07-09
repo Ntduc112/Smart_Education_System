@@ -395,7 +395,14 @@ export interface AIQuestion {
   points: number;
   sample_answer?: string;
   source_excerpt?: string;
+  ai_graded?: boolean;
   options?: { content: string; is_correct: boolean }[];
+}
+
+export interface AIQuestionCounts {
+  mcq: number;
+  trueFalse: number;
+  shortAnswer: number;
 }
 
 export interface AIGenerateResult {
@@ -406,14 +413,14 @@ export interface AIGenerateResult {
 export function useAIGenerateQuiz() {
   return useMutation({
     mutationFn: async ({
-      lessonId, questionCount,
+      lessonId, counts,
     }: {
       lessonId: string;
-      questionCount: number;
+      counts: AIQuestionCounts;
     }) => {
       const res = await api.post<AIGenerateResult>(
         "/teacher/ai/generate-quiz",
-        { lessonId, questionCount }
+        { lessonId, counts }
       );
       return res.data;
     },
@@ -440,6 +447,7 @@ export function useCreateQuizWithQuestions(courseId: string) {
           type:          q.type,
           points:        q.points,
           sample_answer: q.sample_answer,
+          ai_graded:     q.ai_graded,
           options:       q.options,
         })),
       });

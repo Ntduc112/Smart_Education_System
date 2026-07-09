@@ -7,7 +7,13 @@ const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const BodySchema = z.object({
   lessonId: z.string().uuid(),
-  questionCount: z.number().int().min(1).max(10).default(5),
+  counts: z.object({
+    mcq:         z.number().int().min(0).max(10),
+    trueFalse:   z.number().int().min(0).max(10),
+    shortAnswer: z.number().int().min(0).max(10),
+  }).refine((c) => c.mcq + c.trueFalse + c.shortAnswer >= 1, {
+    message: "Cần ít nhất 1 câu hỏi",
+  }),
 });
 
 const AIQuizSchema = z.object({
@@ -46,7 +52,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const { lessonId, questionCount } = body;
+  const { lessonId, counts } = body;
+  const questionCount = counts.mcq + counts.trueFalse + counts.shortAnswer;
 
   // Tra lesson + kiểm tra giáo viên sở hữu khóa học chứa bài này.
   const lesson = await prisma.lesson.findFirst({
@@ -90,7 +97,7 @@ QUY TẮC BẮT BUỘC:
 - CHỈ tạo câu hỏi mà đáp án nằm TRONG nội dung trên. TUYỆT ĐỐI không dùng kiến thức ngoài.
 - Nếu nội dung không đủ cho ${questionCount} câu, tạo ít hơn — KHÔNG bịa.
 - Mỗi câu kèm "source_excerpt": trích nguyên văn câu/cụm trong nội dung mà câu hỏi dựa vào.
-- Đa dạng loại: MCQ (4 lựa chọn, đúng 1 đáp án đúng), TRUE_FALSE ("Đúng"/"Sai", 1 đáp án đúng), SHORT_ANSWER (tự luận, có sample_answer).
+- Số câu TỪNG LOẠI phải đúng yêu cầu: ${counts.mcq} câu MCQ (4 lựa chọn, đúng 1 đáp án đúng), ${counts.trueFalse} câu TRUE_FALSE ("Đúng"/"Sai", 1 đáp án đúng), ${counts.shortAnswer} câu SHORT_ANSWER (tự luận, có sample_answer). Loại nào yêu cầu 0 câu thì KHÔNG tạo.
 - Điểm: MCQ = 1, TRUE_FALSE = 1, SHORT_ANSWER = 2.
 - Hỏi mức hiểu/vận dụng, không hỏi vặt vãnh ngoài bài.
 

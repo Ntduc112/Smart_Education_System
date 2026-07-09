@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { createNotification } from "@/lib/notification";
+import { gradeShortAnswer } from "@/lib/ai/grade-short-answer";
 
 const SubmitAttemptSchema = z.object({
     answers: z.array(z.object({
@@ -61,31 +62,57 @@ export async function POST(
         let totalPoints  = 0;
         let earnedPoints = 0;
 
-        const gradedAnswers = answers.map(({ question_id, answer }) => {
-            const question = questionMap.get(question_id);
-            if (!question) return null;
-
-            totalPoints += question.points;
-
-            if (question.type === "SHORT_ANSWER") {
-                return { question_id, answer, is_correct: null, points_earned: null };
-            }
-
-            const correctOption = question.options.find((o) => o.is_correct);
-            const isCorrect     = correctOption?.content.toLowerCase() === answer.toLowerCase();
-            const pts           = isCorrect ? question.points : 0;
-            earnedPoints += pts;
-
-            return { question_id, answer, is_correct: isCorrect, points_earned: pts };
-        }).filter(Boolean) as {
+        type GradedAnswer = {
             question_id:   string;
             answer:        string;
             is_correct:    boolean | null;
             points_earned: number | null;
-        }[];
+            ai_feedback?:  string;
+        };
 
-        const hasShortAnswer = gradedAnswers.some((a) => a.is_correct === null);
-        const score          = totalPoints > 0 && !hasShortAnswer
+        const gradedAnswers = (await Promise.all(
+            answers.map(async ({ question_id, answer }): Promise<GradedAnswer | null> => {
+                const question = questionMap.get(question_id);
+                if (!question) return null;
+
+                totalPoints += question.points;
+
+                if (question.type === "SHORT_ANSWER") {
+                    if (question.ai_graded) {
+                        // AI chấm ngay lúc nộp; lỗi AI → rơi về hàng chờ chấm tay.
+                        try {
+                            const { points, feedback } = await gradeShortAnswer({
+                                questionContent: question.content,
+                                sampleAnswer:    question.sample_answer,
+                                studentAnswer:   answer,
+                                maxPoints:       question.points,
+                            });
+                            earnedPoints += points;
+                            return {
+                                question_id, answer,
+                                is_correct:    points >= question.points / 2,
+                                points_earned: points,
+                                ai_feedback:   feedback,
+                            };
+                        } catch (err) {
+                            console.error(`[attempt] AI grade failed for question ${question_id}:`, err);
+                        }
+                    }
+                    return { question_id, answer, is_correct: null, points_earned: null };
+                }
+
+                const correctOption = question.options.find((o) => o.is_correct);
+                const isCorrect     = correctOption?.content.toLowerCase() === answer.toLowerCase();
+                const pts           = isCorrect ? question.points : 0;
+                earnedPoints += pts;
+
+                return { question_id, answer, is_correct: isCorrect, points_earned: pts };
+            })
+        )).filter(Boolean) as GradedAnswer[];
+
+        // Còn câu chưa có điểm (chờ chấm tay) → chưa chốt tổng điểm.
+        const hasPending = gradedAnswers.some((a) => a.points_earned === null);
+        const score      = totalPoints > 0 && !hasPending
             ? Math.round((earnedPoints / totalPoints) * 100)
             : null;
         const isPassed       = score !== null ? score >= quiz.pass_score : null;

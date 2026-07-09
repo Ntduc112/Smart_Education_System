@@ -13,6 +13,7 @@ const UpdateQuestionSchema = z.object({
     points:        z.number().int().min(1).optional(),
     order:         z.number().int().min(1).optional(),
     sample_answer: z.string().nullable().optional(),
+    ai_graded:     z.boolean().optional(),
     options:       z.array(OptionInput).optional(),
 });
 
@@ -43,6 +44,8 @@ export async function PUT(
 
         const body = await request.json();
         const { options, ...rest } = UpdateQuestionSchema.parse(body);
+        // Chỉ SHORT_ANSWER mới có nghĩa chấm AI
+        if (existing.type !== "SHORT_ANSWER") delete rest.ai_graded;
 
         const question = await prisma.$transaction(async (tx) => {
             if (options) {

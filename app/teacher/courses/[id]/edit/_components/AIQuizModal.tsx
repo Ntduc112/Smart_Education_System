@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AxiosError } from "axios";
-import { useAIGenerateQuiz, useCreateQuizWithQuestions, AIQuestion } from "../edit.hook";
+import { useAIGenerateQuiz, useCreateQuizWithQuestions, AIQuestion, AIQuestionCounts } from "../edit.hook";
 
 interface AIQuizModalProps {
   courseId: string;
@@ -102,13 +102,25 @@ function QuestionEditor({
       )}
 
       {q.type === "SHORT_ANSWER" && (
-        <textarea
-          value={q.sample_answer ?? ""}
-          onChange={(e) => onChange({ ...q, sample_answer: e.target.value })}
-          rows={2}
-          placeholder="Đáp án mẫu (gợi ý chấm)"
-          className="w-full px-3 py-2 text-xs text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-lg outline-none focus:border-[#1b61c9] resize-y"
-        />
+        <>
+          <textarea
+            value={q.sample_answer ?? ""}
+            onChange={(e) => onChange({ ...q, sample_answer: e.target.value })}
+            rows={2}
+            placeholder="Đáp án mẫu (gợi ý chấm)"
+            className="w-full px-3 py-2 text-xs text-[rgba(4,14,32,0.7)] border border-[#e0e2e6] rounded-lg outline-none focus:border-[#1b61c9] resize-y"
+          />
+          <button
+            onClick={() => onChange({ ...q, ai_graded: !q.ai_graded })}
+            className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full transition-colors ${
+              q.ai_graded ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "bg-[#f0f2f5] text-[rgba(4,14,32,0.5)]"
+            }`}
+            title="Đổi cách chấm câu này"
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${q.ai_graded ? "bg-[#1b61c9]" : "bg-[#cdd2da]"}`} />
+            {q.ai_graded ? "AI chấm khi nộp" : "Giáo viên chấm tay"}
+          </button>
+        </>
       )}
 
       {q.source_excerpt && (
@@ -116,6 +128,38 @@ function QuestionEditor({
           <span className="font-semibold text-[rgba(4,14,32,0.4)]">Trích từ bài: </span>{q.source_excerpt}
         </p>
       )}
+    </div>
+  );
+}
+
+// Ô chọn số câu cho một loại: nút −/+ kèm số, khống chế 0–10.
+function CountField({
+  label, value, onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-[#e0e2e6] bg-white">
+      <span className="text-sm text-[#181d26]">{label}</span>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => onChange(Math.max(0, value - 1))}
+          disabled={value <= 0}
+          className="w-6 h-6 rounded-lg border border-[#e0e2e6] text-[rgba(4,14,32,0.55)] hover:bg-[#f8fafc] disabled:opacity-30 disabled:cursor-not-allowed text-sm leading-none transition-colors"
+        >
+          −
+        </button>
+        <span className="w-6 text-center text-sm font-semibold text-[#1b61c9]">{value}</span>
+        <button
+          onClick={() => onChange(Math.min(10, value + 1))}
+          disabled={value >= 10}
+          className="w-6 h-6 rounded-lg border border-[#e0e2e6] text-[rgba(4,14,32,0.55)] hover:bg-[#f8fafc] disabled:opacity-30 disabled:cursor-not-allowed text-sm leading-none transition-colors"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 }
@@ -129,7 +173,8 @@ export function AIQuizModal({
   courseId, lessonId, lessonTitle, onClose, onSuccess,
 }: AIQuizModalProps) {
   const [step, setStep] = useState<"config" | "preview">("config");
-  const [questionCount, setQuestionCount] = useState(5);
+  const [counts, setCounts] = useState<AIQuestionCounts>({ mcq: 3, trueFalse: 1, shortAnswer: 1 });
+  const [aiGrading, setAiGrading] = useState(true);
   const [quizTitle, setQuizTitle] = useState(`Kiểm tra: ${lessonTitle}`);
   const [passScore, setPassScore] = useState(70);
   const [questions, setQuestions] = useState<AIQuestion[]>([]);
@@ -141,12 +186,17 @@ export function AIQuizModal({
   const noContent =
     (generate.error as AxiosError<{ error?: string }>)?.response?.data?.error === "no_content";
 
+  const totalCount = counts.mcq + counts.trueFalse + counts.shortAnswer;
+
   const handleGenerate = () => {
     generate.mutate(
-      { lessonId, questionCount },
+      { lessonId, counts },
       {
         onSuccess: (res) => {
-          setQuestions(res.questions);
+          // Gắn lựa chọn cách chấm vào từng câu tự luận; sang preview vẫn đổi được từng câu.
+          setQuestions(res.questions.map((q) =>
+            q.type === "SHORT_ANSWER" ? { ...q, ai_graded: aiGrading } : q
+          ));
           setSourcesUsed(res.sourcesUsed);
           setStep("preview");
         },
@@ -199,18 +249,40 @@ export function AIQuizModal({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">Số câu hỏi</label>
-                  <div className="flex items-center gap-3">
-                    <input type="range" min={3} max={10} value={questionCount} onChange={(e) => setQuestionCount(Number(e.target.value))} className="flex-1 accent-[#1b61c9]" />
-                    <span className="text-sm font-semibold text-[#1b61c9] w-6 text-center">{questionCount}</span>
-                  </div>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">Số câu theo loại</label>
+                  <span className={`text-xs font-semibold ${totalCount > 0 ? "text-[#1b61c9]" : "text-red-500"}`}>Tổng: {totalCount}</span>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">Điểm đạt (%)</label>
-                  <input type="number" min={0} max={100} value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} className="w-full px-3 py-2 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] transition-all text-[#181d26]" />
+                <div className="space-y-2">
+                  <CountField label="Trắc nghiệm" value={counts.mcq} onChange={(v) => setCounts((c) => ({ ...c, mcq: v }))} />
+                  <CountField label="Đúng / Sai" value={counts.trueFalse} onChange={(v) => setCounts((c) => ({ ...c, trueFalse: v }))} />
+                  <CountField label="Tự luận" value={counts.shortAnswer} onChange={(v) => setCounts((c) => ({ ...c, shortAnswer: v }))} />
                 </div>
+              </div>
+
+              {counts.shortAnswer > 0 && (
+                <button
+                  onClick={() => setAiGrading((v) => !v)}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-[#e0e2e6] bg-white text-left hover:border-[#1b61c9]/40 transition-colors"
+                >
+                  <span>
+                    <span className="block text-sm font-medium text-[#181d26]">Chấm tự luận bằng AI</span>
+                    <span className="block text-xs text-[rgba(4,14,32,0.45)] mt-0.5">
+                      {aiGrading
+                        ? "AI chấm điểm và nhận xét ngay khi học viên nộp bài."
+                        : "Bài tự luận vào hàng chờ, giáo viên chấm tay."}
+                    </span>
+                  </span>
+                  <span className={`shrink-0 w-9 h-5 rounded-full relative transition-colors ${aiGrading ? "bg-[#1b61c9]" : "bg-[#cdd2da]"}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${aiGrading ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                </button>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">Điểm đạt (%)</label>
+                <input type="number" min={0} max={100} value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} className="w-full px-3 py-2 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] transition-all text-[#181d26]" />
               </div>
 
               <p className="text-xs text-[rgba(4,14,32,0.45)] bg-[#f8fafc] border border-[#f0f2f5] rounded-xl px-4 py-2.5 leading-relaxed">
@@ -273,7 +345,7 @@ export function AIQuizModal({
         <div className="px-6 py-4 border-t border-[#f0f2f5] flex gap-3 shrink-0">
           <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-[#e0e2e6] text-sm font-medium text-[rgba(4,14,32,0.6)] hover:bg-[#f8fafc] transition-colors">Hủy</button>
           {step === "config" ? (
-            <button onClick={handleGenerate} disabled={generate.isPending || !quizTitle.trim()} className="flex-1 py-2.5 rounded-xl bg-[#1b61c9] text-white text-sm font-medium hover:bg-[#254fad] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button onClick={handleGenerate} disabled={generate.isPending || !quizTitle.trim() || totalCount === 0} className="flex-1 py-2.5 rounded-xl bg-[#1b61c9] text-white text-sm font-medium hover:bg-[#254fad] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {generate.isPending ? (
                 <>
                   <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

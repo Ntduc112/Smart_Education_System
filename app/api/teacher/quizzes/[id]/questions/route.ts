@@ -14,6 +14,7 @@ const CreateQuestionSchema = z.object({
     points:        z.number().int().min(1).default(1),
     order:         z.number().int().min(1),
     sample_answer: z.string().optional(),
+    ai_graded:     z.boolean().optional(),
     options:       z.array(OptionSchema).optional(),
 });
 
@@ -44,6 +45,8 @@ export async function POST(
         const question = await prisma.question.create({
             data: {
                 ...questionData,
+                // Chỉ SHORT_ANSWER mới có nghĩa chấm AI
+                ai_graded: questionData.type === "SHORT_ANSWER" ? (questionData.ai_graded ?? false) : false,
                 quiz_id: id,
                 options: options ? { create: options } : undefined,
             },

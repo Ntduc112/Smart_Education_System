@@ -29,6 +29,8 @@ model Question {
     points        Int           @default(1)
     order         Int
     sample_answer String?
+    // SHORT_ANSWER: true = AI chấm ngay khi nộp, false = giáo viên chấm tay
+    ai_graded     Boolean       @default(false)
 
     options Option[]
     answers AttemptAnswer[]

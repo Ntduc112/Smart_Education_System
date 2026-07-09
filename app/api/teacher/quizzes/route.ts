@@ -12,6 +12,7 @@ const QuestionSchema = z.object({
     type:          z.enum(["MCQ", "TRUE_FALSE", "SHORT_ANSWER"]),
     points:        z.number().int().min(1).default(1),
     sample_answer: z.string().optional(),
+    ai_graded:     z.boolean().optional(),
     options:       z.array(OptionSchema).optional(),
 });
 
@@ -56,6 +57,8 @@ export async function POST(request: NextRequest) {
                             points:        q.points,
                             order:         i + 1,
                             sample_answer: q.sample_answer,
+                            // Chỉ SHORT_ANSWER mới có nghĩa chấm AI
+                            ai_graded:     q.type === "SHORT_ANSWER" ? (q.ai_graded ?? false) : false,
                             options: q.options
                                 ? { create: q.options.map((o, idx) => ({ ...o, order: idx + 1 })) }
                                 : undefined,

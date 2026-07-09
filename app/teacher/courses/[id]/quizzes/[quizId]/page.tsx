@@ -22,7 +22,7 @@ import { ConfirmModal } from "@/app/_components/ConfirmModal";
 type QuestionType = "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
 
 interface Option   { id: string; content: string; is_correct: boolean; order: number }
-interface Question { id: string; content: string; type: QuestionType; points: number; order: number; sample_answer?: string | null; options: Option[] }
+interface Question { id: string; content: string; type: QuestionType; points: number; order: number; sample_answer?: string | null; ai_graded?: boolean; options: Option[] }
 interface Quiz     { id: string; title: string; pass_score: number; require_pass: boolean; max_attempts?: number | null; time_limit?: number | null; questions: Question[] }
 
 // ── Palette (đồng bộ teacher/home) ────────────────────────────────────────────
@@ -100,7 +100,7 @@ function useAddQuestion(quizId: string) {
   return useMutation({
     mutationFn: (data: {
       content: string; type: QuestionType;
-      points: number; order: number; sample_answer?: string;
+      points: number; order: number; sample_answer?: string; ai_graded?: boolean;
       options?: { content: string; is_correct: boolean; order: number }[];
     }) => api.post(`/teacher/quizzes/${quizId}/questions`, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "quiz", quizId] }),
@@ -111,7 +111,7 @@ function useUpdateQuestion(quizId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...data }: {
-      id: string; content?: string; points?: number; sample_answer?: string | null;
+      id: string; content?: string; points?: number; sample_answer?: string | null; ai_graded?: boolean;
       options?: { content: string; is_correct: boolean; order: number }[];
     }) => (await api.put<{ question: Question }>(`/teacher/questions/${id}`, data)).data.question,
     onSuccess: (updated) =>
@@ -143,6 +143,25 @@ function useReorderQuestions(quizId: string) {
   };
 }
 
+// ── AI-graded toggle (chỉ cho câu tự luận) ───────────────────────────────────
+
+function AIGradedToggle({ value, onChange }: { value: boolean; onChange: (next: boolean) => void }) {
+  return (
+    <button onClick={() => onChange(!value)}
+      className="w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl border border-[#DCE6F4] bg-white text-left hover:border-[#1b61c9]/40 transition-colors">
+      <span>
+        <span className="block text-xs font-medium text-[#181d26]">Chấm bằng AI</span>
+        <span className="block text-[11px] text-[rgba(4,14,32,0.45)] mt-0.5">
+          {value ? "AI chấm điểm + nhận xét ngay khi học viên nộp." : "Vào hàng chờ, giáo viên chấm tay."}
+        </span>
+      </span>
+      <span className={`shrink-0 w-9 h-5 rounded-full relative transition-colors ${value ? "bg-[#1b61c9]" : "bg-[#C5D4EA]"}`}>
+        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${value ? "left-[18px]" : "left-0.5"}`} />
+      </span>
+    </button>
+  );
+}
+
 // ── Add Question Form ────────────────────────────────────────────────────────
 
 function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextOrder: number; onClose: () => void }) {
@@ -151,6 +170,7 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
   const [content, setContent] = useState("");
   const [points, setPoints]   = useState(1);
   const [sampleAnswer, setSampleAnswer] = useState("");
+  const [aiGraded, setAiGraded] = useState(false);
   const [mcqOptions, setMcqOptions] = useState([
     { content: "", is_correct: true },
     { content: "", is_correct: false },
@@ -170,7 +190,12 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
       ];
     }
     addQuestion.mutate(
-      { content, type, points, order: nextOrder, sample_answer: sampleAnswer || undefined, options },
+      {
+        content, type, points, order: nextOrder,
+        sample_answer: sampleAnswer || undefined,
+        ai_graded: type === "SHORT_ANSWER" ? aiGraded : undefined,
+        options,
+      },
       { onSuccess: onClose },
     );
   };
@@ -210,8 +235,11 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
       )}
 
       {type === "SHORT_ANSWER" && (
-        <input className={inputCls} placeholder="Gợi ý đáp án (không bắt buộc)"
-          value={sampleAnswer} onChange={e => setSampleAnswer(e.target.value)} />
+        <>
+          <input className={inputCls} placeholder="Gợi ý đáp án (không bắt buộc)"
+            value={sampleAnswer} onChange={e => setSampleAnswer(e.target.value)} />
+          <AIGradedToggle value={aiGraded} onChange={setAiGraded} />
+        </>
       )}
 
       <div className="flex gap-2 pt-1">
@@ -235,6 +263,7 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
   const [content, setContent] = useState(q.content);
   const [points, setPoints]   = useState(q.points);
   const [sampleAnswer, setSampleAnswer] = useState(q.sample_answer ?? "");
+  const [aiGraded, setAiGraded] = useState(q.ai_graded ?? false);
   const [options, setOptions] = useState(
     q.options.map(o => ({ content: o.content, is_correct: o.is_correct })),
   );
@@ -247,6 +276,7 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
     const payload: Parameters<typeof updateQuestion.mutate>[0] = { id: q.id, content, points };
     if (q.type === "SHORT_ANSWER") {
       payload.sample_answer = sampleAnswer || null;
+      payload.ai_graded = aiGraded;
     } else {
       payload.options = options.map((o, i) => ({ content: o.content, is_correct: o.is_correct, order: i + 1 }));
     }
@@ -280,8 +310,11 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
       )}
 
       {q.type === "SHORT_ANSWER" && (
-        <input className={inputCls} placeholder="Gợi ý đáp án (không bắt buộc)"
-          value={sampleAnswer} onChange={e => setSampleAnswer(e.target.value)} />
+        <>
+          <input className={inputCls} placeholder="Gợi ý đáp án (không bắt buộc)"
+            value={sampleAnswer} onChange={e => setSampleAnswer(e.target.value)} />
+          <AIGradedToggle value={aiGraded} onChange={setAiGraded} />
+        </>
       )}
 
       <div className="flex gap-2 pt-1">
@@ -357,6 +390,13 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
       <div className="flex items-center gap-2 pl-9">
         <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${meta.pill}`}>{meta.label}</span>
         <span className="text-xs text-[rgba(4,14,32,0.45)]">{q.points} điểm</span>
+        {q.type === "SHORT_ANSWER" && (
+          <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+            q.ai_graded ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "bg-[#f0f2f5] text-[rgba(4,14,32,0.5)]"
+          }`}>
+            {q.ai_graded ? "AI chấm" : "Chấm tay"}
+          </span>
+        )}
       </div>
 
       {q.options.length > 0 && (
