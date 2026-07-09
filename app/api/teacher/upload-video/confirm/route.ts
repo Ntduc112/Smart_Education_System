@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/prisma/prisma";
+import { triggerFaststart } from "@/lib/video";
 
 export async function POST(request: NextRequest) {
     const userId = request.headers.get("x-user-id");
@@ -11,19 +13,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Invalid videoKey" }, { status: 400 });
     }
 
-    const workerUrl = process.env.RAILWAY_WORKER_URL;
-    if (workerUrl) {
-        fetch(`${workerUrl}/faststart`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                ...(process.env.WORKER_SECRET
-                    ? { Authorization: `Bearer ${process.env.WORKER_SECRET}` }
-                    : {}),
-            },
-            body: JSON.stringify({ videoKey }),
-        }).catch(err => console.error("[confirm] Failed to trigger faststart:", err.message));
-    }
+    // Tạo row "processing" ngay khi nhận job: từ đây, transcript-status thấy
+    // "không có row" nghĩa là job thất lạc thật (chứ không phải worker đang chạy).
+    await prisma.videoTranscript.upsert({
+        where: { video_key: videoKey },
+        create: { video_key: videoKey, status: "processing" },
+        update: { status: "processing", text: null },
+    });
+    await triggerFaststart(videoKey);
 
     return NextResponse.json({ ok: true });
 }
