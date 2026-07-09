@@ -1109,11 +1109,11 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   const { data: course, isLoading } = useCourseBuilder(id);
   const togglePublish  = useTogglePublish(id, course);
 
-  const { data: categoriesData } = useQuery<{ categories: Category[] }>({
+  // Cùng queryKey ["categories"] với trang /courses → shape cache phải là Category[]
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
-    queryFn:  async () => (await api.get("/categories")).data,
+    queryFn:  async () => (await api.get<{ categories: Category[] }>("/categories")).data.categories,
   });
-  const categories = categoriesData?.categories ?? [];
 
   const [selection, setSelection]           = useState<Selection>({ type: "info" });
   const [showBulkImport, setShowBulkImport] = useState(false);

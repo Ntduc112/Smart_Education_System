@@ -77,11 +77,11 @@ const inputCls = (hasError?: boolean) =>
 export default function NewCoursePage() {
   const router = useRouter();
 
-  const { data: categoriesData } = useQuery<{ categories: Category[] }>({
+  // Cùng queryKey ["categories"] với trang /courses → shape cache phải là Category[]
+  const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
-    queryFn:  async () => (await api.get("/categories")).data,
+    queryFn:  async () => (await api.get<{ categories: Category[] }>("/categories")).data.categories,
   });
-  const categories = categoriesData?.categories ?? [];
 
   const {
     register,
