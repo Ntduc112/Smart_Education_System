@@ -113,7 +113,7 @@ async function main() {
     {
       title: "Lập trình Web với Next.js",
       description: "Xây dựng ứng dụng web full-stack hiện đại với Next.js 15, TypeScript và Prisma.",
-      thumbnail: "https://picsum.photos/seed/nextjs/800/450",
+      thumbnail: "/thumbnails/nextjs.svg",
       price: 499000,
       level: "intermediate",
       status: "PUBLISHED" as const,
@@ -123,7 +123,7 @@ async function main() {
     {
       title: "Python cho người mới bắt đầu",
       description: "Học lập trình Python từ cơ bản đến thực chiến — phân tích dữ liệu, automation.",
-      thumbnail: "https://picsum.photos/seed/python/800/450",
+      thumbnail: "/thumbnails/python.svg",
       price: 0,
       level: "beginner",
       status: "PUBLISHED" as const,
@@ -133,7 +133,7 @@ async function main() {
     {
       title: "Machine Learning với TensorFlow",
       description: "Xây dựng mô hình ML và deep learning với TensorFlow 2.x và Keras.",
-      thumbnail: "https://picsum.photos/seed/ml/800/450",
+      thumbnail: "/thumbnails/ml.svg",
       price: 799000,
       level: "advanced",
       status: "PUBLISHED" as const,
@@ -143,7 +143,7 @@ async function main() {
     {
       title: "Thiết kế UI/UX với Figma",
       description: "Tư duy thiết kế, wireframe, prototype và design system với Figma.",
-      thumbnail: "https://picsum.photos/seed/figma/800/450",
+      thumbnail: "/thumbnails/figma.svg",
       price: 399000,
       level: "beginner",
       status: "PUBLISHED" as const,
@@ -153,7 +153,7 @@ async function main() {
     {
       title: "Marketing Digital toàn diện",
       description: "SEO, Google Ads, Facebook Ads và Content Marketing cho doanh nghiệp vừa và nhỏ.",
-      thumbnail: "https://picsum.photos/seed/marketing/800/450",
+      thumbnail: "/thumbnails/marketing.svg",
       price: 599000,
       level: "intermediate",
       status: "PUBLISHED" as const,
@@ -163,7 +163,7 @@ async function main() {
     {
       title: "IELTS từ 0 lên 6.5",
       description: "Lộ trình học IELTS có hệ thống, luyện 4 kỹ năng và chiến thuật làm bài.",
-      thumbnail: "https://picsum.photos/seed/ielts/800/450",
+      thumbnail: "/thumbnails/ielts.svg",
       price: 699000,
       level: "intermediate",
       status: "DRAFT" as const,

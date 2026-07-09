@@ -176,7 +176,7 @@ async function main() {
       data: {
         title: cd.title,
         description: cd.description,
-        thumbnail: `https://picsum.photos/seed/${cd.thumbSeed}/800/450`,
+        thumbnail: `/thumbnails/${cd.thumbSeed}.svg`,
         price: cd.price,
         level: cd.level,
         status: "PUBLISHED",

@@ -243,7 +243,7 @@ async function ensureCourse(def: CourseDef, instructorId: string) {
     data: {
       title: def.title,
       description: def.description,
-      thumbnail: `https://picsum.photos/seed/${def.thumbSeed}/800/450`,
+      thumbnail: `/thumbnails/${def.thumbSeed}.svg`,
       price: def.price,
       level: def.level,
       status: "PUBLISHED",
@@ -300,7 +300,7 @@ async function main() {
       data: {
         title: rm.title,
         description: rm.description,
-        thumbnail: `https://picsum.photos/seed/${rm.thumbSeed}/800/450`,
+        thumbnail: `/thumbnails/${rm.thumbSeed}.svg`,
         status: "PUBLISHED",
         items: {
           create: items.map((c, i) => ({

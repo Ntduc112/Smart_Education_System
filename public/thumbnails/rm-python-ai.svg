@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" font-family="Inter,'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e3a8a"/><stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#fff" opacity="0.13"/>
+    </pattern>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.18"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#bg)"/>
+  <rect width="800" height="450" fill="url(#dots)"/>
+  <circle cx="655" cy="225" r="210" fill="url(#glow)"/>
+  <circle cx="655" cy="225" r="150" fill="none" stroke="#fff" stroke-opacity="0.14" stroke-width="2"/>
+  <circle cx="655" cy="225" r="182" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="2"/>
+  <g transform="translate(575 145)">
+    <rect width="160" height="160" rx="34" fill="#fff" fill-opacity="0.12" stroke="#fff" stroke-opacity="0.28" stroke-width="2"/>
+    <g transform="translate(32 32)"><circle cx="22" cy="74" r="8" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/><circle cx="74" cy="22" r="8" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/><path d="M30 74 H58 a10 10 0 0 0 0 -20 H40 a10 10 0 0 1 0 -20 h26" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" stroke-dasharray="9 7"/></g>
+  </g>
+  <g>
+    <rect x="56" y="131.3" width="128" height="36" rx="18" fill="#fff" fill-opacity="0.16"/>
+    <text x="120" y="155.3" text-anchor="middle" font-size="15" font-weight="700" letter-spacing="3" fill="#fff" fill-opacity="0.95">LỘ TRÌNH</text>
+  </g>
+  <text font-size="44" font-weight="800" fill="#fff"><tspan x="56" y="220.5">Lộ trình Python &amp;</tspan><tspan x="56" y="274.2">Data / AI</tspan></text>
+  <rect x="56" y="300.2" width="72" height="6" rx="3" fill="#fff" fill-opacity="0.85"/>
+</svg>

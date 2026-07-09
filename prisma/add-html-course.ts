@@ -34,7 +34,7 @@ async function main() {
       title: "HTML cho người mới bắt đầu",
       description:
         "Học HTML từ cơ bản — ngôn ngữ đánh dấu nền tảng của mọi trang web. Khóa học bao gồm cú pháp, cấu trúc tài liệu, các thẻ thông dụng và cách xây dựng trang web tĩnh đầu tiên của bạn.",
-      thumbnail: "https://picsum.photos/seed/html/800/450",
+      thumbnail: "/thumbnails/html.svg",
       price: 0,
       level: "beginner",
       status: "PUBLISHED",
