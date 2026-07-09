@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
-import { createPaymentLink } from "@/lib/payment/payos";
+import { createPaymentLink, getPayosStatus, cancelPaymentLink } from "@/lib/payment/payos";
+import { fulfillPayment } from "@/lib/payment/fulfill";
 
 export async function POST(request: NextRequest) {
     try {
@@ -44,19 +45,32 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ enrolled: true }, { status: 201 });
         }
 
-        // Nếu đang có PENDING payment thì trả về luôn để tránh tạo trùng
+        // Có PENDING cũ → đối soát với PayOS trước khi tạo đơn mới.
+        // orderCode không tái dùng được phía PayOS (kể cả khi đơn đã hủy/hết hạn),
+        // nên đơn cũ luôn được đóng lại rồi tạo đơn mới với orderCode mới.
         const pendingPayment = await prisma.payment.findFirst({
             where: { user_id: userId, course_id, status: "PENDING" },
         });
         if (pendingPayment) {
-            const checkoutUrl = await createPaymentLink({
-                orderCode:   pendingPayment.order_code,
-                amount:      Number(pendingPayment.amount),
-                description: `Khoa hoc ${course.title}`.slice(0, 25),
-                returnUrl:   `${baseUrl}/payment/success`,
-                cancelUrl:   `${baseUrl}/payment/cancel`,
+            const payosStatus = await getPayosStatus(pendingPayment.order_code);
+
+            // Tiền đã vào nhưng webhook/polling chưa kịp xử lý → fulfill luôn
+            if (payosStatus === "PAID") {
+                await fulfillPayment(pendingPayment.order_code);
+                return NextResponse.json({ enrolled: true }, { status: 200 });
+            }
+
+            // Đơn còn sống phía PayOS → hủy để QR cũ hết hiệu lực.
+            // Hủy thất bại thì throw (rơi xuống catch → 500), không được đánh dấu
+            // CANCELLED trong DB khi QR cũ có thể vẫn nhận tiền.
+            if (!["CANCELLED", "EXPIRED", "FAILED", "NOT_FOUND"].includes(payosStatus)) {
+                await cancelPaymentLink(pendingPayment.order_code, "Tao lai link thanh toan");
+            }
+
+            await prisma.payment.update({
+                where: { order_code: pendingPayment.order_code },
+                data:  { status: "CANCELLED" },
             });
-            return NextResponse.json({ checkoutUrl }, { status: 200 });
         }
 
         // Tạo orderCode ngẫu nhiên 8 chữ số (fits trong Int32)

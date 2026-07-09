@@ -1,5 +1,5 @@
-import { PayOS } from "@payos/node";
-import type { Webhook, WebhookData } from "@payos/node";
+import { PayOS, APIError } from "@payos/node";
+import type { Webhook, WebhookData, PaymentLinkStatus } from "@payos/node";
 
 let _client: PayOS | null = null;
 
@@ -36,4 +36,22 @@ export async function getPaymentInfo(orderCode: number) {
 
 export function isPaymentSuccess(webhookData: WebhookData): boolean {
     return webhookData.code === "00";
+}
+
+// Hủy link thanh toán phía PayOS (orderCode không tái dùng được nên phải hủy trước khi tạo đơn mới).
+export async function cancelPaymentLink(orderCode: number, reason?: string) {
+    return getClient().paymentRequests.cancel(orderCode, reason);
+}
+
+// Trạng thái đơn phía PayOS. "NOT_FOUND" = PayOS trả lỗi API cho orderCode này
+// (đơn chưa từng tạo được — ví dụ createPaymentLink fail sau khi đã ghi DB).
+// Lỗi mạng/timeout vẫn throw để caller không nhầm với đơn chết.
+export async function getPayosStatus(orderCode: number): Promise<PaymentLinkStatus | "NOT_FOUND"> {
+    try {
+        const info = await getClient().paymentRequests.get(orderCode);
+        return info.status;
+    } catch (e) {
+        if (e instanceof APIError && typeof e.status === "number") return "NOT_FOUND";
+        throw e;
+    }
 }

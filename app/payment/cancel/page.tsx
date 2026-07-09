@@ -1,13 +1,21 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { XCircle } from "lucide-react";
+import api from "@/lib/axios";
 
 function PaymentCancelContent() {
     const searchParams = useSearchParams();
     const orderCode = searchParams.get("orderCode");
+
+    // Server sẽ hỏi PayOS và đánh dấu đơn CANCELLED trong DB —
+    // không gọi thì record kẹt PENDING đến lần đối soát kế tiếp.
+    useEffect(() => {
+        if (!orderCode) return;
+        api.get(`/payment/status/${orderCode}`).catch(() => {});
+    }, [orderCode]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
