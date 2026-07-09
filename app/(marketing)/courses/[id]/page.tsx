@@ -6,7 +6,7 @@ import { MainNavbar } from "@/app/_components/MainNavbar";
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
-import { useCourse, useEnrollCourse, Chapter } from "../courses.hook";
+import { useCourse, useEnrollCourse, Chapter, Lesson } from "../courses.hook";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import { useWishlist } from "@/app/student/wishlist/wishlist.hook";
@@ -368,7 +368,7 @@ function discountedPrice(price: string, percent: number | null | undefined): num
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 
-function CurriculumChapter({ chapter }: { chapter: Chapter }) {
+function CurriculumChapter({ chapter, onPreview }: { chapter: Chapter; onPreview: (lesson: Lesson) => void }) {
   const [open, setOpen] = useState(true);
   const freeCount = chapter.lessons.filter((l) => l.is_free).length;
 
@@ -397,23 +397,32 @@ function CurriculumChapter({ chapter }: { chapter: Chapter }) {
       {open && (
         <ul className="divide-y" style={{ borderColor: "#EEF3FB" }}>
           {chapter.lessons.map((lesson) => (
-            <li key={lesson.id} className="flex items-center gap-3 px-5 py-3.5 border-t first:border-t-0" style={{ borderColor: "#EEF3FB" }}>
+            <li key={lesson.id} className="border-t first:border-t-0" style={{ borderColor: "#EEF3FB" }}>
               {lesson.is_free ? (
-                <svg className="shrink-0" style={{ color: C.blue }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
-                </svg>
+                <button
+                  onClick={() => onPreview(lesson)}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left transition-colors hover:bg-[#F4F8FE] cursor-pointer"
+                  title="Xem thử bài học"
+                >
+                  <svg className="shrink-0" style={{ color: C.blue }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+                  </svg>
+                  <span className="text-sm flex-1 tracking-[0.07px]" style={{ color: C.ink }}>
+                    {lesson.title}
+                  </span>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style={{ color: C.blue, background: "rgba(27,97,201,0.09)" }}>
+                    Xem thử
+                  </span>
+                </button>
               ) : (
-                <svg className="shrink-0" style={{ color: C.inkFaint }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              )}
-              <span className="text-sm flex-1 tracking-[0.07px]" style={{ color: lesson.is_free ? C.ink : C.inkSoft }}>
-                {lesson.title}
-              </span>
-              {lesson.is_free && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full shrink-0" style={{ color: C.blue, background: "rgba(27,97,201,0.09)" }}>
-                  Xem thử
-                </span>
+                <div className="flex items-center gap-3 px-5 py-3.5">
+                  <svg className="shrink-0" style={{ color: C.inkFaint }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                  <span className="text-sm flex-1 tracking-[0.07px]" style={{ color: C.inkSoft }}>
+                    {lesson.title}
+                  </span>
+                </div>
               )}
             </li>
           ))}
@@ -585,7 +594,11 @@ export default function CourseDetailPage({ params }: { params: Promise<{ id: str
                 </h2>
                 <div className="space-y-3">
                   {course.sections.map((chapter) => (
-                    <CurriculumChapter key={chapter.id} chapter={chapter} />
+                    <CurriculumChapter
+                      key={chapter.id}
+                      chapter={chapter}
+                      onPreview={(lesson) => router.push(`/courses/${course.id}/preview?lesson=${lesson.id}`)}
+                    />
                   ))}
                 </div>
               </div>

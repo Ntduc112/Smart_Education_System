@@ -24,6 +24,7 @@ export interface Lesson {
   is_free: boolean;
   video_url: string | null;
   pdf_url: string | null;
+  content: string | null;
 }
 
 export interface Chapter {

@@ -21,9 +21,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                                 title: true,
                                 order: true,
                                 is_free: true,
-                                // video_url và pdf_url sẽ được mask bên dưới
+                                // video_url/pdf_url/content sẽ được mask bên dưới
                                 video_url: true,
                                 pdf_url: true,
+                                content: true,
                             },
                         },
                     },
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     ...lesson,
                     video_url: lesson.is_free ? lesson.video_url : null,
                     pdf_url:   lesson.is_free ? lesson.pdf_url   : null,
+                    content:   lesson.is_free ? lesson.content   : null,
                 })),
             })),
             is_enrolled: isEnrolled,
