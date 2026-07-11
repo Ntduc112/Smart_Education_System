@@ -1,15 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import api from "@/lib/axios";
 import axios from "axios";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export interface BuilderQuiz {
-  id:         string;
-  title:      string;
-  pass_score: number;
-  time_limit: number | null;
+  id:           string;
+  title:        string;
+  pass_score:   number;
+  require_pass: boolean;
+  max_attempts: number | null;
+  time_limit:   number | null;
 }
 
 export interface BuilderLesson {
@@ -377,8 +379,13 @@ export function useTranscriptStatus(lessonId: string, videoUrl: string | null) {
 export function useCreateQuiz(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ lesson_id, title, pass_score }: { lesson_id: string; title: string; pass_score: number }) =>
-      (await api.post<{ quiz: BuilderQuiz }>("/teacher/quizzes", { lesson_id, title, pass_score })).data.quiz,
+    mutationFn: async (data: {
+      lesson_id: string;
+      title: string;
+      pass_score: number;
+      require_pass: boolean;
+      max_attempts: number | null;
+    }) => (await api.post<{ quiz: BuilderQuiz }>("/teacher/quizzes", data)).data.quiz,
     onSuccess: (quiz, { lesson_id }) =>
       queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
         old ? {
@@ -391,20 +398,52 @@ export function useCreateQuiz(courseId: string) {
   });
 }
 
+export function useDeleteQuiz(courseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ quizId }: { quizId: string; lessonId: string }) =>
+      api.delete(`/teacher/quizzes/${quizId}`),
+    onSuccess: (_response, { quizId, lessonId }) => {
+      queryClient.setQueryData<BuilderCourse>(["teacher", "course", courseId], (old) =>
+        old ? {
+          ...old,
+          sections: old.sections.map((section) => ({
+            ...section,
+            lessons: section.lessons.map((lesson) =>
+              lesson.id === lessonId
+                ? { ...lesson, quiz: lesson.quiz.filter((quiz) => quiz.id !== quizId) }
+                : lesson,
+            ),
+          })),
+        } : old,
+      );
+      queryClient.invalidateQueries({ queryKey: ["teacher", "classroom", courseId] });
+    },
+  });
+}
+
 export interface AIQuestion {
   content: string;
-  type: "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
+  type: "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER" | "CODING" | "DEBUGGING" | "CODE_OUTPUT";
   points: number;
   sample_answer?: string;
   source_excerpt?: string;
   ai_graded?: boolean;
+  language?: "python" | "javascript" | "c" | "cpp" | "java";
+  starter_code?: string;
+  solution_code?: string;
   options?: { content: string; is_correct: boolean }[];
+  testCases?: { input: string; expected: string; is_hidden: boolean }[];
 }
 
 export interface AIQuestionCounts {
   mcq: number;
   trueFalse: number;
   shortAnswer: number;
+  coding: number;
+  debugging: number;
+  codeOutput: number;
 }
 
 export interface AIGenerateResult {
@@ -415,14 +454,15 @@ export interface AIGenerateResult {
 export function useAIGenerateQuiz() {
   return useMutation({
     mutationFn: async ({
-      lessonId, counts,
+      lessonId, counts, customPrompt,
     }: {
       lessonId: string;
       counts: AIQuestionCounts;
+      customPrompt: string;
     }) => {
       const res = await api.post<AIGenerateResult>(
         "/teacher/ai/generate-quiz",
-        { lessonId, counts }
+        { lessonId, counts, customPrompt: customPrompt.trim() || undefined }
       );
       return res.data;
     },
@@ -433,24 +473,32 @@ export function useCreateQuizWithQuestions(courseId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({
-      lessonId, title, passScore, questions,
+      lessonId, title, passScore, requirePass, maxAttempts, questions,
     }: {
       lessonId: string;
       title: string;
       passScore: number;
+      requirePass: boolean;
+      maxAttempts: number | null;
       questions: AIQuestion[];
     }) => {
       await api.post<{ quiz: BuilderQuiz }>("/teacher/quizzes", {
         lesson_id:  lessonId,
         title,
         pass_score: passScore,
+        require_pass: requirePass,
+        max_attempts: maxAttempts,
         questions:  questions.map((q) => ({
           content:       q.content,
           type:          q.type,
           points:        q.points,
           sample_answer: q.sample_answer,
           ai_graded:     q.ai_graded,
+          language:      q.language,
+          starter_code:  q.starter_code,
+          solution_code: q.solution_code,
           options:       q.options,
+          testCases:     q.testCases,
         })),
       });
     },

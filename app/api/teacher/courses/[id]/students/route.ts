@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
+import { didAttemptPass, getQuizAttemptState } from "@/lib/quiz-policy";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,7 +25,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                 id:    true,
                 title: true,
                 order: true,
-                quiz:  { select: { id: true, title: true, pass_score: true } },
+                quiz:  {
+                  where: { deleted_at: null },
+                  select: {
+                    id: true,
+                    title: true,
+                    pass_score: true,
+                    require_pass: true,
+                    max_attempts: true,
+                  },
+                },
               },
             },
           },
@@ -60,7 +70,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     // ── Bulk-fetch progress + attempts (no N+1) ─────────────────────────────
-    const [progresses, attempts] = await Promise.all([
+    const [progresses, attempts, attemptRequests] = await Promise.all([
       prisma.lessonProgress.findMany({
         where: {
           user_id:   { in: enrolledUserIds },
@@ -88,11 +98,27 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         },
         orderBy: { submitted_at: "desc" },
       }),
+      prisma.quizAttemptRequest.findMany({
+        where: {
+          user_id: { in: enrolledUserIds },
+          quiz_id: { in: allQuizzes.map((q) => q.id) },
+          status: { in: ["PENDING", "APPROVED"] },
+        },
+        select: {
+          id: true,
+          user_id: true,
+          quiz_id: true,
+          status: true,
+          requested_at: true,
+        },
+        orderBy: { requested_at: "desc" },
+      }),
     ]);
 
     // ── Group by userId ─────────────────────────────────────────────────────
     const progressByUser: Record<string, typeof progresses> = {};
     const attemptsByUser: Record<string, typeof attempts>   = {};
+    const requestsByUser: Record<string, typeof attemptRequests> = {};
 
     for (const p of progresses) {
       (progressByUser[p.user_id] ??= []).push(p);
@@ -100,12 +126,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     for (const a of attempts) {
       (attemptsByUser[a.user_id] ??= []).push(a);
     }
+    for (const request of attemptRequests) {
+      (requestsByUser[request.user_id] ??= []).push(request);
+    }
 
     // ── Aggregate per student ───────────────────────────────────────────────
     const students = course.enrollments.map((enrollment) => {
       const uid          = enrollment.user.id;
       const userProgress = progressByUser[uid] ?? [];
       const userAttempts = attemptsByUser[uid] ?? [];
+      const userRequests = requestsByUser[uid] ?? [];
 
       const completedLessons = userProgress.filter((p) => p.is_completed).length;
 
@@ -129,15 +159,28 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           if (!acc || (a.score ?? -1) > (acc.score ?? -1)) return a;
           return acc;
         }, null);
+        const qRequests = userRequests.filter((request) => request.quiz_id === quiz.id);
+        const approvedExtraAttempts = qRequests.filter((request) => request.status === "APPROVED").length;
+        const pendingRequest = qRequests.find((request) => request.status === "PENDING") ?? null;
+        const attemptState = getQuizAttemptState(quiz, qAttempts, approvedExtraAttempts);
         return {
           quiz_id:      quiz.id,
           quiz_title:   quiz.title,
           lesson_title: quiz.lesson_title,
           pass_score:   quiz.pass_score,
+          require_pass: quiz.require_pass,
+          max_attempts: quiz.max_attempts,
+          effective_max_attempts: attemptState.maxAllowed,
+          extra_attempts: attemptState.extraAttempts,
+          remaining_attempts: attemptState.remaining,
+          exhausted: attemptState.exhausted,
+          pending_request: pendingRequest
+            ? { id: pendingRequest.id, requested_at: pendingRequest.requested_at }
+            : null,
           best_score:   best ? best.score : null,
-          is_passed:    best ? best.is_passed : null,
+          is_passed:    best ? didAttemptPass(quiz, best.score) : null,
           attempts:     qAttempts.length,
-          last_attempt: best ? best.submitted_at : null,
+          last_attempt: qAttempts[0]?.submitted_at ?? null,
         };
       });
 

@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
         question: {
           type: { in: ["MCQ", "TRUE_FALSE"] },
           ...(masteredIds.length ? { id: { notIn: masteredIds } } : {}),
-          ...(courseId ? { quiz: { lesson: { chapter: { course_id: courseId } } } } : {}),
+          quiz: {
+            deleted_at: null,
+            ...(courseId ? { lesson: { chapter: { course_id: courseId } } } : {}),
+          },
         },
       },
       select: {

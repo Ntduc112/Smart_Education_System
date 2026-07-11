@@ -9,6 +9,7 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   PAYMENT:     CreditCard,
   ENROLLMENT:  GraduationCap,
   QUIZ_RESULT: ClipboardList,
+  QA_QUESTION: MessageSquare,
   QA_REPLY:    MessageSquare,
 };
 

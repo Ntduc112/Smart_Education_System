@@ -1,0 +1,2 @@
+ALTER TYPE "question_type" ADD VALUE 'DEBUGGING';
+ALTER TYPE "question_type" ADD VALUE 'CODE_OUTPUT';

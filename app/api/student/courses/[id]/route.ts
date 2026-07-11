@@ -29,7 +29,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                         lessons: {
                             orderBy: { order: "asc" },
                             include: {
-                                quiz: { select: { id: true, title: true } },
+                                quiz: {
+                                    where: { deleted_at: null },
+                                    select: { id: true, title: true },
+                                },
                             },
                         },
                     },

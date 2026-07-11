@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
         const lesson = await prisma.lesson.findFirst({
             where:   { id, chapter: { course: { instructor_id: userId } } },
-            include: { quiz: true },
+            include: { quiz: { where: { deleted_at: null } } },
         });
         if (!lesson) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });

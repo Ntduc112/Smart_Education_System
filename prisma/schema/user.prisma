@@ -19,6 +19,8 @@ model User {
     lessonProgress LessonProgress[]
     enrollments    Enrollment[]
     attempts       QuizAttempt[]
+    quizAttemptRequests QuizAttemptRequest[] @relation("QuizAttemptRequestStudent")
+    resolvedQuizAttemptRequests QuizAttemptRequest[] @relation("QuizAttemptRequestResolver")
     payments       Payment[]
     reviews        Review[]
     certificates   Certificate[]

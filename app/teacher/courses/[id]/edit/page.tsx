@@ -7,15 +7,16 @@ import { motion } from "framer-motion";
 import {
   Plus, Save,
   Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings, BookOpen, Route,
-  Loader2, CheckCircle2, AlertTriangle,
+  Loader2, CheckCircle2, AlertTriangle, Trash2,
 } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
+import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { RoadmapModal } from "./_components/RoadmapModal";
 import {
   useCourseBuilder, useUpdateCourse, useTogglePublish,
   useUpdateChapter, useUpdateLesson,
-  useUploadPdf, useUploadVideo, useUploadThumbnail, useCreateQuiz, useTranscriptStatus,
-  BuilderChapter, BuilderLesson,
+  useUploadPdf, useUploadVideo, useUploadThumbnail, useCreateQuiz, useDeleteQuiz, useTranscriptStatus,
+  BuilderChapter, BuilderLesson, BuilderQuiz,
 } from "./edit.hook";
 import { AIQuizModal } from "./_components/AIQuizModal";
 import { BulkImportModal } from "./_components/BulkImportModal";
@@ -23,6 +24,10 @@ import { ChapterTree, type Selection } from "./_components/ChapterTree";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
+import {
+  QuizPolicyFields,
+  type QuizPolicyFormValue,
+} from "@/app/teacher/courses/[id]/_components/QuizPolicyFields";
 
 // ── Palette (cozy-blue, đồng bộ teacher/home) ─────────────────────────────────
 const C = { canvas:"#EFF5FE", ink:"#181d26", inkSoft:"rgba(4,14,32,0.62)", inkFaint:"rgba(4,14,32,0.40)", border:"#DCE6F4", blue:"#1b61c9", blueDark:"#254fad", sky:"#2E8BE6", emerald:"#0E9F6E", violet:"#7C5CFC", rose:"#E5484D" };
@@ -624,6 +629,7 @@ function LessonPanel({
   const updateLesson = useUpdateLesson(courseId);
   const uploadPdf    = useUploadPdf();
   const createQuiz   = useCreateQuiz(courseId);
+  const deleteQuiz   = useDeleteQuiz(courseId);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
@@ -635,10 +641,15 @@ function LessonPanel({
     pdf_text:  lesson.pdf_text ?? "",
   });
   const [showQuizForm, setShowQuizForm]   = useState(false);
+  const [quizToDelete, setQuizToDelete]   = useState<BuilderQuiz | null>(null);
   const [showAIModal, setShowAIModal]     = useState(false);
   const [showAIWarn, setShowAIWarn]       = useState(false);
   const [quizTitle, setQuizTitle]         = useState("");
-  const [quizScore, setQuizScore]         = useState(70);
+  const [quizPolicy, setQuizPolicy]       = useState<QuizPolicyFormValue>({
+    requirePass: true,
+    passScore: 70,
+    maxAttempts: null,
+  });
   const [saveStatus, setSaveStatus]       = useState<"idle" | "success" | "error">("idle");
 
   const transcript = useTranscriptStatus(lesson.id, form.video_url || null);
@@ -714,10 +725,24 @@ function LessonPanel({
   };
 
   const handleCreateQuiz = () => {
-    createQuiz.mutate({ lesson_id: lesson.id, title: quizTitle, pass_score: quizScore });
-    setShowQuizForm(false);
-    setQuizTitle("");
-    setQuizScore(70);
+    createQuiz.mutate(
+      {
+        lesson_id: lesson.id,
+        title: quizTitle,
+        pass_score: quizPolicy.passScore,
+        require_pass: quizPolicy.requirePass,
+        max_attempts: quizPolicy.maxAttempts,
+      },
+      {
+        onSuccess: () => {
+          setShowQuizForm(false);
+          setQuizTitle("");
+          setQuizPolicy({ requirePass: true, passScore: 70, maxAttempts: null });
+          toast.success("Đã tạo bài kiểm tra");
+        },
+        onError: () => toast.error("Tạo bài kiểm tra thất bại"),
+      },
+    );
   };
 
   const hasQuiz = lesson.quiz.length > 0;
@@ -910,20 +935,31 @@ function LessonPanel({
         {hasQuiz ? (
           <div className="px-4 py-3 bg-[#F4F8FE] rounded-xl border border-[#DCE6F4]">
             {lesson.quiz.map((q) => (
-              <div key={q.id} className="flex items-center justify-between">
-                <div>
+              <div key={q.id} className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-[#181d26]">{q.title}</p>
                   <p className="text-xs text-[rgba(4,14,32,0.45)] mt-0.5">
-                    Điểm đạt: {q.pass_score}%
+                    {q.require_pass ? `Cần đạt ${q.pass_score}%` : "Chỉ cần nộp bài"}
+                    {q.max_attempts !== null ? ` · Tối đa ${q.max_attempts} lượt` : " · Không giới hạn lượt"}
                     {q.time_limit ? ` · ${q.time_limit} phút` : ""}
                   </p>
                 </div>
-                <Link
-                  href={`/teacher/courses/${courseId}/quizzes/${q.id}`}
-                  className="text-xs px-3 py-1.5 border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-white hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
-                >
-                  Chỉnh sửa
-                </Link>
+                <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
+                  <Link
+                    href={`/teacher/courses/${courseId}/quizzes/${q.id}`}
+                    className="text-xs px-3 py-1.5 border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-white hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+                  >
+                    Chỉnh sửa
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setQuizToDelete(q)}
+                    className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-50"
+                  >
+                    <Trash2 size={13} />
+                    Xóa quiz
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -935,15 +971,11 @@ function LessonPanel({
               value={quizTitle}
               onChange={(e) => setQuizTitle(e.target.value)}
             />
-            <div className="flex items-center gap-3">
-              <label className="text-xs text-[rgba(4,14,32,0.55)]">Điểm đạt (%)</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                className={`${inputCls} w-24`}
-                value={quizScore}
-                onChange={(e) => setQuizScore(parseInt(e.target.value) || 70)}
+            <div className="border-t border-[#DCE6F4] pt-4">
+              <QuizPolicyFields
+                value={quizPolicy}
+                onChange={setQuizPolicy}
+                disabled={createQuiz.isPending}
               />
             </div>
             <div className="flex gap-2">
@@ -1031,6 +1063,32 @@ function LessonPanel({
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={quizToDelete !== null}
+        title="Xóa bài kiểm tra?"
+        message={quizToDelete
+          ? `“${quizToDelete.title}” sẽ bị xóa vĩnh viễn khỏi khóa học. Các lượt làm và câu trả lời học sinh đã nộp vẫn được lưu trong hệ thống.`
+          : undefined}
+        confirmLabel="Xóa vĩnh viễn"
+        onCancel={() => {
+          if (!deleteQuiz.isPending) setQuizToDelete(null);
+        }}
+        onConfirm={() => {
+          if (!quizToDelete) return;
+          deleteQuiz.mutate(
+            { quizId: quizToDelete.id, lessonId: lesson.id },
+            {
+              onSuccess: () => {
+                setQuizToDelete(null);
+                toast.success("Đã xóa bài kiểm tra");
+              },
+              onError: () => toast.error("Xóa bài kiểm tra thất bại"),
+            },
+          );
+        }}
+        isLoading={deleteQuiz.isPending}
+      />
       </div>
     </>
   );
@@ -1176,11 +1234,27 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             </div>
             </div>
           </div>
-          <Link href={`/courses/${id}`} target="_blank"
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40"
-            style={{ border: `1px solid ${C.border}`, color: C.ink }}>
-            Xem trang khóa học
-          </Link>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {isPublished ? (
+              <Link href={`/courses/${id}`} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40"
+                style={{ border: `1px solid ${C.border}`, color: C.ink }}>
+                Xem trang công khai
+              </Link>
+            ) : (
+              <span
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-[#F7F9FC] px-4 py-2 text-sm font-medium"
+                style={{ border: `1px solid ${C.border}`, color: C.inkFaint }}
+                title="Xuất bản khóa học để mở trang công khai"
+              >
+                Chưa có trang công khai
+              </span>
+            )}
+            <Link href={`/teacher/courses/${id}/classroom`}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#1b61c9] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#254fad]">
+              Vào lớp học
+            </Link>
+          </div>
         </div>
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
+import { didAttemptPass } from "@/lib/quiz-policy";
 
 export async function GET(
   request: NextRequest,
@@ -18,11 +19,12 @@ export async function GET(
 
     // Lấy tất cả quiz của khoá học
     const quizzes = await prisma.quiz.findMany({
-      where: { lesson: { chapter: { course_id: courseId } } },
+      where: { deleted_at: null, lesson: { chapter: { course_id: courseId } } },
       select: {
         id: true,
         title: true,
         pass_score: true,
+        require_pass: true,
         lesson: { select: { title: true } },
       },
       orderBy: { lesson: { order: "asc" } },
@@ -65,7 +67,7 @@ export async function GET(
         return {
           quiz_id:   q.id,
           score:     attempt?.score ?? null,
-          is_passed: attempt?.is_passed ?? null,
+          is_passed: attempt ? didAttemptPass(q, attempt.score) : null,
         };
       });
       return { user: e.user, scores };
@@ -77,6 +79,7 @@ export async function GET(
         id:           q.id,
         title:        q.title,
         pass_score:   q.pass_score,
+        require_pass: q.require_pass,
         lesson_title: q.lesson.title,
       })),
       students,

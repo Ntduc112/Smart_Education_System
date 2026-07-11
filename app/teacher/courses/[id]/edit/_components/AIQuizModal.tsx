@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { AxiosError } from "axios";
 import { useAIGenerateQuiz, useCreateQuizWithQuestions, AIQuestion, AIQuestionCounts } from "../edit.hook";
+import {
+  QuizPolicyFields,
+  type QuizPolicyFormValue,
+} from "@/app/teacher/courses/[id]/_components/QuizPolicyFields";
+import { isExecutableQuestionType } from "@/lib/question-types";
 
 interface AIQuizModalProps {
   courseId: string;
@@ -14,12 +19,30 @@ interface AIQuizModalProps {
 
 type SourcesUsed = { content: boolean; pdf: boolean; transcript: boolean };
 
-const TYPE_LABEL = { MCQ: "Trắc nghiệm", TRUE_FALSE: "Đúng/Sai", SHORT_ANSWER: "Tự luận" } as const;
+const TYPE_LABEL = {
+  MCQ: "Trắc nghiệm",
+  TRUE_FALSE: "Đúng/Sai",
+  SHORT_ANSWER: "Tự luận",
+  CODING: "Lập trình",
+  DEBUGGING: "Sửa lỗi code",
+  CODE_OUTPUT: "Dự đoán output",
+} as const;
 const TYPE_COLOR = {
   MCQ: "bg-[#1b61c9]/8 text-[#1b61c9]",
   TRUE_FALSE: "bg-purple-50 text-purple-600",
   SHORT_ANSWER: "bg-amber-50 text-amber-600",
+  CODING: "bg-emerald-50 text-emerald-600",
+  DEBUGGING: "bg-rose-50 text-rose-600",
+  CODE_OUTPUT: "bg-cyan-50 text-cyan-700",
 } as const;
+
+const LANGUAGE_OPTIONS = [
+  { value: "python", label: "Python" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "c", label: "C" },
+  { value: "cpp", label: "C++" },
+  { value: "java", label: "Java" },
+] as const;
 
 function QuestionEditor({
   q, index, onChange, onRemove,
@@ -38,6 +61,7 @@ function QuestionEditor({
     const options = (q.options ?? []).map((o, idx) => ({ ...o, is_correct: idx === i }));
     onChange({ ...q, options });
   };
+  const isExecutable = isExecutableQuestionType(q.type);
 
   return (
     <div className="rounded-xl border border-[#e0e2e6] bg-white p-4 space-y-3">
@@ -123,6 +147,148 @@ function QuestionEditor({
         </>
       )}
 
+      {isExecutable && (
+        <div className="space-y-3 rounded-xl border border-emerald-100 bg-emerald-50/40 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-[11px] font-medium text-[rgba(4,14,32,0.55)]">Ngôn ngữ</label>
+            <select
+              value={q.language ?? "python"}
+              onChange={(e) => onChange({
+                ...q,
+                language: e.target.value as NonNullable<AIQuestion["language"]>,
+              })}
+              className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs text-[#181d26] outline-none focus:border-emerald-500"
+            >
+              {LANGUAGE_OPTIONS.map((language) => (
+                <option key={language.value} value={language.value}>{language.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <textarea
+            value={q.starter_code ?? ""}
+            onChange={(e) => onChange({ ...q, starter_code: e.target.value })}
+            rows={3}
+            placeholder={q.type === "DEBUGGING" ? "Đoạn code có lỗi để học viên sửa" : "Code khung cho học viên"}
+            className="w-full resize-y rounded-lg border border-emerald-100 bg-white px-3 py-2 font-mono text-xs text-[rgba(4,14,32,0.72)] outline-none focus:border-emerald-500"
+          />
+          <textarea
+            value={q.solution_code ?? ""}
+            onChange={(e) => onChange({ ...q, solution_code: e.target.value })}
+            rows={4}
+            placeholder={q.type === "DEBUGGING" ? "Phiên bản code đã sửa (ẩn với học viên)" : "Lời giải mẫu (ẩn với học viên)"}
+            className="w-full resize-y rounded-lg border border-emerald-100 bg-white px-3 py-2 font-mono text-xs text-[rgba(4,14,32,0.72)] outline-none focus:border-emerald-500"
+          />
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-semibold text-[rgba(4,14,32,0.58)]">Test cases</p>
+              <button
+                type="button"
+                onClick={() => onChange({
+                  ...q,
+                  testCases: [...(q.testCases ?? []), { input: "", expected: "", is_hidden: false }],
+                })}
+                className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800"
+              >
+                + Thêm test case
+              </button>
+            </div>
+            {(q.testCases ?? []).map((testCase, testCaseIndex) => (
+              <div key={testCaseIndex} className="rounded-lg border border-emerald-100 bg-white p-2.5">
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <textarea
+                    value={testCase.input}
+                    onChange={(e) => onChange({
+                      ...q,
+                      testCases: q.testCases?.map((item, index) =>
+                        index === testCaseIndex ? { ...item, input: e.target.value } : item,
+                      ),
+                    })}
+                    placeholder="Input (stdin)"
+                    rows={2}
+                    className="min-w-0 resize-y rounded-md border border-[#e7ece8] px-2 py-1.5 font-mono text-[11px] outline-none focus:border-emerald-500"
+                  />
+                  <textarea
+                    value={testCase.expected}
+                    onChange={(e) => onChange({
+                      ...q,
+                      testCases: q.testCases?.map((item, index) =>
+                        index === testCaseIndex ? { ...item, expected: e.target.value } : item,
+                      ),
+                    })}
+                    placeholder="Expected output"
+                    rows={2}
+                    className="min-w-0 resize-y rounded-md border border-[#e7ece8] px-2 py-1.5 font-mono text-[11px] outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-1.5 text-[10px] text-[rgba(4,14,32,0.5)]">
+                    <input
+                      type="checkbox"
+                      checked={testCase.is_hidden}
+                      onChange={(e) => onChange({
+                        ...q,
+                        testCases: q.testCases?.map((item, index) =>
+                          index === testCaseIndex ? { ...item, is_hidden: e.target.checked } : item,
+                        ),
+                      })}
+                    />
+                    Test ẩn với học viên
+                  </label>
+                  {(q.testCases?.length ?? 0) > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => onChange({
+                        ...q,
+                        testCases: q.testCases?.filter((_, index) => index !== testCaseIndex),
+                      })}
+                      className="text-[10px] font-medium text-red-500 hover:text-red-600"
+                    >
+                      Xóa test
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {q.type === "CODE_OUTPUT" && (
+        <div className="space-y-3 rounded-xl border border-cyan-100 bg-cyan-50/40 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-[11px] font-medium text-[rgba(4,14,32,0.55)]">Ngôn ngữ</label>
+            <select
+              value={q.language ?? "python"}
+              onChange={(e) => onChange({
+                ...q,
+                language: e.target.value as NonNullable<AIQuestion["language"]>,
+              })}
+              className="rounded-lg border border-cyan-200 bg-white px-2.5 py-1.5 text-xs text-[#181d26] outline-none focus:border-cyan-500"
+            >
+              {LANGUAGE_OPTIONS.map((language) => (
+                <option key={language.value} value={language.value}>{language.label}</option>
+              ))}
+            </select>
+          </div>
+          <textarea
+            value={q.starter_code ?? ""}
+            onChange={(e) => onChange({ ...q, starter_code: e.target.value })}
+            rows={6}
+            placeholder="Đoạn code học sinh cần đọc"
+            className="w-full resize-y rounded-lg border border-cyan-100 bg-white px-3 py-2 font-mono text-xs text-[rgba(4,14,32,0.72)] outline-none focus:border-cyan-500"
+          />
+          <textarea
+            value={q.sample_answer ?? ""}
+            onChange={(e) => onChange({ ...q, sample_answer: e.target.value })}
+            rows={3}
+            placeholder="Output chính xác (có thể nhiều dòng)"
+            className="w-full resize-y rounded-lg border border-cyan-100 bg-white px-3 py-2 font-mono text-xs text-[rgba(4,14,32,0.72)] outline-none focus:border-cyan-500"
+          />
+        </div>
+      )}
+
       {q.source_excerpt && (
         <p className="text-[11px] text-[rgba(4,14,32,0.5)] bg-[#f8fafc] border-l-2 border-[#1b61c9]/30 rounded-r px-3 py-1.5 leading-snug">
           <span className="font-semibold text-[rgba(4,14,32,0.4)]">Trích từ bài: </span>{q.source_excerpt}
@@ -173,10 +339,22 @@ export function AIQuizModal({
   courseId, lessonId, lessonTitle, onClose, onSuccess,
 }: AIQuizModalProps) {
   const [step, setStep] = useState<"config" | "preview">("config");
-  const [counts, setCounts] = useState<AIQuestionCounts>({ mcq: 3, trueFalse: 1, shortAnswer: 1 });
+  const [counts, setCounts] = useState<AIQuestionCounts>({
+    mcq: 3,
+    trueFalse: 1,
+    shortAnswer: 1,
+    coding: 0,
+    debugging: 0,
+    codeOutput: 0,
+  });
+  const [customPrompt, setCustomPrompt] = useState("");
   const [aiGrading, setAiGrading] = useState(true);
   const [quizTitle, setQuizTitle] = useState(`Kiểm tra: ${lessonTitle}`);
-  const [passScore, setPassScore] = useState(70);
+  const [quizPolicy, setQuizPolicy] = useState<QuizPolicyFormValue>({
+    requirePass: true,
+    passScore: 70,
+    maxAttempts: null,
+  });
   const [questions, setQuestions] = useState<AIQuestion[]>([]);
   const [sourcesUsed, setSourcesUsed] = useState<SourcesUsed | null>(null);
 
@@ -186,11 +364,17 @@ export function AIQuizModal({
   const noContent =
     (generate.error as AxiosError<{ error?: string }>)?.response?.data?.error === "no_content";
 
-  const totalCount = counts.mcq + counts.trueFalse + counts.shortAnswer;
+  const totalCount = counts.mcq + counts.trueFalse + counts.shortAnswer + counts.coding + counts.debugging + counts.codeOutput;
+  const hasInvalidCodeQuestion = questions.some((question) =>
+    (isExecutableQuestionType(question.type) &&
+      (!question.language || !question.testCases?.some((testCase) => testCase.expected.trim()))) ||
+    (question.type === "CODE_OUTPUT" &&
+      (!question.language || !question.starter_code?.trim() || !question.sample_answer?.trim())),
+  );
 
   const handleGenerate = () => {
     generate.mutate(
-      { lessonId, counts },
+      { lessonId, counts, customPrompt },
       {
         onSuccess: (res) => {
           // Gắn lựa chọn cách chấm vào từng câu tự luận; sang preview vẫn đổi được từng câu.
@@ -207,7 +391,14 @@ export function AIQuizModal({
   const handleSave = () => {
     if (questions.length === 0) return;
     createWithQuestions.mutate(
-      { lessonId, title: quizTitle, passScore, questions },
+      {
+        lessonId,
+        title: quizTitle,
+        passScore: quizPolicy.passScore,
+        requirePass: quizPolicy.requirePass,
+        maxAttempts: quizPolicy.maxAttempts,
+        questions,
+      },
       { onSuccess: () => { onSuccess(); onClose(); } }
     );
   };
@@ -258,7 +449,34 @@ export function AIQuizModal({
                   <CountField label="Trắc nghiệm" value={counts.mcq} onChange={(v) => setCounts((c) => ({ ...c, mcq: v }))} />
                   <CountField label="Đúng / Sai" value={counts.trueFalse} onChange={(v) => setCounts((c) => ({ ...c, trueFalse: v }))} />
                   <CountField label="Tự luận" value={counts.shortAnswer} onChange={(v) => setCounts((c) => ({ ...c, shortAnswer: v }))} />
+                  <CountField label="Lập trình" value={counts.coding} onChange={(v) => setCounts((c) => ({ ...c, coding: v }))} />
+                  <CountField label="Sửa lỗi code" value={counts.debugging} onChange={(v) => setCounts((c) => ({ ...c, debugging: v }))} />
+                  <CountField label="Dự đoán output" value={counts.codeOutput} onChange={(v) => setCounts((c) => ({ ...c, codeOutput: v }))} />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="ai-quiz-custom-prompt"
+                    className="block text-xs font-semibold uppercase tracking-wider text-[rgba(4,14,32,0.55)]"
+                  >
+                    Yêu cầu thêm <span className="font-normal normal-case tracking-normal text-[rgba(4,14,32,0.38)]">(không bắt buộc)</span>
+                  </label>
+                  <span className="text-[10px] tabular-nums text-[rgba(4,14,32,0.38)]">{customPrompt.length}/2000</span>
+                </div>
+                <textarea
+                  id="ai-quiz-custom-prompt"
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  maxLength={2000}
+                  rows={4}
+                  placeholder="Ví dụ: Thêm nhiều bài tập tính toán; câu tự luận tập trung vào mảng A, B, C; câu lập trình dùng Python và có test case biên."
+                  className="w-full resize-y rounded-xl border border-[#e0e2e6] px-3 py-2.5 text-sm leading-relaxed text-[#181d26] outline-none transition-all placeholder:text-[rgba(4,14,32,0.32)] focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10"
+                />
+                <p className="text-[11px] leading-relaxed text-[rgba(4,14,32,0.42)]">
+                  Mô tả trọng tâm, độ khó, dạng tính toán, ngôn ngữ lập trình hoặc ví dụ mong muốn. AI vẫn chỉ dùng kiến thức trong bài học.
+                </p>
               </div>
 
               {counts.shortAnswer > 0 && (
@@ -280,9 +498,8 @@ export function AIQuizModal({
                 </button>
               )}
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-[rgba(4,14,32,0.55)] uppercase tracking-wider">Điểm đạt (%)</label>
-                <input type="number" min={0} max={100} value={passScore} onChange={(e) => setPassScore(Number(e.target.value))} className="w-full px-3 py-2 text-sm border border-[#e0e2e6] rounded-xl outline-none focus:border-[#1b61c9] transition-all text-[#181d26]" />
+              <div className="border-t border-[#f0f2f5] pt-4">
+                <QuizPolicyFields value={quizPolicy} onChange={setQuizPolicy} />
               </div>
 
               <p className="text-xs text-[rgba(4,14,32,0.45)] bg-[#f8fafc] border border-[#f0f2f5] rounded-xl px-4 py-2.5 leading-relaxed">
@@ -334,6 +551,12 @@ export function AIQuizModal({
                 <p className="text-sm text-[rgba(4,14,32,0.45)] text-center py-4">Đã xóa hết câu hỏi. Vui lòng tạo lại.</p>
               )}
 
+              {hasInvalidCodeQuestion && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
+                  Câu chạy code cần ngôn ngữ và test case; câu dự đoán output cần đoạn code và output đáp án.
+                </p>
+              )}
+
               {createWithQuestions.isError && (
                 <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">Không thể lưu quiz. Vui lòng thử lại.</p>
               )}
@@ -363,7 +586,7 @@ export function AIQuizModal({
               )}
             </button>
           ) : (
-            <button onClick={handleSave} disabled={questions.length === 0 || createWithQuestions.isPending} className="flex-1 py-2.5 rounded-xl bg-[#1b61c9] text-white text-sm font-medium hover:bg-[#254fad] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button onClick={handleSave} disabled={questions.length === 0 || hasInvalidCodeQuestion || createWithQuestions.isPending} className="flex-1 py-2.5 rounded-xl bg-[#1b61c9] text-white text-sm font-medium hover:bg-[#254fad] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {createWithQuestions.isPending ? (
                 <>
                   <svg className="animate-spin" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

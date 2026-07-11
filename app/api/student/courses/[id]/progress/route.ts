@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
+import { getQuizAttemptState } from "@/lib/quiz-policy";
 
 export async function GET(
     request: NextRequest,
@@ -47,23 +48,29 @@ export async function GET(
 
         // Trạng thái "thỏa" của từng quiz để gate bài kế tiếp (xem quy tắc gate)
         const quizzes = await prisma.quiz.findMany({
-            where:  { lesson: { chapter: { course_id: id } } },
+            where:  { deleted_at: null, lesson: { chapter: { course_id: id } } },
             select: {
                 id:           true,
+                pass_score:   true,
                 max_attempts: true,
                 require_pass: true,
-                attempts:     { where: { user_id: userId }, select: { is_passed: true } },
+                attempts:     {
+                    where: { user_id: userId },
+                    select: { score: true, is_passed: true },
+                },
+                attemptRequests: {
+                    where: { user_id: userId, status: "APPROVED" },
+                    select: { id: true },
+                },
             },
         });
         const quizStates = quizzes.map((q) => {
-            const used      = q.attempts.length;
-            const hasPassed = q.attempts.some((a) => a.is_passed === true);
-            const satisfied =
-                used === 0                                       ? false
-              : q.max_attempts != null && used >= q.max_attempts ? true   // hết lượt thì cho qua
-              : !q.require_pass                                  ? true   // chỉ cần nộp
-              :                                                    hasPassed;
-            return { quiz_id: q.id, satisfied };
+            const state = getQuizAttemptState(q, q.attempts, q.attemptRequests.length);
+            return {
+                quiz_id: q.id,
+                satisfied: state.satisfied,
+                exhausted: state.exhausted,
+            };
         });
 
         return NextResponse.json({

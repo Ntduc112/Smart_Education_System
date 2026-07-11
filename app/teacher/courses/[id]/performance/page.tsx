@@ -37,6 +37,7 @@ interface QuizMeta {
   id: string;
   title: string;
   pass_score: number;
+  require_pass: boolean;
   lesson_title: string;
 }
 
@@ -256,7 +257,7 @@ export default function PerformancePage({ params }: { params: Promise<{ id: stri
                       >
                         <p className="text-xs font-semibold line-clamp-1 px-1" style={{ color: C.ink }}>{q.title}</p>
                         <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-medium" style={{ background: "#EAF1FC", color: C.blue }}>
-                          Qua: {q.pass_score}%
+                          {q.require_pass ? `Qua: ${q.pass_score}%` : "Chỉ cần nộp"}
                         </span>
                       </th>
                     ))}

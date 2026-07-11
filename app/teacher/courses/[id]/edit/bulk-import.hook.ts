@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/axios";
 import axios from "axios";
+import { MAX_QUIZ_ATTEMPTS } from "@/lib/quiz-policy";
 
 // ── Folder parsing ───────────────────────────────────────────────────────────
 //
@@ -30,9 +31,11 @@ export interface ParsedQuestion {
 }
 
 export interface ParsedQuiz {
-  title:      string;
-  pass_score: number;
-  questions:  ParsedQuestion[];
+  title:        string;
+  pass_score:   number;
+  require_pass: boolean;
+  max_attempts: number | null;
+  questions:    ParsedQuestion[];
 }
 
 export interface ParsedLesson {
@@ -84,6 +87,17 @@ function validateQuiz(text: string, lessonTitle: string): { quiz?: ParsedQuiz; e
   if (!Array.isArray(rawQuestions) || rawQuestions.length === 0) {
     return { error: "quiz.json thiếu mảng \"questions\"" };
   }
+  const rawMaxAttempts = obj.max_attempts;
+  if (
+    rawMaxAttempts !== undefined &&
+    rawMaxAttempts !== null &&
+    (typeof rawMaxAttempts !== "number" ||
+      !Number.isInteger(rawMaxAttempts) ||
+      rawMaxAttempts < 1 ||
+      rawMaxAttempts > MAX_QUIZ_ATTEMPTS)
+  ) {
+    return { error: `\"max_attempts\" phải từ 1 đến ${MAX_QUIZ_ATTEMPTS}, hoặc null` };
+  }
 
   const questions: ParsedQuestion[] = [];
   for (let i = 0; i < rawQuestions.length; i++) {
@@ -126,6 +140,8 @@ function validateQuiz(text: string, lessonTitle: string): { quiz?: ParsedQuiz; e
     quiz: {
       title:      typeof obj.title === "string" && obj.title.trim() ? obj.title.trim() : `Kiểm tra: ${lessonTitle}`,
       pass_score: typeof obj.pass_score === "number" ? obj.pass_score : 70,
+      require_pass: typeof obj.require_pass === "boolean" ? obj.require_pass : true,
+      max_attempts: rawMaxAttempts === null || rawMaxAttempts === undefined ? null : Number(rawMaxAttempts),
       questions,
     },
   };
@@ -236,6 +252,8 @@ async function extractQuizFromPdf(file: File, lessonTitle: string): Promise<Pars
   return {
     title:      `Kiểm tra: ${lessonTitle}`,
     pass_score: 70,
+    require_pass: true,
+    max_attempts: null,
     questions:  questions.map((q) => ({
       ...q,
       points: q.points || (q.type === "SHORT_ANSWER" ? 2 : 1),
@@ -248,6 +266,8 @@ async function createQuiz(lessonId: string, quiz: ParsedQuiz): Promise<void> {
     lesson_id:  lessonId,
     title:      quiz.title,
     pass_score: quiz.pass_score,
+    require_pass: quiz.require_pass,
+    max_attempts: quiz.max_attempts,
   });
   const quizId = data.quiz.id;
   for (let i = 0; i < quiz.questions.length; i++) {

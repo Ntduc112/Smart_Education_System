@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         question: {
           type: { in: ["MCQ", "TRUE_FALSE"] },
           ...(masteredIds.length ? { id: { notIn: masteredIds } } : {}),
+          quiz: { deleted_at: null },
         },
       },
       select: {

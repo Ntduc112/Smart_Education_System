@@ -1,3 +1,22 @@
+# Learnust
+
+## Code execution (OneCompiler)
+
+Coding questions are executed from server-side Route Handlers through the
+[OneCompiler Code Execution API](https://next.onecompiler.com/apis/code-execution).
+Configure these variables locally and in Vercel; never expose the API key with
+a `NEXT_PUBLIC_` prefix.
+
+```env
+ONECOMPILER_API_KEY=your_api_key
+# Optional override; this is the default value:
+ONECOMPILER_API_URL=https://api.onecompiler.com/v1/run
+```
+
+Supported coding-question languages are Python, JavaScript/Node.js, C, C++,
+and Java. Test cases are sent as a batch so one coding question uses a single
+provider request when it is graded.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

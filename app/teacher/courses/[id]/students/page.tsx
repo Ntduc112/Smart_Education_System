@@ -9,9 +9,16 @@ import { MainNavbar } from "@/app/_components/MainNavbar";
 import {
   ChevronDown, ChevronRight, ChevronLeft,
   Users, BookOpen, ClipboardList, CheckCircle2, XCircle, Clock, Lock,
-  Trophy, BarChart3, X,
+  Trophy, BarChart3, X, RotateCcw,
 } from "lucide-react";
-import { useStudentsProgress, StudentProgress, QuizResult, LessonDetail } from "./students.hook";
+import {
+  useApproveQuizAttemptRequest,
+  useStudentsProgress,
+  StudentProgress,
+  QuizResult,
+  LessonDetail,
+} from "./students.hook";
+import { toast } from "sonner";
 
 // ── Palette (đồng bộ teacher/home) ─────────────────────────────────────────────
 const C = { canvas:"#EFF5FE", ink:"#181d26", inkSoft:"rgba(4,14,32,0.62)", inkFaint:"rgba(4,14,32,0.40)", border:"#DCE6F4", blue:"#1b61c9", blueDark:"#254fad", sky:"#2E8BE6", emerald:"#0E9F6E", violet:"#7C5CFC", rose:"#E5484D" };
@@ -113,7 +120,15 @@ function LessonDetailRow({ lesson }: { lesson: LessonDetail }) {
 
 // ── Quiz detail row (inside expanded student) ─────────────────────────────────
 
-function QuizRow({ q }: { q: QuizResult }) {
+function QuizRow({
+  q,
+  onApprove,
+  isApproving,
+}: {
+  q: QuizResult;
+  onApprove: (requestId: string) => void;
+  isApproving: boolean;
+}) {
   const noAttempt = q.attempts === 0;
 
   return (
@@ -132,12 +147,21 @@ function QuizRow({ q }: { q: QuizResult }) {
       {/* Quiz name + lesson */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-[#181d26] truncate">{q.quiz_title}</p>
-        <p className="text-xs text-[rgba(4,14,32,0.4)] truncate">{q.lesson_title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-xs text-[rgba(4,14,32,0.4)] truncate">{q.lesson_title}</p>
+          {q.pending_request ? (
+            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+              Đang xin thêm lượt
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {/* Attempts */}
       <span className="text-xs text-[rgba(4,14,32,0.45)] w-20 text-center shrink-0">
-        {noAttempt ? "—" : `${q.attempts} lần thi`}
+        {q.effective_max_attempts === null
+          ? noAttempt ? "—" : `${q.attempts} lần thi`
+          : `${q.attempts}/${q.effective_max_attempts} lượt`}
       </span>
 
       {/* Điểm cao nhất */}
@@ -162,14 +186,40 @@ function QuizRow({ q }: { q: QuizResult }) {
 
       {/* Điểm qua bài */}
       <div className="w-24 text-right shrink-0">
-        <span className="text-sm font-semibold text-[rgba(4,14,32,0.55)]">{q.pass_score}</span>
-        <span className="text-xs text-[rgba(4,14,32,0.4)]">/100</span>
+        {q.require_pass ? (
+          <>
+            <span className="text-sm font-semibold text-[rgba(4,14,32,0.55)]">{q.pass_score}</span>
+            <span className="text-xs text-[rgba(4,14,32,0.4)]">/100</span>
+          </>
+        ) : (
+          <span className="text-xs font-medium text-[rgba(4,14,32,0.45)]">Chỉ cần nộp</span>
+        )}
       </div>
 
       {/* Last attempt */}
       <span className="text-xs text-[rgba(4,14,32,0.4)] w-28 text-right shrink-0">
         {q.last_attempt ? timeAgo(q.last_attempt) : "—"}
       </span>
+
+      <div className="w-32 text-right shrink-0">
+        {q.pending_request ? (
+          <button
+            type="button"
+            onClick={() => onApprove(q.pending_request!.id)}
+            disabled={isApproving}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#1b61c9] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#254fad] disabled:opacity-60"
+          >
+            <RotateCcw size={12} />
+            {isApproving ? "Đang mở..." : "Mở thêm 1 lượt"}
+          </button>
+        ) : q.extra_attempts > 0 ? (
+          <span className="text-xs font-semibold text-emerald-600">+{q.extra_attempts} lượt đã cấp</span>
+        ) : q.exhausted ? (
+          <span className="text-xs font-medium text-red-500">Đã hết lượt</span>
+        ) : (
+          <span className="text-xs text-[rgba(4,14,32,0.35)]">—</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -180,12 +230,18 @@ function StudentRow({
   student,
   expanded,
   onToggle,
+  onApprove,
+  approvingRequestId,
 }: {
   student:  StudentProgress;
   expanded: boolean;
   onToggle: () => void;
+  onApprove: (requestId: string) => void;
+  approvingRequestId?: string;
 }) {
-  const [tab, setTab] = useState<"lessons" | "quizzes">("lessons");
+  const [tab, setTab] = useState<"lessons" | "quizzes">(() =>
+    student.quizzes.some((quiz) => quiz.pending_request) ? "quizzes" : "lessons",
+  );
 
   return (
     <>
@@ -327,8 +383,16 @@ function StudentRow({
                         <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-24 text-right">Điểm cao nhất</p>
                         <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-24 text-right">Điểm qua bài</p>
                         <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-28 text-right">Lần thi cuối</p>
+                        <p className="text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider w-32 text-right">Yêu cầu</p>
                       </div>
-                      {student.quizzes.map((q) => <QuizRow key={q.quiz_id} q={q} />)}
+                      {student.quizzes.map((q) => (
+                        <QuizRow
+                          key={q.quiz_id}
+                          q={q}
+                          onApprove={onApprove}
+                          isApproving={approvingRequestId === q.pending_request?.id}
+                        />
+                      ))}
                     </>
                   )}
                 </>
@@ -458,6 +522,7 @@ function Skeleton() {
 export default function StudentsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data, isLoading } = useStudentsProgress(id);
+  const approveAttempt = useApproveQuizAttemptRequest(id);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showStuck, setShowStuck] = useState(false);
   const pathname = usePathname();
@@ -491,6 +556,23 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
         )
       : 0;
   const completedCount = students.filter((u) => u.completion_pct >= 100).length;
+  const pendingRequestCount = students.reduce(
+    (count, student) => count + student.quizzes.filter((quiz) => quiz.pending_request).length,
+    0,
+  );
+
+  const handleApprove = (requestId: string) => {
+    const owner = students.find((student) =>
+      student.quizzes.some((quiz) => quiz.pending_request?.id === requestId),
+    );
+    if (owner) {
+      setExpanded((previous) => new Set(previous).add(owner.user.id));
+    }
+    approveAttempt.mutate(requestId, {
+      onSuccess: () => toast.success("Đã mở thêm 1 lượt và gửi thông báo cho học viên"),
+      onError: () => toast.error("Không thể mở thêm lượt. Yêu cầu có thể đã được xử lý."),
+    });
+  };
 
   // Điểm dừng = bài XA NHẤT học viên đã chạm tới (theo thứ tự khóa học).
   // Bỏ qua học viên chưa hoàn thành nhưng đã bắt đầu = đang học dở; đếm riêng nhóm chưa bắt đầu.
@@ -593,6 +675,15 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
       )}
 
       {/* Student table */}
+      {pendingRequestCount > 0 ? (
+        <div className="flex items-center justify-between gap-4 border-l-2 border-amber-500 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="font-medium">
+            {pendingRequestCount} yêu cầu mở thêm lượt đang chờ xử lý
+          </span>
+          <span className="text-xs text-amber-700">Các học viên liên quan đã được mở sẵn bên dưới.</span>
+        </div>
+      ) : null}
+
       <div
         className="bg-white rounded-3xl overflow-hidden"
         style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}
@@ -621,8 +712,10 @@ export default function StudentsPage({ params }: { params: Promise<{ id: string 
                   <StudentRow
                     key={s.user.id}
                     student={s}
-                    expanded={expanded.has(s.user.id)}
+                    expanded={expanded.has(s.user.id) || s.quizzes.some((quiz) => quiz.pending_request)}
                     onToggle={() => toggle(s.user.id)}
+                    onApprove={handleApprove}
+                    approvingRequestId={approveAttempt.variables}
                   />
                 ))}
               </tbody>

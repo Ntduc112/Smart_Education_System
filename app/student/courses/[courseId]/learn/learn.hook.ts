@@ -54,6 +54,7 @@ export interface CourseDetail {
 export interface QuizState {
   quiz_id: string;
   satisfied: boolean;
+  exhausted: boolean;
 }
 
 export interface CourseProgress {
@@ -67,13 +68,20 @@ export interface CourseProgress {
 
 // ── Quiz detail types ──────────────────────────────────────────────────────
 
-export type QuestionType = "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
+export type QuestionType = "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER" | "CODING" | "DEBUGGING" | "CODE_OUTPUT";
 
 export interface QuizOption {
   id: string;
   content: string;
   order: number;
   is_correct?: boolean;
+}
+
+export interface QuizTestCase {
+  id: string;
+  input: string;
+  expected: string;
+  order: number;
 }
 
 export interface QuizQuestion {
@@ -83,6 +91,10 @@ export interface QuizQuestion {
   points: number;
   order: number;
   options: QuizOption[];
+  // Code-question fields
+  language?: string | null;
+  starter_code?: string | null;
+  testCases?: QuizTestCase[];
 }
 
 export interface QuizDetail {
@@ -101,6 +113,8 @@ export interface AttemptAnswer {
   answer: string;
   is_correct: boolean | null;
   points_earned: number | null;
+  code_output?: string | null;
+  ai_feedback?: string | null;
 }
 
 export interface QuizAttempt {
@@ -109,6 +123,36 @@ export interface QuizAttempt {
   is_passed: boolean | null;
   submitted_at: string;
   answers: AttemptAnswer[];
+}
+
+export interface QuizAttemptState {
+  used: number;
+  maxAllowed: number | null;
+  extraAttempts: number;
+  remaining: number | null;
+  exhausted: boolean;
+  canAttempt: boolean;
+  hasPassed: boolean;
+  satisfied: boolean;
+  bestScore: number | null;
+}
+
+export interface QuizAttemptRequest {
+  id: string;
+  status: "PENDING";
+  requested_at: string;
+}
+
+export interface QuizAttemptsResult {
+  attempts: QuizAttempt[];
+  attemptState: QuizAttemptState;
+  attemptRequest: QuizAttemptRequest | null;
+}
+
+export interface SubmitQuizAttemptResult {
+  attempt: QuizAttempt;
+  attemptState: QuizAttemptState;
+  attemptRequest: null;
 }
 
 // ── Hooks ──────────────────────────────────────────────────────────────────
@@ -159,11 +203,11 @@ export function useQuizDetail(quizId: string | null) {
 }
 
 export function useQuizAttempts(quizId: string | null) {
-  return useQuery<QuizAttempt[]>({
+  return useQuery<QuizAttemptsResult>({
     queryKey: ["quiz-attempts", quizId],
     queryFn: async () => {
       const res = await api.get(`/student/quizzes/${quizId}/attempts`);
-      return res.data.attempts;
+      return res.data as QuizAttemptsResult;
     },
     enabled: !!quizId,
   });
@@ -172,12 +216,34 @@ export function useQuizAttempts(quizId: string | null) {
 export function useSubmitQuizAttempt(quizId: string, courseId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (answers: { question_id: string; answer: string }[]) =>
-      api.post(`/student/quizzes/${quizId}/attempts`, { answers }),
-    onSuccess: () => {
+    mutationFn: async (answers: { question_id: string; answer: string }[]) =>
+      (await api.post<SubmitQuizAttemptResult>(`/student/quizzes/${quizId}/attempts`, { answers })).data,
+    onSuccess: (result) => {
+      qc.setQueryData<QuizAttemptsResult>(["quiz-attempts", quizId], (old) => ({
+        attempts: [result.attempt, ...(old?.attempts ?? [])],
+        attemptState: result.attemptState,
+        attemptRequest: null,
+      }));
       qc.invalidateQueries({ queryKey: ["quiz-attempts", quizId] });
+      qc.invalidateQueries({ queryKey: ["quiz-detail", quizId] });
       // Cập nhật trạng thái gate (quiz_states) cho điều hướng bài học
       qc.invalidateQueries({ queryKey: ["course-progress", courseId] });
+    },
+  });
+}
+
+export function useRequestExtraQuizAttempt(quizId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      (await api.post<{ attemptRequest: QuizAttemptRequest }>(
+        `/student/quizzes/${quizId}/attempt-request`,
+      )).data.attemptRequest,
+    onSuccess: (attemptRequest) => {
+      queryClient.setQueryData<QuizAttemptsResult>(["quiz-attempts", quizId], (old) =>
+        old ? { ...old, attemptRequest } : old,
+      );
+      queryClient.invalidateQueries({ queryKey: ["quiz-attempts", quizId] });
     },
   });
 }

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { MAX_QUIZ_ATTEMPTS } from "@/lib/quiz-policy";
 
 const UpdateQuizSchema = z.object({
     title:        z.string().min(1).optional(),
-    pass_score:   z.number().int().min(0).max(100).optional(),
+    pass_score:   z.number().int().min(1).max(100).optional(),
     require_pass: z.boolean().optional(),
-    max_attempts: z.number().int().positive().nullable().optional(),
+    max_attempts: z.number().int().min(1).max(MAX_QUIZ_ATTEMPTS).nullable().optional(),
     time_limit:   z.number().int().min(1).nullable().optional(),
 });
 
@@ -14,9 +15,10 @@ async function verifyOwnership(quizId: string, userId: string) {
     return prisma.quiz.findFirst({
         where: {
             id:     quizId,
+            deleted_at: null,
             lesson: { chapter: { course: { instructor_id: userId } } },
         },
-        include: { questions: { include: { options: true }, orderBy: { order: "asc" } } },
+        include: { questions: { include: { options: true, testCases: { orderBy: { order: "asc" } } }, orderBy: { order: "asc" } } },
     });
 }
 
@@ -89,8 +91,11 @@ export async function DELETE(
             return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
         }
 
-        await prisma.quiz.delete({ where: { id } });
-        return NextResponse.json({ message: "Quiz deleted" }, { status: 200 });
+        await prisma.quiz.update({
+            where: { id },
+            data: { deleted_at: new Date() },
+        });
+        return NextResponse.json({ message: "Quiz deleted; student attempts preserved" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting quiz:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
