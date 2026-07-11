@@ -1,12 +1,12 @@
 "use client";
 
 import { use, useState } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Plus, ChevronLeft, CheckCircle2, Pencil, X, Check, GripVertical } from "lucide-react";
+import { Trash2, Plus, CheckCircle2, Pencil, X, Check, GripVertical } from "lucide-react";
 import api from "@/lib/axios";
 import { MainNavbar } from "@/app/_components/MainNavbar";
+import { BackButton } from "@/app/student/_components/BackButton";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
 } from "@dnd-kit/core";
@@ -16,13 +16,19 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/app/_components/ConfirmModal";
+import {
+  QuizPolicyFields,
+  type QuizPolicyFormValue,
+} from "@/app/teacher/courses/[id]/_components/QuizPolicyFields";
+import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type QuestionType = "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER";
+type QuestionType = "MCQ" | "TRUE_FALSE" | "SHORT_ANSWER" | "CODING" | "DEBUGGING" | "CODE_OUTPUT";
 
 interface Option   { id: string; content: string; is_correct: boolean; order: number }
-interface Question { id: string; content: string; type: QuestionType; points: number; order: number; sample_answer?: string | null; ai_graded?: boolean; options: Option[] }
+interface TestCase { id: string; input: string; expected: string; is_hidden: boolean; order: number }
+interface Question { id: string; content: string; type: QuestionType; points: number; order: number; sample_answer?: string | null; ai_graded?: boolean; language?: string | null; starter_code?: string | null; solution_code?: string | null; options: Option[]; testCases?: TestCase[] }
 interface Quiz     { id: string; title: string; pass_score: number; require_pass: boolean; max_attempts?: number | null; time_limit?: number | null; questions: Question[] }
 
 // ── Palette (đồng bộ teacher/home) ────────────────────────────────────────────
@@ -65,7 +71,18 @@ const TYPE_META: Record<QuestionType, { label: string; pill: string }> = {
   MCQ:          { label: "Trắc nghiệm", pill: "bg-[#EAF1FC] text-[#1b61c9]" },
   TRUE_FALSE:   { label: "Đúng/Sai",    pill: "bg-amber-50 text-amber-600" },
   SHORT_ANSWER: { label: "Tự luận",     pill: "bg-[rgba(124,92,252,0.12)] text-[#7C5CFC]" },
+  CODING:       { label: "Lập trình",   pill: "bg-emerald-50 text-emerald-600" },
+  DEBUGGING:    { label: "Sửa lỗi code", pill: "bg-rose-50 text-rose-600" },
+  CODE_OUTPUT:  { label: "Dự đoán output", pill: "bg-cyan-50 text-cyan-700" },
 };
+
+const LANG_OPTIONS = [
+  { value: "python",     label: "Python" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "c",          label: "C" },
+  { value: "cpp",        label: "C++" },
+  { value: "java",       label: "Java" },
+];
 
 // ── Hooks ────────────────────────────────────────────────────────────────────
 
@@ -102,6 +119,8 @@ function useAddQuestion(quizId: string) {
       content: string; type: QuestionType;
       points: number; order: number; sample_answer?: string; ai_graded?: boolean;
       options?: { content: string; is_correct: boolean; order: number }[];
+      language?: string; starter_code?: string; solution_code?: string;
+      testCases?: { input: string; expected: string; is_hidden: boolean; order: number }[];
     }) => api.post(`/teacher/quizzes/${quizId}/questions`, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["teacher", "quiz", quizId] }),
   });
@@ -113,6 +132,8 @@ function useUpdateQuestion(quizId: string) {
     mutationFn: async ({ id, ...data }: {
       id: string; content?: string; points?: number; sample_answer?: string | null; ai_graded?: boolean;
       options?: { content: string; is_correct: boolean; order: number }[];
+      language?: string; starter_code?: string | null; solution_code?: string | null;
+      testCases?: { input: string; expected: string; is_hidden: boolean; order: number }[];
     }) => (await api.put<{ question: Question }>(`/teacher/questions/${id}`, data)).data.question,
     onSuccess: (updated) =>
       qc.setQueryData<Quiz>(["teacher", "quiz", quizId], (old) =>
@@ -177,9 +198,27 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
     { content: "", is_correct: false },
     { content: "", is_correct: false },
   ]);
+  // CODING state
+  const [language, setLanguage] = useState("python");
+  const [starterCode, setStarterCode] = useState("");
+  const [solutionCode, setSolutionCode] = useState("");
+  const [testCases, setTestCases] = useState([{ input: "", expected: "", is_hidden: false }]);
+  const isExecutable = isExecutableQuestionType(type);
+  const isCodeBased = isCodeBasedQuestionType(type);
 
   const handleSubmit = () => {
     if (!content.trim()) return;
+    const validTestCases = testCases
+      .filter((testCase) => testCase.expected.trim())
+      .map((testCase, index) => ({ ...testCase, order: index }));
+    if (isExecutable && validTestCases.length === 0) {
+      toast.error("Câu hỏi chạy code cần ít nhất một test case có output mong đợi");
+      return;
+    }
+    if (type === "CODE_OUTPUT" && (!starterCode.trim() || !sampleAnswer.trim())) {
+      toast.error("Câu dự đoán output cần đoạn code và output đáp án");
+      return;
+    }
     let options: { content: string; is_correct: boolean; order: number }[] | undefined;
     if (type === "MCQ") {
       options = mcqOptions.map((o, i) => ({ ...o, order: i + 1 }));
@@ -195,15 +234,26 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
         sample_answer: sampleAnswer || undefined,
         ai_graded: type === "SHORT_ANSWER" ? aiGraded : undefined,
         options,
+        ...(isCodeBased ? {
+          language,
+          starter_code: starterCode || undefined,
+        } : {}),
+        ...(isExecutable ? {
+          solution_code: solutionCode || undefined,
+          testCases: validTestCases,
+        } : {}),
       },
-      { onSuccess: onClose },
+      {
+        onSuccess: onClose,
+        onError: () => toast.error("Thêm câu hỏi thất bại, vui lòng kiểm tra dữ liệu"),
+      },
     );
   };
 
   return (
     <div className="p-5 border border-[#1b61c9]/25 rounded-2xl bg-[#EAF1FC] space-y-4">
-      <div className="flex gap-2">
-        {(["MCQ", "TRUE_FALSE", "SHORT_ANSWER"] as const).map(t => (
+      <div className="flex gap-2 flex-wrap">
+        {(["MCQ", "TRUE_FALSE", "SHORT_ANSWER", "CODING", "DEBUGGING", "CODE_OUTPUT"] as const).map(t => (
           <button key={t} onClick={() => setType(t)}
             className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${type === t ? "bg-[#1b61c9] text-white" : "bg-white border border-[#DCE6F4] text-[rgba(4,14,32,0.6)] hover:border-[#1b61c9]/40"}`}>
             {TYPE_META[t].label}
@@ -211,7 +261,7 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
         ))}
       </div>
 
-      <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Nội dung câu hỏi"
+      <textarea className={`${inputCls} resize-none`} rows={2} placeholder={isCodeBased ? "Mô tả yêu cầu về đoạn code..." : "Nội dung câu hỏi"}
         value={content} onChange={e => setContent(e.target.value)} />
 
       <div className="flex items-center gap-3">
@@ -242,12 +292,87 @@ function AddQuestionForm({ quizId, nextOrder, onClose }: { quizId: string; nextO
         </>
       )}
 
+      {isExecutable && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-[rgba(4,14,32,0.55)]">Ngôn ngữ</label>
+            <select className={`${inputCls} w-40`} value={language} onChange={e => setLanguage(e.target.value)}>
+              {LANG_OPTIONS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-[rgba(4,14,32,0.55)] block mb-1">
+              {type === "DEBUGGING" ? "Đoạn code có lỗi" : "Code khung (starter code)"}
+            </label>
+            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={4} placeholder="# Viết code ở đây..."
+              value={starterCode} onChange={e => setStarterCode(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-[rgba(4,14,32,0.55)] block mb-1">
+              {type === "DEBUGGING" ? "Phiên bản code đã sửa (ẩn với học viên)" : "Lời giải mẫu (ẩn với học viên)"}
+            </label>
+            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={4} placeholder="# Lời giải..."
+              value={solutionCode} onChange={e => setSolutionCode(e.target.value)} />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-[rgba(4,14,32,0.55)]">Test cases</label>
+              <button onClick={() => setTestCases([...testCases, { input: "", expected: "", is_hidden: false }])}
+                className="text-xs text-[#1b61c9] hover:underline flex items-center gap-1"><Plus size={12} /> Thêm</button>
+            </div>
+            {testCases.map((tc, i) => (
+              <div key={i} className="flex gap-2 mb-2 items-start">
+                <div className="flex-1">
+                  <textarea className={`${inputCls} resize-y text-xs font-mono mb-1`} rows={2} placeholder="Input (stdin)" value={tc.input}
+                    onChange={e => setTestCases(testCases.map((t, j) => j === i ? { ...t, input: e.target.value } : t))} />
+                  <textarea className={`${inputCls} resize-y text-xs font-mono`} rows={2} placeholder="Expected output" value={tc.expected}
+                    onChange={e => setTestCases(testCases.map((t, j) => j === i ? { ...t, expected: e.target.value } : t))} />
+                </div>
+                <label className="flex items-center gap-1 text-[10px] text-[rgba(4,14,32,0.45)] mt-2 shrink-0">
+                  <input type="checkbox" checked={tc.is_hidden}
+                    onChange={e => setTestCases(testCases.map((t, j) => j === i ? { ...t, is_hidden: e.target.checked } : t))} />
+                  Ẩn
+                </label>
+                {testCases.length > 1 && (
+                  <button onClick={() => setTestCases(testCases.filter((_, j) => j !== i))}
+                    className="text-[rgba(4,14,32,0.3)] hover:text-red-500 mt-2"><Trash2 size={12} /></button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {type === "CODE_OUTPUT" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-[rgba(4,14,32,0.55)]">Ngôn ngữ</label>
+            <select className={`${inputCls} w-40`} value={language} onChange={e => setLanguage(e.target.value)}>
+              {LANG_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[rgba(4,14,32,0.55)]">Đoạn code học sinh cần đọc</label>
+            <textarea className={`${inputCls} resize-y font-mono text-xs`} rows={7}
+              value={starterCode} onChange={e => setStarterCode(e.target.value)} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[rgba(4,14,32,0.55)]">Output đáp án</label>
+            <textarea className={`${inputCls} resize-y font-mono text-xs`} rows={3} placeholder="Có thể nhập nhiều dòng"
+              value={sampleAnswer} onChange={e => setSampleAnswer(e.target.value)} />
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2 pt-1">
         <button onClick={onClose}
           className="flex-1 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors">
           Hủy
         </button>
-        <button onClick={handleSubmit} disabled={!content.trim() || addQuestion.isPending}
+        <button onClick={handleSubmit}
+          disabled={!content.trim() || addQuestion.isPending ||
+            (isExecutable && !testCases.some((testCase) => testCase.expected.trim())) ||
+            (type === "CODE_OUTPUT" && (!starterCode.trim() || !sampleAnswer.trim()))}
           className="flex-1 py-2 text-sm bg-[#1b61c9] text-white rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60">
           {addQuestion.isPending ? "Đang lưu..." : "Thêm câu hỏi"}
         </button>
@@ -267,6 +392,17 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
   const [options, setOptions] = useState(
     q.options.map(o => ({ content: o.content, is_correct: o.is_correct })),
   );
+  const [language, setLanguage] = useState(q.language ?? "python");
+  const [starterCode, setStarterCode] = useState(q.starter_code ?? "");
+  const [solutionCode, setSolutionCode] = useState(q.solution_code ?? "");
+  const [testCases, setTestCases] = useState(
+    q.testCases?.map((testCase) => ({
+      input: testCase.input,
+      expected: testCase.expected,
+      is_hidden: testCase.is_hidden,
+    })) ?? [{ input: "", expected: "", is_hidden: false }],
+  );
+  const isExecutable = isExecutableQuestionType(q.type);
 
   const setCorrect = (i: number) =>
     setOptions(options.map((o, j) => ({ ...o, is_correct: j === i })));
@@ -277,10 +413,33 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
     if (q.type === "SHORT_ANSWER") {
       payload.sample_answer = sampleAnswer || null;
       payload.ai_graded = aiGraded;
+    } else if (isExecutable) {
+      const validTestCases = testCases
+        .filter((testCase) => testCase.expected.trim())
+        .map((testCase, index) => ({ ...testCase, order: index }));
+      if (validTestCases.length === 0) {
+        toast.error("Câu hỏi chạy code cần ít nhất một test case có output mong đợi");
+        return;
+      }
+      payload.language = language;
+      payload.starter_code = starterCode || null;
+      payload.solution_code = solutionCode || null;
+      payload.testCases = validTestCases;
+    } else if (q.type === "CODE_OUTPUT") {
+      if (!starterCode.trim() || !sampleAnswer.trim()) {
+        toast.error("Câu dự đoán output cần đoạn code và output đáp án");
+        return;
+      }
+      payload.language = language;
+      payload.starter_code = starterCode;
+      payload.sample_answer = sampleAnswer;
     } else {
       payload.options = options.map((o, i) => ({ content: o.content, is_correct: o.is_correct, order: i + 1 }));
     }
-    updateQuestion.mutate(payload, { onSuccess: onClose });
+    updateQuestion.mutate(payload, {
+      onSuccess: onClose,
+      onError: () => toast.error("Lưu câu hỏi thất bại, vui lòng kiểm tra dữ liệu"),
+    });
   };
 
   return (
@@ -317,12 +476,96 @@ function QuestionEditor({ q, quizId, onClose }: { q: Question; quizId: string; o
         </>
       )}
 
+      {isExecutable && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-[rgba(4,14,32,0.55)]">Ngôn ngữ</label>
+            <select className={`${inputCls} w-40`} value={language} onChange={e => setLanguage(e.target.value)}>
+              {LANG_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-[rgba(4,14,32,0.55)] block mb-1">
+              {q.type === "DEBUGGING" ? "Đoạn code có lỗi" : "Code khung"}
+            </label>
+            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={4}
+              value={starterCode} onChange={e => setStarterCode(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs text-[rgba(4,14,32,0.55)] block mb-1">
+              {q.type === "DEBUGGING" ? "Phiên bản code đã sửa (ẩn với học viên)" : "Lời giải mẫu (ẩn với học viên)"}
+            </label>
+            <textarea className={`${inputCls} resize-none font-mono text-xs`} rows={4}
+              value={solutionCode} onChange={e => setSolutionCode(e.target.value)} />
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs text-[rgba(4,14,32,0.55)]">Test cases</label>
+              <button onClick={() => setTestCases([...testCases, { input: "", expected: "", is_hidden: false }])}
+                className="text-xs text-[#1b61c9] hover:underline flex items-center gap-1">
+                <Plus size={12} /> Thêm
+              </button>
+            </div>
+            {testCases.map((testCase, index) => (
+              <div key={index} className="flex gap-2 mb-2 items-start">
+                <div className="flex-1">
+                  <textarea className={`${inputCls} resize-y text-xs font-mono mb-1`} rows={2} placeholder="Input (stdin)"
+                    value={testCase.input}
+                    onChange={e => setTestCases(testCases.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, input: e.target.value } : item))} />
+                  <textarea className={`${inputCls} resize-y text-xs font-mono`} rows={2} placeholder="Expected output"
+                    value={testCase.expected}
+                    onChange={e => setTestCases(testCases.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, expected: e.target.value } : item))} />
+                </div>
+                <label className="flex items-center gap-1 text-[10px] text-[rgba(4,14,32,0.45)] mt-2 shrink-0">
+                  <input type="checkbox" checked={testCase.is_hidden}
+                    onChange={e => setTestCases(testCases.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, is_hidden: e.target.checked } : item))} />
+                  Ẩn
+                </label>
+                {testCases.length > 1 && (
+                  <button onClick={() => setTestCases(testCases.filter((_, itemIndex) => itemIndex !== index))}
+                    className="text-[rgba(4,14,32,0.3)] hover:text-red-500 mt-2">
+                    <Trash2 size={12} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {q.type === "CODE_OUTPUT" && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <label className="text-xs text-[rgba(4,14,32,0.55)]">Ngôn ngữ</label>
+            <select className={`${inputCls} w-40`} value={language} onChange={e => setLanguage(e.target.value)}>
+              {LANG_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[rgba(4,14,32,0.55)]">Đoạn code học sinh cần đọc</label>
+            <textarea className={`${inputCls} resize-y font-mono text-xs`} rows={7}
+              value={starterCode} onChange={e => setStarterCode(e.target.value)} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-[rgba(4,14,32,0.55)]">Output đáp án</label>
+            <textarea className={`${inputCls} resize-y font-mono text-xs`} rows={3}
+              value={sampleAnswer} onChange={e => setSampleAnswer(e.target.value)} />
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2 pt-1">
         <button onClick={onClose}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm border border-[#DCE6F4] rounded-xl text-[rgba(4,14,32,0.6)] hover:bg-white transition-colors">
           <X size={14} /> Hủy
         </button>
-        <button onClick={handleSave} disabled={!content.trim() || updateQuestion.isPending}
+        <button onClick={handleSave}
+          disabled={!content.trim() || updateQuestion.isPending ||
+            (isExecutable && !testCases.some((testCase) => testCase.expected.trim())) ||
+            (q.type === "CODE_OUTPUT" && (!starterCode.trim() || !sampleAnswer.trim()))}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm bg-[#1b61c9] text-white rounded-xl hover:bg-[#254fad] transition-colors disabled:opacity-60">
           <Check size={14} /> {updateQuestion.isPending ? "Đang lưu..." : "Lưu thay đổi"}
         </button>
@@ -387,7 +630,7 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
         isLoading={deleteQuestion.isPending}
       />
 
-      <div className="flex items-center gap-2 pl-9">
+      <div className="flex items-center gap-2 pl-9 flex-wrap">
         <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${meta.pill}`}>{meta.label}</span>
         <span className="text-xs text-[rgba(4,14,32,0.45)]">{q.points} điểm</span>
         {q.type === "SHORT_ANSWER" && (
@@ -395,6 +638,16 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
             q.ai_graded ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "bg-[#f0f2f5] text-[rgba(4,14,32,0.5)]"
           }`}>
             {q.ai_graded ? "AI chấm" : "Chấm tay"}
+          </span>
+        )}
+        {isCodeBasedQuestionType(q.type) && q.language && (
+          <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-emerald-50 text-emerald-700">
+            {LANG_OPTIONS.find(l => l.value === q.language)?.label ?? q.language}
+          </span>
+        )}
+        {isExecutableQuestionType(q.type) && q.testCases && (
+          <span className="text-xs text-[rgba(4,14,32,0.45)]">
+            {q.testCases.length} test case{q.testCases.length !== 1 ? "s" : ""}
           </span>
         )}
       </div>
@@ -414,7 +667,26 @@ function QuestionCard({ q, quizId, index }: { q: Question; quizId: string; index
       )}
 
       {q.sample_answer && (
-        <p className="pl-9 text-xs text-[rgba(4,14,32,0.5)] italic">Gợi ý: {q.sample_answer}</p>
+        <p className="pl-9 text-xs text-[rgba(4,14,32,0.5)] italic whitespace-pre-wrap">
+          {q.type === "CODE_OUTPUT" ? "Output đáp án: " : "Gợi ý: "}{q.sample_answer}
+        </p>
+      )}
+
+      {isExecutableQuestionType(q.type) && q.testCases && q.testCases.length > 0 && (
+        <div className="pl-9 space-y-1">
+          <p className="text-xs text-[rgba(4,14,32,0.5)] font-medium">Test cases:</p>
+          {q.testCases.slice(0, 3).map((tc, i) => (
+            <div key={tc.id} className="flex gap-3 text-xs font-mono bg-[#f8fafc] px-3 py-1.5 rounded-lg border border-[#f0f2f5]">
+              <span className="text-[rgba(4,14,32,0.4)]">#{i + 1}</span>
+              <span className="text-[rgba(4,14,32,0.6)]">in: {tc.input || "(trống)"}</span>
+              <span className="text-[rgba(4,14,32,0.6)]">→ {tc.expected}</span>
+              {tc.is_hidden && <span className="text-amber-500 text-[10px]">ẩn</span>}
+            </div>
+          ))}
+          {q.testCases.length > 3 && (
+            <p className="text-[10px] text-[rgba(4,14,32,0.4)]">+{q.testCases.length - 3} test cases khác</p>
+          )}
+        </div>
       )}
     </div>
   );
@@ -480,7 +752,7 @@ function QuizSkeleton() {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function QuizEditPage({ params }: { params: Promise<{ id: string; quizId: string }> }) {
-  const { id: courseId, quizId } = use(params);
+  const { quizId } = use(params);
   const { data: quiz, isLoading } = useQuiz(quizId);
   const updateQuiz = useUpdateQuiz(quizId);
   const reorderQuestions = useReorderQuestions(quizId);
@@ -496,21 +768,30 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
   };
 
   const [title, setTitle]         = useState("");
-  const [passScore, setPassScore] = useState(70);
-  const [requirePass, setRequirePass] = useState(false);
-  const [maxAttempts, setMaxAttempts] = useState<string>(""); // "" = không giới hạn
+  const [policy, setPolicy] = useState<QuizPolicyFormValue>({
+    requirePass: true,
+    passScore: 70,
+    maxAttempts: null,
+  });
   const [titleEditing, setTitleEditing] = useState(false);
   const [showAddForm, setShowAddForm]   = useState(false);
 
   const handleSaveMeta = () => {
-    const parsed = parseInt(maxAttempts);
-    updateQuiz.mutate({
-      title: title || quiz?.title,
-      pass_score: passScore,
-      require_pass: requirePass,
-      max_attempts: maxAttempts.trim() === "" || isNaN(parsed) ? null : parsed,
-    });
-    setTitleEditing(false);
+    updateQuiz.mutate(
+      {
+        title: title || quiz?.title,
+        pass_score: policy.passScore,
+        require_pass: policy.requirePass,
+        max_attempts: policy.maxAttempts,
+      },
+      {
+        onSuccess: () => {
+          setTitleEditing(false);
+          toast.success("Đã lưu thiết lập bài kiểm tra");
+        },
+        onError: () => toast.error("Lưu thiết lập thất bại"),
+      },
+    );
   };
 
   if (isLoading) return <QuizSkeleton />;
@@ -526,11 +807,7 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
         <div className="max-w-2xl mx-auto space-y-7">
       {/* Header */}
       <div>
-        <Link href={`/teacher/courses/${courseId}/edit`}
-          className="group inline-flex items-center gap-1 text-sm text-[rgba(4,14,32,0.4)] hover:text-[#1b61c9] transition-colors mb-4">
-          <ChevronLeft size={14} className="transition-transform group-hover:-translate-x-0.5" />
-          Chỉnh sửa khóa học
-        </Link>
+        <BackButton back />
         <h1 className="font-display text-3xl font-semibold text-[#181d26]">Chỉnh sửa bài kiểm tra</h1>
         <p className="text-sm text-[rgba(4,14,32,0.45)] mt-1">
           {quiz.questions.length} câu hỏi · {totalPoints} điểm · {quiz.require_pass ? `đạt từ ${quiz.pass_score}%` : "không cần điểm qua"}
@@ -544,28 +821,12 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
           <div className="space-y-3">
             <input className={inputCls} value={title} onChange={e => setTitle(e.target.value)} placeholder="Tên bài kiểm tra" />
 
-            <label className="flex items-center justify-between gap-3 cursor-pointer">
-              <span className="text-xs text-[rgba(4,14,32,0.55)]">Yêu cầu đạt điểm để qua bài</span>
-              <button type="button" onClick={() => setRequirePass(v => !v)}
-                className={`relative rounded-full transition-colors ${requirePass ? "bg-[#1b61c9]" : "bg-[#C5D4EA]"}`}
-                style={{ height: 22, width: 40 }}>
-                <span className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] rounded-full bg-white transition-transform ${requirePass ? "translate-x-[18px]" : ""}`} />
-              </button>
-            </label>
-
-            {requirePass && (
-              <div className="flex items-center gap-3">
-                <label className="text-xs text-[rgba(4,14,32,0.55)]">Điểm đạt (%)</label>
-                <input type="number" min={0} max={100} className={`${inputCls} w-24`}
-                  value={passScore} onChange={e => setPassScore(parseInt(e.target.value) || 0)} />
-              </div>
-            )}
-
-            <div className="flex items-center gap-3">
-              <label className="text-xs text-[rgba(4,14,32,0.55)]">Số lần làm tối đa</label>
-              <input type="number" min={1} className={`${inputCls} w-24`} placeholder="∞"
-                value={maxAttempts} onChange={e => setMaxAttempts(e.target.value)} />
-              <span className="text-xs text-[rgba(4,14,32,0.4)]">để trống = không giới hạn</span>
+            <div className="border-t border-[#E7EEF8] pt-4">
+              <QuizPolicyFields
+                value={policy}
+                onChange={setPolicy}
+                disabled={updateQuiz.isPending}
+              />
             </div>
 
             <div className="flex gap-2">
@@ -591,9 +852,11 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
             </div>
             <button onClick={() => {
                 setTitle(quiz.title);
-                setPassScore(quiz.pass_score);
-                setRequirePass(quiz.require_pass);
-                setMaxAttempts(quiz.max_attempts != null ? String(quiz.max_attempts) : "");
+                setPolicy({
+                  passScore: quiz.pass_score,
+                  requirePass: quiz.require_pass,
+                  maxAttempts: quiz.max_attempts ?? null,
+                });
                 setTitleEditing(true);
               }}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-[#DCE6F4] rounded-lg text-[rgba(4,14,32,0.6)] hover:bg-[#EAF1FC] hover:border-[#1b61c9]/40 transition-colors">

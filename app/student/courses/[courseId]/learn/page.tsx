@@ -15,6 +15,7 @@ import {
   useQuizDetail,
   useQuizAttempts,
   useSubmitQuizAttempt,
+  useRequestExtraQuizAttempt,
   useCourseCertificate,
   useIssueCertificate,
   Chapter,
@@ -26,6 +27,10 @@ import { QASection } from "./_components/QASection";
 import { NotesSection } from "./_components/NotesSection";
 import { AIChatBox } from "./_components/AIChatBox";
 import { AISummary } from "./_components/AISummary";
+import { CodingQuestion } from "./_components/CodingQuestion";
+import { CodeOutputQuestion } from "./_components/CodeOutputQuestion";
+import { toast } from "sonner";
+import { isExecutableQuestionType } from "@/lib/question-types";
 
 type NavItem =
   | { kind: "lesson"; item: Lesson }
@@ -366,19 +371,24 @@ function QuestionItem({
   onChange,
   submitted,
   correctAnswer,
+  answerCorrect,
 }: {
   question: QuizQuestion;
   answer: string;
   onChange: (val: string) => void;
   submitted: boolean;
   correctAnswer?: string;
+  answerCorrect?: boolean | null;
 }) {
-  const isCorrect = submitted && answer !== "" && answer.toLowerCase() === correctAnswer?.toLowerCase();
-  const isWrong = submitted && answer !== "" && !isCorrect && question.type !== "SHORT_ANSWER";
+  const matchesRevealedAnswer = !!correctAnswer && answer.toLowerCase() === correctAnswer.toLowerCase();
+  const isCorrect = submitted && answer !== "" && (answerCorrect === true || matchesRevealedAnswer);
+  const isWrong = submitted && answer !== "" && question.type !== "SHORT_ANSWER" &&
+    (answerCorrect === false || (!!correctAnswer && !matchesRevealedAnswer));
+  const hasGradedResult = isCorrect || isWrong;
 
   return (
     <div className={`rounded-xl border p-5 transition-colors ${
-      submitted && question.type !== "SHORT_ANSWER"
+      submitted && question.type !== "SHORT_ANSWER" && hasGradedResult
         ? isCorrect ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"
         : "border-[#DCE6F4] bg-white"
     }`}>
@@ -393,8 +403,10 @@ function QuestionItem({
         <div className="flex flex-col gap-2 pl-9">
           {question.options.map((opt) => {
             const selected = answer === opt.content;
-            const isOptCorrect = submitted && opt.content.toLowerCase() === correctAnswer?.toLowerCase();
-            const isOptWrong = submitted && selected && !isOptCorrect;
+            const isRevealedCorrect = !!correctAnswer && opt.content.toLowerCase() === correctAnswer.toLowerCase();
+            const isOptCorrect = submitted && (isRevealedCorrect || (selected && answerCorrect === true));
+            const isOptWrong = submitted && selected &&
+              (answerCorrect === false || (!!correctAnswer && !isRevealedCorrect));
             return (
               <label
                 key={opt.id}
@@ -458,18 +470,39 @@ function QuestionItem({
 // ── Quiz View ──────────────────────────────────────────────────────────────
 
 function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: quiz, isLoading } = useQuizDetail(quizId);
-  const { data: attempts } = useQuizAttempts(quizId);
+  const { data: attemptsData, isLoading: attemptsLoading } = useQuizAttempts(quizId);
   const submit = useSubmitQuizAttempt(quizId, courseId);
+  const requestExtraAttempt = useRequestExtraQuizAttempt(quizId);
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [showingResult, setShowingResult] = useState(false);
-  const [retrying, setRetrying] = useState(false);
 
-  const lastAttempt = attempts?.[0] ?? null;
-  const attemptsUsed = attempts?.length ?? 0;
-  const exhausted = !!quiz && quiz.max_attempts != null && attemptsUsed >= quiz.max_attempts;
+  const attempts = attemptsData?.attempts ?? [];
+  const lastAttempt = attempts[0] ?? null;
+  const attemptIdFromUrl = searchParams.get("attempt");
+  const takingQuiz = searchParams.get("take") === "1";
+  const selectedAttempt = attemptIdFromUrl
+    ? attempts.find((attempt) => attempt.id === attemptIdFromUrl) ?? null
+    : null;
+  const attemptState = attemptIdFromUrl === submit.data?.attempt.id
+    ? submit.data.attemptState
+    : attemptsData?.attemptState;
+  const attemptsUsed = attemptState?.used ?? attempts.length;
+  const exhausted = attemptState?.exhausted ?? false;
+  const canAttempt = attemptState?.canAttempt ?? false;
+  const pendingAttemptRequest = attemptsData?.attemptRequest ?? null;
+
+  const replaceQuizViewInUrl = useCallback((attemptId: string | null, takeQuiz = false) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("quiz", quizId);
+    if (attemptId) params.set("attempt", attemptId);
+    else params.delete("attempt");
+    if (takeQuiz) params.set("take", "1");
+    else params.delete("take");
+    router.replace(`/student/courses/${courseId}/learn?${params.toString()}`, { scroll: false });
+  }, [courseId, quizId, router, searchParams]);
 
   const handleSubmit = () => {
     if (!quiz) return;
@@ -477,19 +510,33 @@ function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
       question_id: q.id,
       answer: answers[q.id] ?? "",
     }));
+    if (payload.some((answer) => !answer.answer.trim())) {
+      toast.error("Vui lòng trả lời đầy đủ tất cả câu hỏi trước khi nộp");
+      return;
+    }
     submit.mutate(payload, {
-      onSuccess: () => {
-        setSubmitted(true);
-        setShowingResult(true);
+      onSuccess: (result) => {
+        replaceQuizViewInUrl(result.attempt.id);
       },
+      onError: () => toast.error("Không thể nộp bài. Vui lòng kiểm tra số lượt và thử lại."),
     });
   };
 
   const handleRetry = () => {
     setAnswers({});
-    setSubmitted(false);
-    setShowingResult(false);
-    setRetrying(true);
+    replaceQuizViewInUrl(null, true);
+  };
+
+  const handleSelectAttempt = (attemptId: string) => {
+    if (!attemptId) return;
+    replaceQuizViewInUrl(attemptId);
+  };
+
+  const handleRequestExtraAttempt = () => {
+    requestExtraAttempt.mutate(undefined, {
+      onSuccess: () => toast.success("Đã gửi yêu cầu thêm lượt tới giáo viên"),
+      onError: () => toast.error("Không thể gửi yêu cầu. Vui lòng tải lại và thử lại."),
+    });
   };
 
   if (isLoading) {
@@ -502,26 +549,50 @@ function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
 
   if (!quiz) return null;
 
-  const correctAnswerMap = new Map(
+  const correctAnswerMap = new Map<string, string | undefined>(
     quiz.questions.map((q) => [
       q.id,
-      q.options.find((o) => o.is_correct)?.content ?? "",
+      q.options.find((o) => o.is_correct)?.content,
     ])
   );
 
-  const attemptToShow = showingResult ? submit.data?.data?.attempt : lastAttempt;
+  const submittedAttempt = attemptIdFromUrl === submit.data?.attempt.id
+    ? submit.data.attempt
+    : null;
+  const attemptToShow = selectedAttempt ?? submittedAttempt ?? lastAttempt;
+  const reviewingAttempt = !!attemptToShow && !takingQuiz;
+  const selectedAttemptIndex = attemptToShow
+    ? attempts.findIndex((attempt) => attempt.id === attemptToShow.id)
+    : -1;
+  const selectedAttemptNumber = selectedAttemptIndex >= 0
+    ? attempts.length - selectedAttemptIndex
+    : attempts.length;
   const answerMap = new Map<string, string>(attemptToShow?.answers?.map((a: { question_id: string; answer: string }) => [a.question_id, a.answer] as [string, string]) ?? []);
+  const answerResultMap = new Map<string, boolean | null>(
+    attemptToShow?.answers?.map((answer) => [answer.question_id, answer.is_correct]) ?? [],
+  );
+
+  const awaitingGrade = !!attemptToShow && quiz.require_pass && attemptToShow.score === null;
+  const resultPassed = !!attemptToShow && (!quiz.require_pass || attemptToShow.is_passed === true);
+  const resultTone = awaitingGrade ? "blue" : resultPassed ? "green" : "amber";
+  const resultTitle = awaitingGrade
+    ? "Đang chờ chấm"
+    : !quiz.require_pass
+      ? "Đã hoàn thành"
+      : resultPassed
+        ? "Đã vượt qua"
+        : "Chưa đạt";
 
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
-      <div className="rounded-xl bg-[#f5f0ff] border border-[#e9d8fd] px-6 py-5 flex items-start gap-4">
+      <div className="rounded-xl bg-[#f5f0ff] border border-[#e9d8fd] px-6 py-5 flex flex-wrap items-start gap-4">
         <div className="w-10 h-10 rounded-xl bg-[#7c3aed]/10 flex items-center justify-center shrink-0 mt-0.5">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
           </svg>
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#7c3aed] mb-1">Bài tập</p>
           <h2 className="font-display text-lg font-semibold text-[#181d26]">{quiz.title}</h2>
           <div className="flex items-center gap-4 mt-2 flex-wrap">
@@ -530,27 +601,57 @@ function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
               {quiz.require_pass ? `Điểm qua: ${quiz.pass_score}%` : "Không cần điểm qua"}
             </span>
             <span className="text-xs text-[rgba(4,14,32,0.55)]">
-              {quiz.max_attempts != null ? `Lượt: ${attemptsUsed}/${quiz.max_attempts}` : "Không giới hạn lượt"}
+              {quiz.max_attempts != null
+                ? exhausted
+                  ? `Đã dùng hết ${attemptState?.maxAllowed ?? quiz.max_attempts} lượt`
+                  : `Đã dùng ${attemptsUsed}/${attemptState?.maxAllowed ?? quiz.max_attempts} lượt`
+                : `Đã làm ${attemptsUsed} lượt · Không giới hạn`}
             </span>
             {quiz.time_limit && (
               <span className="text-xs text-[rgba(4,14,32,0.55)]">{quiz.time_limit} phút</span>
             )}
           </div>
         </div>
+        {attempts.length > 0 && (
+          <label className="flex w-full flex-col gap-1.5 sm:w-auto sm:min-w-52">
+            <span className="text-xs font-medium text-[rgba(4,14,32,0.55)]">Lịch sử làm bài</span>
+            <select
+              aria-label="Chọn lần làm bài"
+              value={reviewingAttempt && attemptToShow ? attemptToShow.id : ""}
+              onChange={(event) => handleSelectAttempt(event.target.value)}
+              className="h-10 rounded-lg border border-[#d8c9f4] bg-white px-3 text-sm font-medium text-[#4c1d95] outline-none transition-colors focus:border-[#7c3aed] focus:ring-2 focus:ring-[#7c3aed]/15"
+            >
+              <option value="" disabled>Xem {attempts.length} lần đã làm</option>
+              {attempts.map((attempt, index) => (
+                <option key={attempt.id} value={attempt.id}>
+                  Lần {attempts.length - index} · {attempt.score === null ? "Chờ chấm" : `${attempt.score}%`}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
-      {/* Last attempt result (not current submission) */}
-      {lastAttempt && !showingResult && (
+      {/* Kết quả gần nhất / kết quả vừa nộp */}
+      {attemptToShow && reviewingAttempt ? (
         <div className={`rounded-xl border px-5 py-4 flex items-center justify-between gap-4 ${
-          lastAttempt.is_passed ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"
+          resultTone === "green"
+            ? "border-green-200 bg-green-50"
+            : resultTone === "blue"
+              ? "border-blue-200 bg-blue-50"
+              : "border-amber-200 bg-amber-50"
         }`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-              lastAttempt.is_passed ? "bg-green-100" : "bg-amber-100"
+              resultTone === "green" ? "bg-green-100" : resultTone === "blue" ? "bg-blue-100" : "bg-amber-100"
             }`}>
-              {lastAttempt.is_passed ? (
+              {resultPassed ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : awaitingGrade ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
                 </svg>
               ) : (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -559,78 +660,115 @@ function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
               )}
             </div>
             <div>
-              <p className={`text-sm font-semibold ${lastAttempt.is_passed ? "text-green-800" : "text-amber-800"}`}>
-                {lastAttempt.is_passed ? "Đã vượt qua" : "Chưa đạt"}
-                {lastAttempt.score !== null && ` — ${lastAttempt.score}%`}
+              <p className={`text-sm font-semibold ${
+                resultTone === "green" ? "text-green-800" : resultTone === "blue" ? "text-blue-800" : "text-amber-800"
+              }`}>
+                {selectedAttemptNumber > 0 && `Lần ${selectedAttemptNumber} · `}
+                {resultTitle}
+                {attemptToShow.score !== null && ` — ${attemptToShow.score}%`}
               </p>
               <p className="text-xs text-[rgba(4,14,32,0.45)] mt-0.5">
-                Lần làm gần nhất: {new Date(lastAttempt.submitted_at).toLocaleDateString("vi-VN")}
+                {awaitingGrade
+                  ? "Lượt này đã được ghi nhận và sẽ có kết quả sau khi chấm."
+                  : quiz.require_pass
+                    ? resultPassed
+                      ? `Điểm cao nhất: ${attemptState?.bestScore ?? attemptToShow.score ?? 0}%`
+                      : exhausted
+                        ? pendingAttemptRequest
+                          ? `Cần ${quiz.pass_score}% để qua · Đang chờ giáo viên mở thêm lượt`
+                          : `Cần ${quiz.pass_score}% để qua · Bạn đã hết lượt làm`
+                        : `Cần ${quiz.pass_score}% để qua · Còn ${attemptState?.remaining ?? "—"} lượt`
+                    : "Bài nộp đã được ghi nhận; điểm chỉ dùng để theo dõi kết quả."}
               </p>
             </div>
           </div>
           <button
-            onClick={handleRetry}
-            disabled={exhausted}
-            className="shrink-0 text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+            onClick={exhausted ? handleRequestExtraAttempt : handleRetry}
+            disabled={exhausted && (!!pendingAttemptRequest || requestExtraAttempt.isPending)}
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+              exhausted
+                ? "bg-[#1b61c9] text-white hover:bg-[#254fad]"
+                : "text-[#7c3aed] hover:bg-[#7c3aed]/8 hover:text-[#6d28d9]"
+            }`}
           >
-            {exhausted ? "Đã hết lượt" : "Làm lại"}
+            {exhausted
+              ? pendingAttemptRequest
+                ? "Đã gửi yêu cầu"
+                : requestExtraAttempt.isPending
+                  ? "Đang gửi..."
+                  : "Xin thêm 1 lượt"
+              : resultPassed
+                ? "Làm lại để cải thiện"
+                : "Làm lại"}
           </button>
         </div>
-      )}
-
-      {/* Score result after submit */}
-      {showingResult && submit.data?.data?.attempt && (
-        <div className={`rounded-xl border px-5 py-4 flex items-center justify-between gap-4 ${
-          submit.data.data.attempt.is_passed ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${
-              submit.data.data.attempt.is_passed ? "bg-green-100" : "bg-amber-100"
-            }`}>
-              {submit.data.data.attempt.is_passed ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              )}
-            </div>
-            <div>
-              <p className={`text-sm font-semibold ${submit.data.data.attempt.is_passed ? "text-green-800" : "text-amber-800"}`}>
-                {submit.data.data.attempt.is_passed ? "Vượt qua!" : "Chưa đạt"}
-                {submit.data.data.attempt.score !== null && ` — ${submit.data.data.attempt.score}%`}
-              </p>
-              <p className="text-xs text-[rgba(4,14,32,0.45)] mt-0.5">Cần {quiz.pass_score}% để qua</p>
-            </div>
-          </div>
-          <button
-            onClick={handleRetry}
-            disabled={exhausted}
-            className="shrink-0 text-xs font-medium text-[#7c3aed] hover:text-[#6d28d9] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/8 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-          >
-            {exhausted ? "Đã hết lượt" : "Làm lại"}
-          </button>
-        </div>
-      )}
+      ) : null}
 
       {/* Questions */}
       <div className="flex flex-col gap-3">
-        {quiz.questions.map((q) => (
-          <QuestionItem
-            key={q.id}
-            question={q}
-            answer={(showingResult || (!!lastAttempt && !submitted && !retrying)) ? (answerMap.get(q.id) ?? "") : (answers[q.id] ?? "")}
-            onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
-            submitted={showingResult}
-            correctAnswer={correctAnswerMap.get(q.id)}
-          />
-        ))}
+        {quiz.questions.map((q) => {
+          const currentAnswer = reviewingAttempt ? (answerMap.get(q.id) ?? "") : (answers[q.id] ?? "");
+
+          if (isExecutableQuestionType(q.type) && q.language) {
+            const attemptAnswer = attemptToShow?.answers?.find((a: { question_id: string }) => a.question_id === q.id);
+            return (
+              <CodingQuestion
+                key={q.id}
+                questionType={q.type}
+                questionId={q.id}
+                content={q.content}
+                language={q.language}
+                starterCode={q.starter_code ?? null}
+                testCases={q.testCases ?? []}
+                points={q.points}
+                order={q.order}
+                submitted={reviewingAttempt}
+                answer={currentAnswer}
+                onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
+                attemptResult={attemptAnswer ? {
+                  is_correct: attemptAnswer.is_correct,
+                  code_output: attemptAnswer.code_output ?? null,
+                  ai_feedback: attemptAnswer.ai_feedback ?? null,
+                  points_earned: attemptAnswer.points_earned,
+                } : undefined}
+              />
+            );
+          }
+
+          if (q.type === "CODE_OUTPUT" && q.language && q.starter_code) {
+            return (
+              <CodeOutputQuestion
+                key={q.id}
+                questionId={q.id}
+                content={q.content}
+                language={q.language}
+                code={q.starter_code}
+                points={q.points}
+                order={q.order}
+                submitted={reviewingAttempt}
+                answer={currentAnswer}
+                onChange={(value) => setAnswers((prev) => ({ ...prev, [q.id]: value }))}
+                isCorrect={answerResultMap.get(q.id)}
+              />
+            );
+          }
+
+          return (
+            <QuestionItem
+              key={q.id}
+              question={q}
+              answer={currentAnswer}
+              onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
+              submitted={reviewingAttempt}
+              correctAnswer={correctAnswerMap.get(q.id)}
+              answerCorrect={answerResultMap.get(q.id)}
+            />
+          );
+        })}
       </div>
 
       {/* Submit */}
-      {!showingResult && !exhausted && (
+      {!reviewingAttempt && canAttempt && !attemptsLoading && (
         <button
           onClick={handleSubmit}
           disabled={submit.isPending}

@@ -530,13 +530,20 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowDelete(false)} className="px-4 py-2 text-sm font-medium border border-[#e0e2e6] rounded-xl hover:bg-[#f8fafc]">Hủy</button>
               <button
-                onClick={() => { deleteUser.mutate(id); router.push(backHref); }}
+                onClick={() => deleteUser.mutate(id, {
+                  onSuccess: () => router.replace(backHref),
+                })}
                 disabled={deleteUser.isPending}
                 className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 disabled:opacity-60"
               >
                 {deleteUser.isPending ? "Đang xóa..." : "Xóa"}
               </button>
             </div>
+            {deleteUser.isError && (
+              <p className="mt-3 text-right text-xs text-red-500">
+                Xóa người dùng thất bại. Vui lòng thử lại.
+              </p>
+            )}
           </div>
         </div>
       )}

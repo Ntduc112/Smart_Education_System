@@ -1,7 +1,8 @@
 import prisma from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createNotification } from "@/lib/notification";
+import { didAttemptPass } from "@/lib/quiz-policy";
+import { buildQuizAttemptResultLink } from "@/lib/quiz-attempt-link";
 
 const GradeSchema = z.object({
     points_earned: z.number().min(0, "Points must be non-negative"),
@@ -56,7 +57,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             where: { id: answer.attempt_id },
             include: {
                 answers: { include: { question: { select: { points: true } } } },
-                quiz: { select: { pass_score: true } },
+                quiz: {
+                    select: {
+                        id: true,
+                        pass_score: true,
+                        require_pass: true,
+                        lesson: {
+                            select: {
+                                chapter: { select: { course_id: true } },
+                            },
+                        },
+                    },
+                },
             },
         });
 
@@ -66,21 +78,31 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                 const total  = attempt.answers.reduce((s, a) => s + a.question.points, 0);
                 const earned = attempt.answers.reduce((s, a) => s + (a.points_earned ?? 0), 0);
                 const score  = total > 0 ? Math.round((earned / total) * 100) : 0;
-                const isPassed = score >= attempt.quiz.pass_score;
+                const isPassed = didAttemptPass(attempt.quiz, score);
 
-                await prisma.quizAttempt.update({
-                    where: { id: attempt.id },
-                    data: { score, is_passed: isPassed },
-                });
-
-                // Báo cho student là quiz đã có điểm
-                createNotification(
-                    attempt.user_id,
-                    "QUIZ_RESULT",
-                    "Quiz đã được chấm điểm",
-                    `Bạn đạt ${score}/100 — ${isPassed ? "Đạt" : "Chưa đạt"}`,
-                    "/student/dashboard"
-                ).catch(console.error);
+                // Cập nhật điểm và notification cùng transaction để serverless không
+                // kết thúc request trước khi thông báo được ghi vào database.
+                await prisma.$transaction([
+                    prisma.quizAttempt.update({
+                        where: { id: attempt.id },
+                        data: { score, is_passed: isPassed },
+                    }),
+                    prisma.notification.create({
+                        data: {
+                            user_id: attempt.user_id,
+                            type: "QUIZ_RESULT",
+                            title: "Quiz đã được chấm điểm",
+                            message: !attempt.quiz.require_pass
+                                ? `Bạn đã hoàn thành quiz với ${score}/100`
+                                : `Bạn đạt ${score}/100 — ${isPassed ? "Đạt" : "Chưa đạt"}`,
+                            link: buildQuizAttemptResultLink(
+                                attempt.quiz.lesson.chapter.course_id,
+                                attempt.quiz.id,
+                                attempt.id,
+                            ),
+                        },
+                    }),
+                ]);
             }
         }
 

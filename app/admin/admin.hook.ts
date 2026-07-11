@@ -61,7 +61,37 @@ export function useDeleteUser() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => api.delete(`/admin/users/${id}`),
-    onSuccess:  () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+    onSuccess: async (_response, deletedId) => {
+      queryClient.setQueriesData<{
+        users: AdminUser[];
+        pagination: { page: number; limit: number; total: number; totalPages: number };
+      }>(
+        { queryKey: ["admin", "users", "list"] },
+        (current) => {
+          if (!current?.users.some((user) => user.id === deletedId)) return current;
+
+          const total = Math.max(0, current.pagination.total - 1);
+          return {
+            users: current.users.filter((user) => user.id !== deletedId),
+            pagination: {
+              ...current.pagination,
+              total,
+              totalPages: Math.ceil(total / current.pagination.limit),
+            },
+          };
+        },
+      );
+      queryClient.setQueryData<AdminUser[]>(["admin", "recent-users"], (current) =>
+        current?.filter((user) => user.id !== deletedId),
+      );
+      queryClient.removeQueries({ queryKey: ["admin", "user", deletedId], exact: true });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "recent-users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "statistics"] }),
+      ]);
+    },
   });
 }
 

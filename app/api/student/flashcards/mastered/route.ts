@@ -48,7 +48,10 @@ export async function DELETE(request: NextRequest) {
     if (ids.length === 0) return NextResponse.json({ ok: true });
 
     const inCourse = await prisma.question.findMany({
-      where: { id: { in: ids }, quiz: { lesson: { chapter: { course_id: courseId } } } },
+      where: {
+        id: { in: ids },
+        quiz: { deleted_at: null, lesson: { chapter: { course_id: courseId } } },
+      },
       select: { id: true },
     });
     const toDelete = inCourse.map((q) => q.id);

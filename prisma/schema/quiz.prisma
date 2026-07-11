@@ -2,6 +2,15 @@ enum question_type {
     MCQ
     TRUE_FALSE
     SHORT_ANSWER
+    CODING
+    DEBUGGING
+    CODE_OUTPUT
+}
+
+enum attempt_request_status {
+    PENDING
+    APPROVED
+    REJECTED
 }
 
 model Quiz {
@@ -15,9 +24,11 @@ model Quiz {
     time_limit   Int?
     created_at   DateTime @default(now())
     updated_at DateTime @updatedAt
+    deleted_at DateTime? @db.Timestamptz(3)
 
     questions Question[]
     attempts  QuizAttempt[]
+    attemptRequests QuizAttemptRequest[]
 }
 
 model Question {
@@ -31,9 +42,24 @@ model Question {
     sample_answer String?
     // SHORT_ANSWER: true = AI chấm ngay khi nộp, false = giáo viên chấm tay
     ai_graded     Boolean       @default(false)
+    // Code-question fields (CODING / DEBUGGING / CODE_OUTPUT)
+    language      String?       // "python", "javascript", "c", "cpp", "java"
+    starter_code  String?       // Code khung, code lỗi hoặc đoạn code cần đọc
+    solution_code String?       // Lời giải mẫu (chỉ teacher/admin thấy)
 
-    options Option[]
-    answers AttemptAnswer[]
+    options   Option[]
+    answers   AttemptAnswer[]
+    testCases TestCase[]
+}
+
+model TestCase {
+    id          String   @id @default(uuid())
+    question_id String
+    question    Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
+    input       String   // Input truyền vào stdin
+    expected    String   // Output mong đợi (so sánh với stdout)
+    is_hidden   Boolean  @default(false) // Hidden test case — sinh viên không thấy
+    order       Int
 }
 
 model Option {
@@ -56,6 +82,25 @@ model QuizAttempt {
     submitted_at DateTime @default(now())
 
     answers AttemptAnswer[]
+
+    @@index([user_id, quiz_id, submitted_at])
+}
+
+model QuizAttemptRequest {
+    id           String                 @id @default(uuid())
+    user_id      String
+    quiz_id      String
+    status       attempt_request_status @default(PENDING)
+    requested_at DateTime               @default(now())
+    resolved_at  DateTime?
+    resolved_by  String?
+
+    user     User  @relation("QuizAttemptRequestStudent", fields: [user_id], references: [id], onDelete: Cascade)
+    quiz     Quiz  @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+    resolver User? @relation("QuizAttemptRequestResolver", fields: [resolved_by], references: [id], onDelete: SetNull)
+
+    @@index([quiz_id, status])
+    @@index([user_id, quiz_id, status])
 }
 
 model AttemptAnswer {
@@ -68,4 +113,5 @@ model AttemptAnswer {
     is_correct    Boolean?
     ai_feedback   String?
     points_earned Float?
+    code_output   String?     // Lưu kết quả chạy code (CODING / DEBUGGING)
 }

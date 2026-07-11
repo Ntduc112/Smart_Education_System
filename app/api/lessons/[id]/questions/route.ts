@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { createNotification } from "@/lib/notification";
 
 const AskSchema = z.object({
     content: z.string().min(1, "Nội dung không được trống").max(2000),
@@ -15,16 +16,17 @@ async function getEnrollmentOrTeacher(userId: string, lessonId: string) {
 
     const courseId = lesson.chapter.course_id;
 
-    const enrollment = await prisma.enrollment.findUnique({
-        where: { user_id_course_id: { user_id: userId, course_id: courseId } },
-    });
-    if (enrollment) return { courseId, isTeacher: false };
-
-    const course = await prisma.course.findUnique({
-        where: { id: courseId },
-        select: { instructor_id: true },
-    });
-    if (course?.instructor_id === userId) return { courseId, isTeacher: true };
+    const [enrollment, course] = await Promise.all([
+        prisma.enrollment.findUnique({
+            where: { user_id_course_id: { user_id: userId, course_id: courseId } },
+        }),
+        prisma.course.findUnique({
+            where: { id: courseId },
+            select: { instructor_id: true },
+        }),
+    ]);
+    if (enrollment && course) return { courseId, isTeacher: false, instructorId: course.instructor_id };
+    if (course?.instructor_id === userId) return { courseId, isTeacher: true, instructorId: course.instructor_id };
 
     return null;
 }
@@ -114,6 +116,14 @@ export async function POST(
                 user: { select: { id: true, name: true, avatar: true, role: true } },
             },
         });
+
+        createNotification(
+            access.instructorId,
+            "QA_QUESTION",
+            "Câu hỏi mới trong khóa học",
+            content.length > 90 ? `${content.slice(0, 87)}...` : content,
+            `/teacher/courses/${access.courseId}/classroom?lesson=${lessonId}`,
+        ).catch(console.error);
 
         return NextResponse.json({ question }, { status: 201 });
     } catch (error) {

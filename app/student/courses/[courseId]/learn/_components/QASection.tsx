@@ -69,8 +69,8 @@ function LikeButton({ count, hasVoted, disabled, onVote, isPending }: {
   );
 }
 
-function ReplyItem({ reply, lessonId, questionId, currentUserId }: {
-  reply: QAReply; lessonId: string; questionId: string; currentUserId: string;
+function ReplyItem({ reply, lessonId, questionId, currentUserId, canVote }: {
+  reply: QAReply; lessonId: string; questionId: string; currentUserId: string; canVote: boolean;
 }) {
   const toggleVote = useToggleReplyVote(lessonId);
   const isOwn = reply.user.id === currentUserId;
@@ -91,7 +91,7 @@ function ReplyItem({ reply, lessonId, questionId, currentUserId }: {
           <LikeButton
             count={reply.vote_count}
             hasVoted={reply.has_voted}
-            disabled={isOwn}
+            disabled={isOwn || !canVote}
             onVote={() => toggleVote.mutate({ replyId: reply.id, questionId })}
             isPending={toggleVote.isPending}
           />
@@ -101,8 +101,12 @@ function ReplyItem({ reply, lessonId, questionId, currentUserId }: {
   );
 }
 
-function QuestionItem({ question, lessonId, currentUserId }: {
-  question: QAQuestion; lessonId: string; currentUserId: string;
+function QuestionItem({ question, lessonId, currentUserId, canVote, onReplySuccess }: {
+  question: QAQuestion;
+  lessonId: string;
+  currentUserId: string;
+  canVote: boolean;
+  onReplySuccess?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -115,7 +119,13 @@ function QuestionItem({ question, lessonId, currentUserId }: {
     if (!replyText.trim()) return;
     postReply.mutate(
       { questionId: question.id, content: replyText.trim() },
-      { onSuccess: () => { setReplyText(""); setExpanded(true); } }
+      {
+        onSuccess: () => {
+          setReplyText("");
+          setExpanded(true);
+          onReplySuccess?.();
+        },
+      }
     );
   };
 
@@ -138,7 +148,7 @@ function QuestionItem({ question, lessonId, currentUserId }: {
             <LikeButton
               count={question.vote_count}
               hasVoted={question.has_voted}
-              disabled={isOwn}
+              disabled={isOwn || !canVote}
               onVote={() => toggleVote.mutate(question.id)}
               isPending={toggleVote.isPending}
             />
@@ -172,6 +182,7 @@ function QuestionItem({ question, lessonId, currentUserId }: {
                   lessonId={lessonId}
                   questionId={question.id}
                   currentUserId={currentUserId}
+                  canVote={canVote}
                 />
               ))}
 
@@ -218,7 +229,17 @@ function QuestionItem({ question, lessonId, currentUserId }: {
   );
 }
 
-export function QASection({ lessonId, currentUserId }: { lessonId: string; currentUserId: string }) {
+export function QASection({
+  lessonId,
+  currentUserId,
+  mode = "student",
+  onReplySuccess,
+}: {
+  lessonId: string;
+  currentUserId: string;
+  mode?: "student" | "owner";
+  onReplySuccess?: () => void;
+}) {
   const { data: questions, isLoading } = useQuestions(lessonId);
   const askQuestion = useAskQuestion(lessonId);
   const { data: me } = useMe();
@@ -257,6 +278,8 @@ export function QASection({ lessonId, currentUserId }: { lessonId: string; curre
               question={q}
               lessonId={lessonId}
               currentUserId={currentUserId}
+              canVote={mode === "student"}
+              onReplySuccess={onReplySuccess}
             />
           ))}
         </div>
@@ -265,12 +288,22 @@ export function QASection({ lessonId, currentUserId }: { lessonId: string; curre
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          <p className="text-sm">Chưa có câu hỏi nào. Hãy là người đầu tiên!</p>
+          <p className="text-sm">
+            {mode === "owner" ? "Bài học này chưa có câu hỏi nào." : "Chưa có câu hỏi nào. Hãy là người đầu tiên!"}
+          </p>
         </div>
       )}
 
       {/* Ask input — Facebook style, pinned to bottom */}
-      <div className="px-5 py-3.5 border-t border-[#f0f2f5] bg-white">
+      {mode === "owner" ? (
+        <div className="flex items-center gap-2 border-t border-[#f0f2f5] bg-[#F8FAFD] px-5 py-3.5 text-xs text-[rgba(4,14,32,0.52)]">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1b61c9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          Chọn “Trả lời” dưới câu hỏi để phản hồi với tư cách giáo viên.
+        </div>
+      ) : (
+        <div className="px-5 py-3.5 border-t border-[#f0f2f5] bg-white">
         <div className="flex gap-2.5 items-center">
           {me ? (
             <Avatar avatar={me.avatar ?? null} name={me.name} />
@@ -306,7 +339,8 @@ export function QASection({ lessonId, currentUserId }: { lessonId: string; curre
             )}
           </button>
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
