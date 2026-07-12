@@ -136,13 +136,15 @@ function QuestionEditor({
           />
           <button
             onClick={() => onChange({ ...q, ai_graded: !q.ai_graded })}
-            className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-full transition-colors ${
-              q.ai_graded ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "bg-[#f0f2f5] text-[rgba(4,14,32,0.5)]"
-            }`}
+            className="group flex items-center gap-2 py-0.5"
             title="Đổi cách chấm câu này"
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${q.ai_graded ? "bg-[#1b61c9]" : "bg-[#cdd2da]"}`} />
-            {q.ai_graded ? "AI chấm khi nộp" : "Giáo viên chấm tay"}
+            <span className={`relative shrink-0 w-7 h-4 rounded-full transition-colors ${q.ai_graded ? "bg-[#1b61c9]" : "bg-[#cdd2da]"}`}>
+              <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-all ${q.ai_graded ? "left-[14px]" : "left-0.5"}`} />
+            </span>
+            <span className={`text-[11px] font-medium transition-colors ${q.ai_graded ? "text-[#1b61c9]" : "text-[rgba(4,14,32,0.5)] group-hover:text-[rgba(4,14,32,0.7)]"}`}>
+              {q.ai_graded ? "AI chấm khi nộp" : "Giáo viên chấm tay"}
+            </span>
           </button>
         </>
       )}
