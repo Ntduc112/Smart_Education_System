@@ -1273,21 +1273,6 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
-            {isPublished ? (
-              <Link href={`/courses/${id}`} target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40"
-                style={{ border: `1px solid ${C.border}`, color: C.ink }}>
-                Xem trang công khai
-              </Link>
-            ) : (
-              <span
-                className="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-[#F7F9FC] px-4 py-2 text-sm font-medium"
-                style={{ border: `1px solid ${C.border}`, color: C.inkFaint }}
-                title="Xuất bản khóa học để mở trang công khai"
-              >
-                Chưa có trang công khai
-              </span>
-            )}
             {isOwner && <button onClick={() => setShowCollaborators(true)}
               className="inline-flex items-center gap-2 rounded-xl border border-[#DCE6F4] bg-white px-4 py-2 text-sm font-medium text-[#181d26] transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]">
               <UserRoundCog size={16} /> Trợ giảng
