@@ -14,9 +14,6 @@ env:
   ACCESS_TOKEN_EXPIRES_IN: 900
   REFRESH_TOKEN_EXPIRES_IN: 604800
   DATABASE_URL: postgresql://admin:password@localhost:5433/smart_education
-  # Groq/Resend SDK throw ngay khi import nếu thiếu key — build cần key giả dù không gọi API.
-  GROQ_API_KEY: ci-dummy
-  RESEND_API_KEY: re_ci_dummy
 
 jobs:
   test:

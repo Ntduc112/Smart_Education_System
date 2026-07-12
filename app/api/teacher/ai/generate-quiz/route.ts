@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
 import { z } from "zod";
 import prisma from "@/prisma/prisma";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
 import { courseAccessWhere } from "@/lib/course-access";
 import { logCourseActivity } from "@/lib/activity-log";
-
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { getGroq } from "@/lib/ai/groq";
 
 const BodySchema = z.object({
   lessonId: z.string().uuid(),
@@ -197,7 +195,7 @@ Trả về JSON đúng schema:
   let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const completion = await client.chat.completions.create({
+      const completion = await getGroq().chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },

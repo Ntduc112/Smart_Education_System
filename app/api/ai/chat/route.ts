@@ -1,8 +1,6 @@
 import { NextRequest } from "next/server";
-import Groq from "groq-sdk";
 import { z } from "zod";
-
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
+import { getGroq } from "@/lib/ai/groq";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -52,7 +50,7 @@ Trả lời bằng tiếng Việt.`;
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        const stream = await groq.chat.completions.create({
+        const stream = await getGroq().chat.completions.create({
           model:    "llama-3.3-70b-versatile",
           stream:   true,
           max_tokens: 1024,

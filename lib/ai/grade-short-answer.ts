@@ -1,7 +1,5 @@
-import Groq from "groq-sdk";
 import { z } from "zod";
-
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+import { getGroq } from "@/lib/ai/groq";
 
 const GradeSchema = z.object({
   points: z.number(),
@@ -49,7 +47,7 @@ Trả về JSON đúng schema:
   "feedback": "nhận xét bằng tiếng Việt"
 }`;
 
-  const completion = await client.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },

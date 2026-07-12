@@ -1,9 +1,18 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazy-init (như lib/payment/payos.ts): Resend throw ngay trong constructor
+// khi thiếu RESEND_API_KEY — không được tạo client ở module scope kẻo sập build.
+let _resend: Resend | null = null;
+
+function getResend(): Resend {
+    if (!_resend) {
+        _resend = new Resend(process.env.RESEND_API_KEY);
+    }
+    return _resend;
+}
 
 export async function sendOtpEmail(email: string, code: string) {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "Learnust <noreply@learnust.dev>",
         to: email,
         subject: "Mã xác thực đặt lại mật khẩu – Learnust",
@@ -65,7 +74,7 @@ export async function sendAssistantWelcomeEmail(input: {
     teacherName: string;
     loginUrl: string;
 }) {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "Learnust <noreply@learnust.dev>",
         to: input.email,
         subject: `Tài khoản trợ giảng khóa học "${input.courseTitle}" – Learnust`,
