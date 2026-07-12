@@ -56,8 +56,11 @@ function setAccessCookie(response: NextResponse, accessToken: string){
 }
 export async function proxy(request: NextRequest){
     const pathName = request.nextUrl.pathname;
+    // File tĩnh trong public/ (ảnh thumbnail, font...) không phải trang —
+    // phải cho qua, nếu không guest bị redirect /login và ảnh vỡ.
     if( pathName.startsWith("/_next")||
-        pathName.startsWith("/favicon.ico")){
+        pathName.startsWith("/favicon.ico")||
+        /\.(svg|png|jpe?g|gif|webp|avif|ico|css|js|txt|xml|json|woff2?|ttf|otf|map|mp4|webm|pdf)$/i.test(pathName)){
         return NextResponse.next();
     }
     // Landing marketing: chỉ guest mới thấy. Đã đăng nhập → vào thẳng home theo role.
@@ -141,5 +144,5 @@ export async function proxy(request: NextRequest){
     return response;
 }
 export const config = {
-    matcher: ["/((?!login|register|_next/static|_next/image/favicon.ico).*)"]
+    matcher: ["/((?!login|register|_next/static|_next/image|favicon.ico).*)"]
 }
