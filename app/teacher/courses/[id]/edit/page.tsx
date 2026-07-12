@@ -487,7 +487,7 @@ function VideoUploadSection({
     return (
       <div className="px-4 py-4 border border-[#DCE6F4] rounded-xl bg-[#F4F8FE] space-y-2.5">
         <div className="flex items-center justify-between text-xs text-[rgba(4,14,32,0.55)]">
-          <span>Đang tải lên MinIO...</span>
+          <span>Đang tải video lên...</span>
           <span className="font-medium text-[#1b61c9]">{uploadPct}%</span>
         </div>
         <div className="h-1.5 bg-[#DCE6F4] rounded-full overflow-hidden">
@@ -495,7 +495,7 @@ function VideoUploadSection({
                style={{ width: `${uploadPct}%` }} />
         </div>
         <p className="text-[10px] text-[rgba(4,14,32,0.4)]">
-          File đang được truyền thẳng đến MinIO, không qua server.
+          Vui lòng giữ trang mở cho tới khi tải xong. Lời giảng sẽ được trích tự động sau đó.
         </p>
       </div>
     );
