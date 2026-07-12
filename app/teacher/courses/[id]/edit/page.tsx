@@ -1239,7 +1239,12 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push(isAssistant ? "/assistant/home" : "/teacher/courses")}
+              // Quay về đúng trang trước đó (classroom, danh sách...); mở thẳng
+              // bằng link (không có lịch sử) thì rơi về trang mặc định theo role.
+              onClick={() => {
+                if (window.history.length > 1) router.back();
+                else router.push(isAssistant ? "/assistant/home" : "/teacher/courses");
+              }}
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
               style={{ border: `1px solid ${C.border}`, color: C.ink }}
             >
