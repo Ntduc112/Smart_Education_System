@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
     }
 
     const newHash = await hashPassword(newPassword);
-    await prisma.user.update({ where: { id: userId }, data: { password_hash: newHash } });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password_hash: newHash, must_change_password: false },
+    });
 
     return NextResponse.json({ message: "Đổi mật khẩu thành công" }, { status: 200 });
   } catch (error) {

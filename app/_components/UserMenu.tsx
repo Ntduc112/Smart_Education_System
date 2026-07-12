@@ -21,10 +21,16 @@ interface MenuCourse {
   thumbnail: string | null;
 }
 
-function useMenuCourses(enabled: boolean, isTeacher: boolean) {
+function useMenuCourses(enabled: boolean, role?: string) {
+  const isTeacher = role === "TEACHER";
+  const isAssistant = role === "TEACHING_ASSISTANT";
   return useQuery<MenuCourse[]>({
-    queryKey: ["user-menu-courses", isTeacher ? "teacher" : "student"],
+    queryKey: ["user-menu-courses", role ?? "student"],
     queryFn: async () => {
+      if (isAssistant) {
+        const res = await api.get("/assistant/courses");
+        return (res.data.memberships as { course: MenuCourse }[]).map((item) => item.course);
+      }
       const res = await api.get(isTeacher ? "/teacher/courses" : "/student/courses");
       return res.data.courses as MenuCourse[];
     },
@@ -45,7 +51,8 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const isTeacher = user?.role === "TEACHER";
-  const { data: courses, isLoading: coursesLoading } = useMenuCourses(coursesOpen, isTeacher);
+  const isAssistant = user?.role === "TEACHING_ASSISTANT";
+  const { data: courses, isLoading: coursesLoading } = useMenuCourses(coursesOpen, user?.role);
 
   // Đóng cả 2 dropdown khi click ngoài
   useEffect(() => {
@@ -96,7 +103,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
             style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 4px 16px" }}
           >
             <p className="px-4 pt-2.5 pb-2 text-xs font-semibold text-[rgba(4,14,32,0.45)] uppercase tracking-wider">
-              {isTeacher ? "Khóa học của bạn" : "Khóa học đã đăng ký"}
+              {isTeacher ? "Khóa học của bạn" : isAssistant ? "Khóa học đang hỗ trợ" : "Khóa học đã đăng ký"}
             </p>
 
             {coursesLoading && (
@@ -108,14 +115,14 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
             {!coursesLoading && (!courses || courses.length === 0) && (
               <div className="px-4 py-5 text-center">
                 <p className="text-sm text-[rgba(4,14,32,0.45)]">
-                  {isTeacher ? "Bạn chưa tạo khóa học nào." : "Bạn chưa đăng ký khóa học nào."}
+                  {isTeacher ? "Bạn chưa tạo khóa học nào." : isAssistant ? "Bạn chưa tham gia khóa học nào." : "Bạn chưa đăng ký khóa học nào."}
                 </p>
                 <Link
-                  href={isTeacher ? "/teacher/courses/new" : "/courses"}
+                  href={isTeacher ? "/teacher/courses/new" : isAssistant ? "/assistant/home" : "/courses"}
                   onClick={() => setCoursesOpen(false)}
                   className="inline-block mt-2 text-sm text-[#1b61c9] font-medium hover:underline"
                 >
-                  {isTeacher ? "Tạo khóa học →" : "Khám phá khóa học →"}
+                  {isTeacher ? "Tạo khóa học →" : isAssistant ? "Không gian trợ giảng →" : "Khám phá khóa học →"}
                 </Link>
               </div>
             )}
@@ -125,7 +132,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
                 {courses.map((course) => (
                   <Link
                     key={course.id}
-                    href={isTeacher ? `/teacher/courses/${course.id}/edit` : `/student/courses/${course.id}/learn`}
+                    href={isTeacher || isAssistant ? `/teacher/courses/${course.id}/edit` : `/student/courses/${course.id}/learn`}
                     onClick={() => setCoursesOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8fafc] transition-colors"
                   >
@@ -150,7 +157,7 @@ export function UserMenu({ user, dark = false }: { user: User | null; dark?: boo
 
             <div className="border-t border-[#f0f2f5] mt-1 pt-1 px-4 pb-2">
               <Link
-                href={isTeacher ? "/teacher/courses" : "/student/dashboard"}
+                href={isTeacher ? "/teacher/courses" : isAssistant ? "/assistant/home" : "/student/dashboard"}
                 onClick={() => setCoursesOpen(false)}
                 className="text-xs text-[#1b61c9] font-medium hover:underline"
               >

@@ -41,6 +41,7 @@ function matchesRoutes(pathName: string, routes: string[]){
 function roleHome(role: string){
     if(role === "ADMIN") return "/admin/dashboard";
     if(role === "TEACHER") return "/teacher/home";
+    if(role === "TEACHING_ASSISTANT") return "/assistant/home";
     return "/student/home";
 }
 // đặt cookie access mới khi refresh ngầm thành công (khớp option ở lib/auth/session.ts)
@@ -125,7 +126,7 @@ export async function proxy(request: NextRequest){
         }
         return NextResponse.redirect(new URL("/403", request.url));
     }
-    if(matchesRoutes(pathName, TEACHER_ROUTES) && session.role !== "TEACHER" && session.role !== "ADMIN"){
+    if(matchesRoutes(pathName, TEACHER_ROUTES) && session.role !== "TEACHER" && session.role !== "TEACHING_ASSISTANT" && session.role !== "ADMIN"){
         if(pathName.startsWith("/api")){
             return NextResponse.json({ error: "Không có quyền truy cập" }, { status: 403 });
         }

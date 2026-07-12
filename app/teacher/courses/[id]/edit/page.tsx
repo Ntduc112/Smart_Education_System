@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import {
   Plus, Save,
   Video, FileText, ClipboardList, Globe, Lock, ChevronLeft, ImageIcon, Settings, BookOpen, Route,
-  Loader2, CheckCircle2, AlertTriangle, Trash2,
+  Loader2, CheckCircle2, AlertTriangle, Trash2, UserRoundCog,
 } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
 import { ConfirmModal } from "@/app/_components/ConfirmModal";
@@ -21,6 +21,7 @@ import {
 import { AIQuizModal } from "./_components/AIQuizModal";
 import { BulkImportModal } from "./_components/BulkImportModal";
 import { ChapterTree, type Selection } from "./_components/ChapterTree";
+import { CollaboratorModal } from "./_components/CollaboratorModal";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
@@ -429,6 +430,25 @@ function ChapterPanel({
   );
 }
 
+function AssistantAccessPanel({ canManageLessons, canManageQuizzes }: { canManageLessons: boolean; canManageQuizzes: boolean }) {
+  return (
+    <>
+      <SurfaceHead icon={<UserRoundCog size={18} />} title="Quyền trợ giảng" subtitle="Phạm vi do giáo viên sở hữu khóa học cấp" />
+      <div className={`${sectionCls} space-y-3`}>
+        <div className={`flex items-center gap-3 rounded-2xl border p-4 ${canManageLessons ? "border-[#1b61c9]/25 bg-[#EAF1FC]" : "border-[#DCE6F4] bg-[#F8FAFC] opacity-60"}`}>
+          <BookOpen size={18} className="text-[#1b61c9]" />
+          <div><p className="text-sm font-semibold">Quản lý bài giảng</p><p className="text-xs text-[rgba(4,14,32,0.5)]">{canManageLessons ? "Bạn có thể tạo, sửa và sắp xếp chương, bài học." : "Bạn chưa được cấp quyền này."}</p></div>
+        </div>
+        <div className={`flex items-center gap-3 rounded-2xl border p-4 ${canManageQuizzes ? "border-[#7C5CFC]/25 bg-[#7C5CFC]/[0.06]" : "border-[#DCE6F4] bg-[#F8FAFC] opacity-60"}`}>
+          <ClipboardList size={18} className="text-[#7C5CFC]" />
+          <div><p className="text-sm font-semibold">Quản lý quiz</p><p className="text-xs text-[rgba(4,14,32,0.5)]">{canManageQuizzes ? "Chọn một bài học để tạo hoặc chỉnh sửa quiz." : "Bạn chưa được cấp quyền này."}</p></div>
+        </div>
+        <p className="pt-2 text-xs leading-relaxed text-[rgba(4,14,32,0.45)]">Trợ giảng không thể sửa giá, thông tin khóa học, công bố hoặc xóa nội dung. Nếu cần thay đổi phạm vi, hãy liên hệ giáo viên sở hữu.</p>
+      </div>
+    </>
+  );
+}
+
 // ── VideoUploadSection ────────────────────────────────────────────────────────
 
 type VideoMode = "uploaded" | "url" | "empty";
@@ -621,10 +641,13 @@ function VideoUploadSection({
 // ── LessonPanel ──────────────────────────────────────────────────────────────
 
 function LessonPanel({
-  courseId, lesson,
+  courseId, lesson, canManageLessons, canManageQuizzes, isOwner,
 }: {
   courseId: string;
   lesson:   BuilderLesson;
+  canManageLessons: boolean;
+  canManageQuizzes: boolean;
+  isOwner: boolean;
 }) {
   const updateLesson = useUpdateLesson(courseId);
   const uploadPdf    = useUploadPdf();
@@ -764,12 +787,12 @@ function LessonPanel({
           <BookOpen size={18} />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-[18px] font-semibold text-[#181d26] leading-tight">Chỉnh sửa bài học</h2>
+          <h2 className="font-display text-[18px] font-semibold text-[#181d26] leading-tight">{canManageLessons ? "Chỉnh sửa bài học" : "Quản lý bài kiểm tra"}</h2>
           <p className="text-[13px] text-[rgba(4,14,32,0.4)] mt-0.5 truncate">{lesson.title}</p>
         </div>
       </div>
 
-      <div className={`${sectionCls} space-y-5`}>
+      {canManageLessons && <><div className={`${sectionCls} space-y-5`}>
       {/* Title */}
       <div>
         <label className={labelCls}>Tên bài học</label>
@@ -925,8 +948,10 @@ function LessonPanel({
         )}
       </button>
 
+      </div></>}
+
       {/* Quiz section */}
-      <div className="border-t border-[#DCE6F4] pt-5">
+      {canManageQuizzes && <div className={`${sectionCls} border-t border-[#DCE6F4] pt-5`}>
         <div className="flex items-center gap-2 mb-3">
           <ClipboardList size={15} className="text-[#1b61c9]" />
           <span className="text-sm font-semibold text-[#181d26]">Bài kiểm tra</span>
@@ -951,14 +976,14 @@ function LessonPanel({
                   >
                     Chỉnh sửa
                   </Link>
-                  <button
+                  {isOwner && <button
                     type="button"
                     onClick={() => setQuizToDelete(q)}
                     className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:border-red-300 hover:bg-red-50"
                   >
                     <Trash2 size={13} />
                     Xóa quiz
-                  </button>
+                  </button>}
                 </div>
               </div>
             ))}
@@ -1022,9 +1047,9 @@ function LessonPanel({
             </button>
           </div>
         )}
-      </div>
+      </div>}
 
-      {showAIModal && (
+      {canManageQuizzes && showAIModal && (
         <AIQuizModal
           courseId={courseId}
           lessonId={lesson.id}
@@ -1034,7 +1059,7 @@ function LessonPanel({
         />
       )}
 
-      {showAIWarn && (
+      {canManageQuizzes && showAIWarn && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
           onClick={() => setShowAIWarn(false)}>
           <div className="bg-white rounded-2xl p-6 w-[26rem]"
@@ -1064,7 +1089,7 @@ function LessonPanel({
         </div>
       )}
 
-      <ConfirmModal
+      {isOwner && <ConfirmModal
         open={quizToDelete !== null}
         title="Xóa bài kiểm tra?"
         message={quizToDelete
@@ -1088,8 +1113,7 @@ function LessonPanel({
           );
         }}
         isLoading={deleteQuiz.isPending}
-      />
-      </div>
+      />}
     </>
   );
 }
@@ -1175,6 +1199,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
 
   const [selection, setSelection]           = useState<Selection>({ type: "info" });
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [showCollaborators, setShowCollaborators] = useState(false);
 
   // Derive selected objects
   const selectedChapter =
@@ -1207,6 +1232,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
   }
 
   const isPublished = course.status === "PUBLISHED";
+  const { isOwner, isAssistant, canManageLessons, canManageQuizzes } = course.access;
 
   return (
     <div className="min-h-screen" style={{ background: C.canvas, color: C.ink }}>
@@ -1217,7 +1243,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push(isAssistant ? "/assistant/home" : "/teacher/courses")}
               className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
               style={{ border: `1px solid ${C.border}`, color: C.ink }}
             >
@@ -1231,6 +1257,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
                 style={isPublished ? { background: "rgba(14,159,110,0.12)", color: C.emerald } : { background: "#EAF1FC", color: C.inkSoft }}>
                 {isPublished ? "Đã công bố" : "Nháp"}
               </span>
+              {isAssistant && <span className="rounded-full bg-[#7C5CFC]/10 px-2.5 py-1 text-xs font-semibold text-[#7C5CFC]">Chế độ trợ giảng</span>}
             </div>
             </div>
           </div>
@@ -1250,10 +1277,14 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
                 Chưa có trang công khai
               </span>
             )}
-            <Link href={`/teacher/courses/${id}/classroom`}
+            {isOwner && <button onClick={() => setShowCollaborators(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#DCE6F4] bg-white px-4 py-2 text-sm font-medium text-[#181d26] transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]">
+              <UserRoundCog size={16} /> Trợ giảng
+            </button>}
+            {isOwner && <Link href={`/teacher/courses/${id}/classroom`}
               className="inline-flex items-center gap-2 rounded-xl bg-[#1b61c9] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#254fad]">
               Vào lớp học
-            </Link>
+            </Link>}
           </div>
         </div>
 
@@ -1275,7 +1306,7 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             }`}
           >
             <Settings size={14} className="shrink-0" />
-            <span className="line-clamp-1">Thông tin khóa học</span>
+            <span className="line-clamp-1">{isOwner ? "Thông tin khóa học" : "Quyền trợ giảng"}</span>
           </button>
         </div>
 
@@ -1286,10 +1317,12 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
           selection={selection}
           setSelection={setSelection}
           onOpenImport={() => setShowBulkImport(true)}
+          canManage={canManageLessons}
+          canDelete={isOwner}
         />
 
         {/* Publish toggle */}
-        <div className="border-t border-[#DCE6F4] px-4 py-4">
+        {isOwner && <div className="border-t border-[#DCE6F4] px-4 py-4">
           <button
             onClick={() => togglePublish.mutate(undefined, {
               onSuccess: () => toast.success(isPublished ? "Đã chuyển khóa học về nháp" : "Đã công bố khóa học"),
@@ -1305,20 +1338,26 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
             {isPublished ? <Lock size={14} /> : <Globe size={14} />}
             {isPublished ? "Đang công bố" : "Công bố khóa học"}
           </button>
-        </div>
+        </div>}
       </aside>
 
       {/* ── Right panel: Editor surface (head · sections · footer) ── */}
       <div className="flex-1 min-w-0 rounded-3xl bg-white overflow-hidden"
         style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(80,60,20,0.06) 0px 10px 30px" }}>
-        {selection.type === "info" && (
+        {selection.type === "info" && isOwner && (
           <CourseInfoPanel courseId={id} course={course} categories={categories} />
         )}
-        {selection.type === "chapter" && selectedChapter && (
+        {selection.type === "info" && isAssistant && (
+          <AssistantAccessPanel canManageLessons={canManageLessons} canManageQuizzes={canManageQuizzes} />
+        )}
+        {selection.type === "chapter" && selectedChapter && canManageLessons && (
           <ChapterPanel courseId={id} chapter={selectedChapter} />
         )}
+        {selection.type === "chapter" && selectedChapter && !canManageLessons && (
+          <AssistantAccessPanel canManageLessons={canManageLessons} canManageQuizzes={canManageQuizzes} />
+        )}
         {selection.type === "lesson" && selectedLesson && (
-          <LessonPanel courseId={id} lesson={selectedLesson} />
+          <LessonPanel courseId={id} lesson={selectedLesson} canManageLessons={canManageLessons} canManageQuizzes={canManageQuizzes} isOwner={isOwner} />
         )}
         {selection.type === "lesson" && !selectedLesson && (
           <p className="p-7 text-sm text-[rgba(4,14,32,0.4)]">Chọn bài học để chỉnh sửa.</p>
@@ -1327,13 +1366,14 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         </div>
       </main>
 
-      {showBulkImport && (
+      {canManageLessons && showBulkImport && (
         <BulkImportModal
           courseId={id}
           existingChapterCount={course.sections.length}
           onClose={() => setShowBulkImport(false)}
         />
       )}
+      {isOwner && showCollaborators && <CollaboratorModal courseId={id} onClose={() => setShowCollaborators(false)} />}
     </div>
   );
 }

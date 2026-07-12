@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { courseAccessWhere, getCourseAccess } from "@/lib/course-access";
 
 const CourseSchema = z.object({
     title:            z.string().min(1, "Title is required"),
@@ -20,8 +21,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         if (!userId) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const course = await prisma.course.findFirst({
-            where:   { id, instructor_id: userId },
+        const [course, access] = await Promise.all([
+          prisma.course.findFirst({
+            where:   { id, ...courseAccessWhere(userId) },
             include: {
                 category: { select: { id: true, name: true } },
                 sections: {
@@ -34,11 +36,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     },
                 },
             },
-        });
-        if (!course) {
+          }),
+          getCourseAccess(userId, id),
+        ]);
+        if (!course || !access) {
             return NextResponse.json({ error: "Course not found" }, { status: 404 });
         }
-        return NextResponse.json({ course }, { status: 200 });
+        return NextResponse.json({ course: { ...course, access } }, { status: 200 });
     } catch (error) {
         console.error("Error fetching course:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });

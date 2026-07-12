@@ -3,6 +3,7 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { MAX_QUIZ_ATTEMPTS } from "@/lib/quiz-policy";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const OptionSchema = z.object({
     content:    z.string().min(1),
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
         const lesson = await prisma.lesson.findFirst({
             where: {
                 id:      quizData.lesson_id,
-                chapter: { course: { instructor_id: userId } },
+                chapter: { course: courseAccessWhere(userId, "QUIZZES") },
             },
         });
         if (!lesson) {

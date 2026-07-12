@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const OptionSchema = z.object({
     content:    z.string().min(1).max(2_000),
@@ -67,7 +68,7 @@ export async function POST(
             where: {
                 id,
                 deleted_at: null,
-                lesson: { chapter: { course: { instructor_id: userId } } },
+                lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
             },
         });
         if (!quiz) {

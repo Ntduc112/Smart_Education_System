@@ -1,83 +1,87 @@
 enum userRole {
-    STUDENT
-    ADMIN
-    TEACHER
+  STUDENT
+  ADMIN
+  TEACHER
+  TEACHING_ASSISTANT
 }
 
 model User {
-    id             String           @id @default(uuid())
-    name           String
-    email          String           @unique
-    password_hash  String
-    role           userRole
-    is_active      Boolean          @default(true)
-    created_at     DateTime         @default(now())
-    updated_at     DateTime         @updatedAt
-    avatar         String?
-    refresh_tokens RefreshToken[]
-    courses        Course[]
-    lessonProgress LessonProgress[]
-    enrollments    Enrollment[]
-    attempts       QuizAttempt[]
-    quizAttemptRequests QuizAttemptRequest[] @relation("QuizAttemptRequestStudent")
-    resolvedQuizAttemptRequests QuizAttemptRequest[] @relation("QuizAttemptRequestResolver")
-    payments       Payment[]
-    reviews        Review[]
-    certificates   Certificate[]
-    notifications   Notification[]
-    wishlist        Wishlist[]
-    notes           LessonNote[]
-    questions       LessonQuestion[]
-    questionReplies QuestionReply[]
-    questionVotes   QuestionVote[]
-    replyVotes      ReplyVote[]
-    posts           Post[]
-    postComments    PostComment[]
-    postLikes       PostLike[]
+  id                          String               @id @default(uuid())
+  name                        String
+  email                       String               @unique
+  password_hash               String
+  role                        userRole
+  is_active                   Boolean              @default(true)
+  must_change_password        Boolean              @default(false)
+  created_at                  DateTime             @default(now())
+  updated_at                  DateTime             @updatedAt
+  avatar                      String?
+  refresh_tokens              RefreshToken[]
+  courses                     Course[]
+  lessonProgress              LessonProgress[]
+  enrollments                 Enrollment[]
+  attempts                    QuizAttempt[]
+  quizAttemptRequests         QuizAttemptRequest[] @relation("QuizAttemptRequestStudent")
+  resolvedQuizAttemptRequests QuizAttemptRequest[] @relation("QuizAttemptRequestResolver")
+  payments                    Payment[]
+  reviews                     Review[]
+  certificates                Certificate[]
+  notifications               Notification[]
+  wishlist                    Wishlist[]
+  notes                       LessonNote[]
+  questions                   LessonQuestion[]
+  questionReplies             QuestionReply[]
+  questionVotes               QuestionVote[]
+  replyVotes                  ReplyVote[]
+  posts                       Post[]
+  postComments                PostComment[]
+  postLikes                   PostLike[]
+  courseCollaborations        CourseCollaborator[] @relation("CourseCollaboratorUser")
+  invitedCourseCollaborators  CourseCollaborator[] @relation("CourseCollaboratorInviter")
 }
 
 model RefreshToken {
-    id         String   @id @default(uuid())
-    token      String   @unique
-    user_id    String
-    user       User     @relation(fields: [user_id], references: [id])
-    created_at DateTime @default(now())
-    expires_at DateTime
+  id         String   @id @default(uuid())
+  token      String   @unique
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id])
+  created_at DateTime @default(now())
+  expires_at DateTime
 }
 
 model Enrollment {
-    id          String   @id @default(uuid())
-    user_id     String
-    user        User     @relation(fields: [user_id], references: [id])
-    course_id   String
-    course      Course   @relation(fields: [course_id], references: [id])
-    enrolled_at DateTime @default(now())
+  id          String   @id @default(uuid())
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id])
+  course_id   String
+  course      Course   @relation(fields: [course_id], references: [id])
+  enrolled_at DateTime @default(now())
 
-    @@unique([user_id, course_id])
+  @@unique([user_id, course_id])
 }
 
 model PasswordReset {
-    id         String   @id @default(uuid())
-    email      String
-    code_hash  String
-    attempts   Int      @default(0)
-    expires_at DateTime
-    used       Boolean  @default(false)
-    created_at DateTime @default(now())
+  id         String   @id @default(uuid())
+  email      String
+  code_hash  String
+  attempts   Int      @default(0)
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
 
-    @@index([email])
+  @@index([email])
 }
 
 model LessonProgress {
-    id              String    @id @default(uuid())
-    user_id         String
-    user            User      @relation(fields: [user_id], references: [id])
-    lesson_id       String
-    lesson          Lesson    @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
-    is_completed    Boolean   @default(false)
-    watch_percent   Int       @default(0)
-    last_watched_at DateTime?
-    updated_at      DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  user_id         String
+  user            User      @relation(fields: [user_id], references: [id])
+  lesson_id       String
+  lesson          Lesson    @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  is_completed    Boolean   @default(false)
+  watch_percent   Int       @default(0)
+  last_watched_at DateTime?
+  updated_at      DateTime  @updatedAt
 
-    @@unique([user_id, lesson_id])
+  @@unique([user_id, lesson_id])
 }

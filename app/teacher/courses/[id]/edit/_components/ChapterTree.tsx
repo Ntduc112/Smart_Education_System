@@ -26,7 +26,7 @@ export type Selection =
 // ── Sortable lesson row ───────────────────────────────────────────────────────
 
 function SortableLesson({
-  lesson, chapterId, selected, isDropTarget, onSelect, onDelete,
+  lesson, chapterId, selected, isDropTarget, onSelect, onDelete, canManage, canDelete,
 }: {
   lesson:    BuilderLesson;
   chapterId: string;
@@ -34,9 +34,11 @@ function SortableLesson({
   isDropTarget: boolean;
   onSelect:  () => void;
   onDelete:  () => void;
+  canManage: boolean;
+  canDelete: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: lesson.id, data: { type: "lesson", chapterId } });
+    useSortable({ id: lesson.id, data: { type: "lesson", chapterId }, disabled: !canManage });
 
   return (
     <div
@@ -45,7 +47,7 @@ function SortableLesson({
       {...listeners}
       style={{ transform: CSS.Translate.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
       onClick={onSelect}
-      className={`group flex items-center gap-1.5 pl-5 pr-3 py-2 cursor-grab active:cursor-grabbing rounded-lg mx-1 transition-colors touch-none ${
+      className={`group flex items-center gap-1.5 pl-5 pr-3 py-2 rounded-lg mx-1 transition-colors touch-none ${canManage ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
         isDragging ? "outline-2 outline-dashed outline-[#1b61c9] bg-[#1b61c9]/5 text-[#1b61c9]" :
         isDropTarget ? "bg-[#1b61c9]/8 text-[#1b61c9] ring-1 ring-[#1b61c9]/30" :
         selected ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "text-[rgba(4,14,32,0.65)] hover:bg-[#f8fafc]"
@@ -75,12 +77,12 @@ function SortableLesson({
             Free
           </span>
         )}
-        <button
+        {canDelete && <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"
         >
           <Trash2 size={11} />
-        </button>
+        </button>}
       </div>
     </div>
   );
@@ -93,7 +95,7 @@ function SortableChapter({
   isDropTarget, overLessonId,
   onDeleteChapter, onDeleteLesson,
   addLessonChapterId, setAddLessonChapterId,
-  newLessonTitle, setNewLessonTitle, onAddLesson,
+  newLessonTitle, setNewLessonTitle, onAddLesson, canManage, canDelete,
 }: {
   chapter:    BuilderChapter;
   index:      number;
@@ -110,9 +112,11 @@ function SortableChapter({
   newLessonTitle: string;
   setNewLessonTitle: (s: string) => void;
   onAddLesson: (chapterId: string) => void;
+  canManage: boolean;
+  canDelete: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: chapter.id, data: { type: "chapter", chapterId: chapter.id } });
+    useSortable({ id: chapter.id, data: { type: "chapter", chapterId: chapter.id }, disabled: !canManage });
 
   const isSel = selection.type === "chapter" && selection.id === chapter.id;
 
@@ -129,7 +133,7 @@ function SortableChapter({
       <div
         {...attributes}
         {...listeners}
-        className={`group flex items-center gap-1.5 px-2 py-2 cursor-grab active:cursor-grabbing rounded-lg mx-1 transition-colors touch-none ${
+        className={`group flex items-center gap-1.5 px-2 py-2 rounded-lg mx-1 transition-colors touch-none ${canManage ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
           isSel ? "bg-[#1b61c9]/8 text-[#1b61c9]" : "text-[rgba(4,14,32,0.7)] hover:bg-[#f8fafc]"
         }`}
       >
@@ -147,12 +151,12 @@ function SortableChapter({
           {chapter.title}
         </span>
         <span className="shrink-0 text-[11px] text-[rgba(4,14,32,0.4)] mr-1">{chapter.lessons.length} bài</span>
-        <button
+        {canDelete && <button
           onClick={(e) => { e.stopPropagation(); onDeleteChapter(chapter.id, chapter.title); }}
           className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-red-500 transition-all"
         >
           <Trash2 size={12} />
-        </button>
+        </button>}
       </div>
 
       {/* Lessons */}
@@ -171,6 +175,8 @@ function SortableChapter({
                 isDropTarget={overLessonId === lesson.id}
                 onSelect={() => setSelection({ type: "lesson", id: lesson.id })}
                 onDelete={() => onDeleteLesson(chapter.id, lesson.id, lesson.title)}
+                canManage={canManage}
+                canDelete={canDelete}
               />
             ))}
           </SortableContext>
@@ -183,7 +189,7 @@ function SortableChapter({
           )}
 
           {/* Add lesson */}
-          {addLessonChapterId === chapter.id ? (
+          {canManage && (addLessonChapterId === chapter.id ? (
             <div className="pl-8 pr-3 py-2 mx-1 flex gap-2">
               <input
                 autoFocus
@@ -207,7 +213,7 @@ function SortableChapter({
             >
               <Plus size={11} /> Thêm bài học
             </button>
-          )}
+          ))}
         </div>
       )}
     </div>
@@ -217,13 +223,15 @@ function SortableChapter({
 // ── Chapter tree (drag-drop container) ────────────────────────────────────────
 
 export function ChapterTree({
-  courseId, sections, selection, setSelection, onOpenImport,
+  courseId, sections, selection, setSelection, onOpenImport, canManage, canDelete,
 }: {
   courseId:     string;
   sections:     BuilderChapter[];
   selection:    Selection;
   setSelection: (s: Selection) => void;
   onOpenImport: () => void;
+  canManage: boolean;
+  canDelete: boolean;
 }) {
   const createChapter = useCreateChapter(courseId);
   const deleteChapter = useDeleteChapter(courseId);
@@ -256,6 +264,7 @@ export function ChapterTree({
   const clearOver = () => { setActiveId(null); setOverChapterId(null); setOverLessonId(null); };
 
   const handleDragOver = (event: DragOverEvent) => {
+    if (!canManage) return;
     const { active, over } = event;
     if (!over || active.data.current?.type !== "lesson") {
       setOverChapterId(null);
@@ -348,6 +357,7 @@ export function ChapterTree({
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (!canManage) return;
     const { active, over } = event;
     clearOver();
     if (!over) { setLocalSections(sections); return; }
@@ -393,7 +403,7 @@ export function ChapterTree({
   return (
     <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden py-3">
       {/* Import từ folder */}
-      {localSections.length > 0 && (
+      {canManage && localSections.length > 0 && (
         <div className="px-2 mb-2 pb-2 border-b border-[#f0f2f5]">
           <button
             onClick={onOpenImport}
@@ -412,18 +422,18 @@ export function ChapterTree({
           </div>
           <p className="text-sm font-semibold text-[#181d26]">Chưa có chương nào</p>
           <p className="mt-1 text-xs text-[rgba(4,14,32,0.5)]">Bắt đầu xây nội dung khóa học của bạn.</p>
-          <button
+          {canManage && <button
             onClick={() => setShowNewChapter(true)}
             className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1b61c9] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#254fad]"
           >
             <Plus size={14} /> Thêm chương đầu tiên
-          </button>
-          <button
+          </button>}
+          {canManage && <button
             onClick={onOpenImport}
             className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#DCE6F4] bg-white py-2.5 text-sm font-medium text-[rgba(4,14,32,0.7)] transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
           >
             <FolderUp size={14} /> Import từ folder
-          </button>
+          </button>}
         </div>
       )}
 
@@ -454,6 +464,8 @@ export function ChapterTree({
               newLessonTitle={newLessonTitle}
               setNewLessonTitle={setNewLessonTitle}
               onAddLesson={handleAddLesson}
+              canManage={canManage}
+              canDelete={canDelete}
             />
           ))}
         </SortableContext>
@@ -472,7 +484,7 @@ export function ChapterTree({
       </DndContext>
 
       {/* Add chapter */}
-      <div className="px-2 mt-2">
+      {canManage && <div className="px-2 mt-2">
         {showNewChapter ? (
           <div className="flex gap-2 px-1">
             <input
@@ -498,7 +510,7 @@ export function ChapterTree({
             <Plus size={13} /> Thêm chương
           </button>
         ) : null}
-      </div>
+      </div>}
 
       {/* Modal xác nhận xóa */}
       {confirmDelete && (

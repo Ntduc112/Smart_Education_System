@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const UpdateChapterSchema = z.object({
     title: z.string().min(1, "Title is required").optional(),
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         const chapter = await prisma.chapter.findFirst({
-            where:   { id, course: { instructor_id: userId } },
+            where:   { id, course: courseAccessWhere(userId, "LESSONS") },
             include: { lessons: { orderBy: { order: "asc" } } },
         });
         if (!chapter) {
@@ -41,7 +42,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const { title, order } = UpdateChapterSchema.parse(body);
 
         const existing = await prisma.chapter.findFirst({
-            where: { id, course: { instructor_id: userId } },
+            where: { id, course: courseAccessWhere(userId, "LESSONS") },
         });
         if (!existing) {
             return NextResponse.json({ error: "Chapter not found" }, { status: 404 });

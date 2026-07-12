@@ -3,6 +3,7 @@ import Groq from "groq-sdk";
 import { z } from "zod";
 import prisma from "@/prisma/prisma";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
 
   // Tra lesson + kiểm tra giáo viên sở hữu khóa học chứa bài này.
   const lesson = await prisma.lesson.findFirst({
-    where: { id: lessonId, chapter: { course: { instructor_id: userId } } },
+    where: { id: lessonId, chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
     select: { title: true, content: true, pdf_text: true, video_url: true },
   });
   if (!lesson) return NextResponse.json({ error: "Lesson not found" }, { status: 404 });

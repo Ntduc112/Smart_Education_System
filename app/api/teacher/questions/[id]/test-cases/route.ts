@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { isExecutableQuestionType } from "@/lib/question-types";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const TestCaseSchema = z.object({
     input:     z.string().max(10_000),
@@ -34,8 +35,8 @@ export async function GET(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const question = await prisma.question.findUnique({
-            where: { id },
+        const question = await prisma.question.findFirst({
+            where: { id, quiz: { lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } } } },
             include: {
                 quiz: { include: { lesson: { include: { chapter: { select: { course_id: true, course: { select: { instructor_id: true } } } } } } } },
                 testCases: { orderBy: { order: "asc" } },
@@ -47,11 +48,6 @@ export async function GET(
         }
         if (!isExecutableQuestionType(question.type)) {
             return NextResponse.json({ error: "Question is not a coding question" }, { status: 400 });
-        }
-
-        // Chỉ instructor của khóa học mới xem được
-        if (question.quiz.lesson.chapter.course.instructor_id !== userId) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         return NextResponse.json({ testCases: question.testCases });
@@ -73,8 +69,8 @@ export async function PUT(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const question = await prisma.question.findUnique({
-            where: { id },
+        const question = await prisma.question.findFirst({
+            where: { id, quiz: { lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } } } },
             include: {
                 quiz: { include: { lesson: { include: { chapter: { select: { course_id: true, course: { select: { instructor_id: true } } } } } } } },
             },
@@ -85,10 +81,6 @@ export async function PUT(
         }
         if (!isExecutableQuestionType(question.type)) {
             return NextResponse.json({ error: "Question is not a coding question" }, { status: 400 });
-        }
-
-        if (question.quiz.lesson.chapter.course.instructor_id !== userId) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const body = await request.json();

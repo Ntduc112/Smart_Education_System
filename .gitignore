@@ -44,3 +44,6 @@ prisma/generated
 
 # Báo cáo & tài liệu (không đẩy lên repo)
 báo cáo mới/
+
+# Playwright artifacts
+/test-results/

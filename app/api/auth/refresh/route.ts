@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         // Bước 3.5: Chặn tài khoản đã bị khóa
         const account = await prisma.user.findUnique({
             where: { id: payload.userId },
-            select: { is_active: true },
+            select: { is_active: true, role: true },
         });
         if (!account?.is_active) {
             await prisma.refreshToken.delete({ where: { token: refreshToken } }).catch(() => {});
@@ -70,11 +70,11 @@ export async function POST(request: NextRequest) {
         // Bước 4: Ký token mới
         const newAccessToken = await signAccessToken({
             userId: payload.userId,
-            role: payload.role,
+            role: account.role,
         });
         const newRefreshToken = await signRefreshToken({
             userId: payload.userId,
-            role: payload.role,
+            role: account.role,
         });
 
         const refreshTokenMaxAge = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN!);

@@ -45,6 +45,12 @@ export interface BuilderCourse {
   category_id:      string;
   category:         { id: string; name: string };
   sections:         BuilderChapter[];
+  access: {
+    isOwner: boolean;
+    isAssistant: boolean;
+    canManageLessons: boolean;
+    canManageQuizzes: boolean;
+  };
 }
 
 // ── Hooks ───────────────────────────────────────────────────────────────────

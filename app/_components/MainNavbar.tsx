@@ -43,6 +43,7 @@ function MainAuth() {
 function roleHome(role?: string) {
   if (role === "ADMIN") return "/admin/dashboard";
   if (role === "TEACHER") return "/teacher/home";
+  if (role === "TEACHING_ASSISTANT") return "/assistant/home";
   if (role === "STUDENT") return "/student/home";
   return "/";
 }

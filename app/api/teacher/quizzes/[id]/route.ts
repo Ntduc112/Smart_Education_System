@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { MAX_QUIZ_ATTEMPTS } from "@/lib/quiz-policy";
+import { courseAccessWhere, getCourseAccess } from "@/lib/course-access";
 
 const UpdateQuizSchema = z.object({
     title:        z.string().min(1).optional(),
@@ -16,7 +17,7 @@ async function verifyOwnership(quizId: string, userId: string) {
         where: {
             id:     quizId,
             deleted_at: null,
-            lesson: { chapter: { course: { instructor_id: userId } } },
+            lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
         },
         include: { questions: { include: { options: true, testCases: { orderBy: { order: "asc" } } }, orderBy: { order: "asc" } } },
     });
@@ -38,7 +39,14 @@ export async function GET(
             return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ quiz }, { status: 200 });
+        const courseId = await prisma.quiz.findUnique({
+            where: { id },
+            select: { lesson: { select: { chapter: { select: { course_id: true } } } } },
+        });
+        const access = courseId
+            ? await getCourseAccess(userId, courseId.lesson.chapter.course_id)
+            : null;
+        return NextResponse.json({ quiz, access }, { status: 200 });
     } catch (error) {
         console.error("Error fetching quiz:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
@@ -86,7 +94,9 @@ export async function DELETE(
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const existing = await verifyOwnership(id, userId);
+        const existing = await prisma.quiz.findFirst({
+            where: { id, deleted_at: null, lesson: { chapter: { course: { instructor_id: userId } } } },
+        });
         if (!existing) {
             return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
         }

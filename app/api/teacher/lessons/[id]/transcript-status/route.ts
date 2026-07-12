@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { triggerFaststart } from "@/lib/video";
+import { courseAccessWhere } from "@/lib/course-access";
 
 // Row kẹt "processing" lâu hơn ngưỡng này coi như worker chết giữa job → trigger lại.
 const RETRIGGER_AFTER_MS = 10 * 60 * 1000;
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         const lesson = await prisma.lesson.findFirst({
-            where:  { id, chapter: { course: { instructor_id: userId } } },
+            where:  { id, chapter: { course: courseAccessWhere(userId, "LESSONS") } },
             select: { video_url: true },
         });
         if (!lesson) {

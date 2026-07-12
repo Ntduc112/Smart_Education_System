@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const CreateLessonSchema = z.object({
     chapter_id: z.string().uuid("Chapter ID must be a valid UUID"),
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
         const chapter = await prisma.chapter.findFirst({
             where: {
                 id: chapter_id,
-                course: { instructor_id: userId },
+                course: courseAccessWhere(userId, "LESSONS"),
             },
         });
         if (!chapter) {

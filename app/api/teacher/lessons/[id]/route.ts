@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
+import { courseAccessWhere } from "@/lib/course-access";
 
 const UpdateLessonSchema = z.object({
     title:      z.string().min(1, "Title is required").optional(),
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         const lesson = await prisma.lesson.findFirst({
-            where:   { id, chapter: { course: { instructor_id: userId } } },
+            where:   { id, chapter: { course: courseAccessWhere(userId, "LESSONS") } },
             include: { quiz: { where: { deleted_at: null } } },
         });
         if (!lesson) {
@@ -47,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const { title, order, chapter_id, content, video_url, pdf_url, pdf_text, is_free } = UpdateLessonSchema.parse(body);
 
         const existing = await prisma.lesson.findFirst({
-            where: { id, chapter: { course: { instructor_id: userId } } },
+            where: { id, chapter: { course: courseAccessWhere(userId, "LESSONS") } },
         });
         if (!existing) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
@@ -56,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         // When moving the lesson to another chapter, verify the target chapter belongs to this instructor.
         if (chapter_id) {
             const targetChapter = await prisma.chapter.findFirst({
-                where: { id: chapter_id, course: { instructor_id: userId } },
+                where: { id: chapter_id, course: courseAccessWhere(userId, "LESSONS") },
             });
             if (!targetChapter) {
                 return NextResponse.json({ error: "Target chapter not found" }, { status: 404 });

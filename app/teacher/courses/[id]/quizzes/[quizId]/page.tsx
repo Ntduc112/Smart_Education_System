@@ -752,7 +752,7 @@ function QuizSkeleton() {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function QuizEditPage({ params }: { params: Promise<{ id: string; quizId: string }> }) {
-  const { quizId } = use(params);
+  const { id, quizId } = use(params);
   const { data: quiz, isLoading } = useQuiz(quizId);
   const updateQuiz = useUpdateQuiz(quizId);
   const reorderQuestions = useReorderQuestions(quizId);
@@ -807,7 +807,7 @@ export default function QuizEditPage({ params }: { params: Promise<{ id: string;
         <div className="max-w-2xl mx-auto space-y-7">
       {/* Header */}
       <div>
-        <BackButton back />
+        <BackButton href={`/teacher/courses/${id}/edit`} />
         <h1 className="font-display text-3xl font-semibold text-[#181d26]">Chỉnh sửa bài kiểm tra</h1>
         <p className="text-sm text-[rgba(4,14,32,0.45)] mt-1">
           {quiz.questions.length} câu hỏi · {totalPoints} điểm · {quiz.require_pass ? `đạt từ ${quiz.pass_score}%` : "không cần điểm qua"}
