@@ -212,7 +212,15 @@ Trang chính theo vai trò: Admin → `/admin` · Giảng viên → `/teacher` �
 
 ---
 
-## 7. Cấu trúc thư mục chính
+## 7. Kiểm thử & CI
+
+- **Unit / Integration / E2E**: Vitest (`tests/unit/`, `tests/integration/`) + Playwright (`e2e/`) — lệnh chạy ở bảng trên.
+- **CI**: GitHub Actions (`.github/workflows/ci.yml`) — mỗi push/PR vào `main` tự chạy lint, unit test, integration test (Postgres 16 service) và production build.
+- **Hiệu năng**: kết quả đo Lighthouse, load test (autocannon) và benchmark truy vấn DB — xem [`docs/performance.md`](docs/performance.md).
+
+---
+
+## 8. Cấu trúc thư mục chính
 
 ```
 app/
