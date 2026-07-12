@@ -76,17 +76,6 @@ function NoteRow({ note }: { note: AllNote }) {
         </span>
       </div>
 
-      {note.video_time != null && (
-        <Link
-          href={`/student/courses/${note.lesson.chapter.course.id}/learn?lesson=${note.lesson.id}&t=${note.video_time}`}
-          className="mb-2 inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:bg-[#1b61c9]/15"
-          style={{ background: "rgba(27,97,201,0.08)", color: C.blue }}
-        >
-          <Play size={9} fill="currentColor" stroke="none" />
-          {formatTime(note.video_time)}
-        </Link>
-      )}
-
       <AnimatePresence mode="wait">
         {editing ? (
           <motion.div
@@ -131,7 +120,19 @@ function NoteRow({ note }: { note: AllNote }) {
             exit={{ opacity: 0 }}
             className="flex items-start gap-2"
           >
-            <p className="flex-1 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: C.ink }}>{note.content}</p>
+            <p className="flex-1 whitespace-pre-wrap text-sm leading-relaxed" style={{ color: C.ink }}>
+              {note.video_time != null && (
+                <Link
+                  href={`/student/courses/${note.lesson.chapter.course.id}/learn?lesson=${note.lesson.id}&t=${note.video_time}`}
+                  className="mr-2 inline-flex translate-y-[1px] items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium transition-colors hover:bg-[#1b61c9]/15"
+                  style={{ background: "rgba(27,97,201,0.08)", color: C.blue }}
+                >
+                  <Play size={9} fill="currentColor" stroke="none" />
+                  {formatTime(note.video_time)}
+                </Link>
+              )}
+              {note.content}
+            </p>
             <div className="mt-0.5 flex shrink-0 items-center gap-1">
               <button
                 onClick={() => { setEditing(true); setEditText(note.content); }}
