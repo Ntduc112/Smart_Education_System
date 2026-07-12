@@ -22,6 +22,7 @@ import { AIQuizModal } from "./_components/AIQuizModal";
 import { BulkImportModal } from "./_components/BulkImportModal";
 import { ChapterTree, type Selection } from "./_components/ChapterTree";
 import { CollaboratorModal } from "./_components/CollaboratorModal";
+import { normalizeYouTubeEmbedUrl } from "@/lib/youtube";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/axios";
@@ -575,9 +576,9 @@ function VideoUploadSection({
         <input
           autoFocus
           className={inputCls}
-          placeholder="https://youtube.com/embed/..."
+          placeholder="Dán link YouTube, ví dụ https://youtube.com/watch?v=..."
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => onChange(normalizeYouTubeEmbedUrl(e.target.value))}
         />
         <div className="flex gap-2">
           <button
