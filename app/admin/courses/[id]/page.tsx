@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -65,20 +65,23 @@ export default function AdminCourseDetailPage({ params }: { params: Promise<{ id
     category_id: "", status: "DRAFT" as "DRAFT" | "PUBLISHED",
   });
 
-  // Seed form once course loads.
-  useEffect(() => {
-    if (!course) return;
-    setForm({
-      title:            course.title,
-      description:      course.description,
-      thumbnail:        course.thumbnail,
-      price:            String(parseFloat(course.price)),
-      discount_percent: course.discount_percent != null ? String(course.discount_percent) : "",
-      level:            course.level,
-      category_id:      course.category_id,
-      status:           course.status,
-    });
-  }, [course]);
+  // Seed form khi course load/đổi — set-state-during-render thay useEffect.
+  const [prevCourse, setPrevCourse] = useState(course);
+  if (prevCourse !== course) {
+    setPrevCourse(course);
+    if (course) {
+      setForm({
+        title:            course.title,
+        description:      course.description,
+        thumbnail:        course.thumbnail,
+        price:            String(parseFloat(course.price)),
+        discount_percent: course.discount_percent != null ? String(course.discount_percent) : "",
+        level:            course.level,
+        category_id:      course.category_id,
+        status:           course.status,
+      });
+    }
+  }
 
   if (isLoading) {
     return (

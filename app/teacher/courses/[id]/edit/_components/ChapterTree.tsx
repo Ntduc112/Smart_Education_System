@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ChevronDown, ChevronRight, Plus, Trash2, BookOpen,
   Video, FileText, ClipboardList, FolderUp, GripVertical,
@@ -257,9 +257,12 @@ export function ChapterTree({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   // Khi không kéo, lấy lại thứ tự chuẩn từ server.
-  useEffect(() => {
+  // Set-state-during-render thay useEffect: không render thừa, lint sạch.
+  const [prevSync, setPrevSync] = useState({ sections, activeId });
+  if (prevSync.sections !== sections || prevSync.activeId !== activeId) {
+    setPrevSync({ sections, activeId });
     if (!activeId) setLocalSections(sections);
-  }, [sections, activeId]);
+  }
 
   const clearOver = () => { setActiveId(null); setOverChapterId(null); setOverLessonId(null); };
 

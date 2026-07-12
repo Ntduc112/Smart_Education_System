@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import { motion } from "framer-motion";
 import { Layers, Check, Shuffle } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
@@ -39,11 +39,14 @@ function Viewer({ courseId, cards }: { courseId: string; cards: Flashcard[] }) {
   // Sync from the query: initial load + after a reset refetch (which restores
   // previously-mastered cards). "Đã nhớ" only invalidates the course list, not
   // this cards query, so in-session removals are preserved.
-  useEffect(() => {
+  // Set-state-during-render thay useEffect: không render thừa, lint sạch.
+  const [prevCards, setPrevCards] = useState<Flashcard[] | null>(null);
+  if (prevCards !== cards) {
+    setPrevCards(cards);
     setDeck(shuffle(cards));
     setPos(0);
     setFlipped(false);
-  }, [cards]);
+  }
 
   const total = cards.length;
   const done = total - deck.length;

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Code sinh tự động / báo cáo — không lint.
+    "prisma/generated/**",
+    "coverage/**",
+    "test-results/**",
   ]),
   {
     rules: {
