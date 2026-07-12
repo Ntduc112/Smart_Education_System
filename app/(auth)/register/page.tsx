@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { Logo } from "@/app/_components/Logo";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRegister } from "./register.hook";
+import { useRegister, useVerifyRegister } from "./register.hook";
 import { useLogin } from "../login/login.hook";
 import { registerSchema, RegisterInput } from "./register.schema";
 import { getApiError } from "@/lib/api/error";
@@ -92,13 +92,155 @@ const inputCls = (hasError: boolean) =>
       : "border-[#DCE6F4] focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/15"
   }`;
 
+// ── OTP modal — xác thực email trước khi tạo tài khoản ─────────────────────
+function OtpModal({
+  email,
+  onSubmitCode,
+  onResend,
+  onCancel,
+}: {
+  email: string;
+  // Throw Error với message hiển thị được khi mã sai/hết hạn
+  onSubmitCode: (code: string) => Promise<void>;
+  onResend: () => void;
+  onCancel: () => void;
+}) {
+  const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [resendCool, setResendCool] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const submitCode = async (code: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      await onSubmitCode(code);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Mã không hợp lệ hoặc đã hết hạn");
+      setDigits(Array(6).fill(""));
+      inputRefs.current[0]?.focus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (i: number, v: string) => {
+    if (!/^\d*$/.test(v)) return;
+    const next = [...digits];
+    next[i] = v.slice(-1);
+    setDigits(next);
+    if (v && i < 5) inputRefs.current[i + 1]?.focus();
+    if (next.every(Boolean)) submitCode(next.join(""));
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !digits[i] && i > 0) inputRefs.current[i - 1]?.focus();
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!text) return;
+    e.preventDefault();
+    const next = Array(6).fill("").map((_, i) => text[i] ?? "");
+    setDigits(next);
+    inputRefs.current[Math.min(text.length, 5)]?.focus();
+    if (text.length === 6) submitCode(text);
+  };
+
+  const handleResend = () => {
+    if (resendCool) return;
+    setResendCool(true);
+    onResend();
+    setTimeout(() => setResendCool(false), 60_000);
+  };
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="absolute inset-0 bg-[#0a1633]/40 backdrop-blur-sm" />
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.97 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-sm bg-white rounded-3xl p-8"
+        style={{ border: `1px solid ${C.border}`, boxShadow: "rgba(27,60,120,0.12) 0px 20px 60px" }}
+      >
+        <h2 className="font-display text-xl font-semibold mb-1.5" style={{ color: C.ink }}>Xác thực email</h2>
+        <p className="text-sm mb-5" style={{ color: C.inkSoft }}>
+          Chúng tôi đã gửi mã 6 số đến{" "}
+          <span className="font-medium" style={{ color: C.ink }}>{email}</span>
+        </p>
+
+        {error && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-2 justify-between mb-4" onPaste={handlePaste}>
+          {digits.map((d, i) => (
+            <input
+              key={i}
+              ref={(el) => { inputRefs.current[i] = el; }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={d}
+              onChange={(e) => handleChange(i, e.target.value)}
+              onKeyDown={(e) => handleKeyDown(i, e)}
+              disabled={loading}
+              className={`w-11 h-13 py-3 text-center text-xl font-bold border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all
+                ${error ? "border-red-300" : d ? "border-[#1b61c9] bg-[#EAF1FC]" : "border-[#DCE6F4] focus:border-[#1b61c9]"}
+                disabled:opacity-50`}
+            />
+          ))}
+        </div>
+
+        {loading && (
+          <p className="text-sm text-center mb-3" style={{ color: C.inkFaint }}>Đang xác thực...</p>
+        )}
+
+        <p className="text-sm text-center mb-4" style={{ color: C.inkFaint }}>
+          Không nhận được mã?{" "}
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={resendCool}
+            className="text-[#1b61c9] font-medium hover:text-[#254fad] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {resendCool ? "Đã gửi (60s)" : "Gửi lại"}
+          </button>
+        </p>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          className="w-full text-sm py-2 transition-colors hover:text-[#181d26]"
+          style={{ color: C.inkFaint }}
+        >
+          Quay lại chỉnh sửa thông tin
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
   const [creds, setCreds] = useState<{ email: string; password: string } | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
+  // Payload đang chờ xác thực OTP — user chỉ được tạo sau khi verify
+  const [pendingData, setPendingData] = useState<RegisterInput | null>(null);
   const { mutateAsync: register, isPending } = useRegister();
+  const { mutateAsync: verifyRegister } = useVerifyRegister();
   const { mutateAsync: login, isPending: loggingIn } = useLogin();
 
   const {
@@ -114,11 +256,32 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterInput) => {
     try {
-      await register(data);
-      setCreds({ email: data.email, password: data.password });
-      setSuccess(true);
+      await register(data); // gửi OTP — user chưa được tạo
+      setPendingData(data);
     } catch (err) {
       setError("root", { message: getApiError(err, "Đăng ký thất bại") });
+    }
+  };
+
+  const handleVerifyCode = async (code: string) => {
+    if (!pendingData) return;
+    try {
+      await verifyRegister({ ...pendingData, code });
+    } catch (err) {
+      // Modal hiển thị message này và cho nhập lại
+      throw new Error(getApiError(err, "Mã không hợp lệ hoặc đã hết hạn"));
+    }
+    setCreds({ email: pendingData.email, password: pendingData.password });
+    setPendingData(null);
+    setSuccess(true);
+  };
+
+  const handleResendCode = async () => {
+    if (!pendingData) return;
+    try {
+      await register(pendingData);
+    } catch {
+      // Gửi lại lỗi thì giữ im lặng — user vẫn có thể nhập mã cũ còn hạn
     }
   };
 
@@ -323,6 +486,18 @@ export default function RegisterPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* OTP modal — xác thực email trước khi tạo tài khoản */}
+      <AnimatePresence>
+        {pendingData && !success && (
+          <OtpModal
+            email={pendingData.email}
+            onSubmitCode={handleVerifyCode}
+            onResend={handleResendCode}
+            onCancel={() => setPendingData(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Success modal */}
       <AnimatePresence>

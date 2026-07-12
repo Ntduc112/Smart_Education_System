@@ -73,6 +73,19 @@ model PasswordReset {
   @@index([email])
 }
 
+// OTP xác thực email khi đăng ký — user chỉ được tạo sau khi verify thành công
+model EmailVerification {
+  id         String   @id @default(uuid())
+  email      String
+  code_hash  String
+  attempts   Int      @default(0)
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([email])
+}
+
 model LessonProgress {
   id                String    @id @default(uuid())
   user_id           String

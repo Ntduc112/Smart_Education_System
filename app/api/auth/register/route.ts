@@ -1,34 +1,42 @@
 import prisma from "@/prisma/prisma";
 import { NextResponse, NextRequest } from "next/server";
+import { randomInt } from "crypto";
 import { z } from "zod";
 import { hashPassword } from "@/lib/auth/password";
+import { sendRegisterOtpEmail } from "@/lib/email/resend";
+import { Registerschema } from "./register-schema";
 
-const Registerschema = z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters long"),
-    role: z.enum(["STUDENT", "TEACHER"], { message: "Role must be either STUDENT or TEACHER" })
-});
-
+// Bước 1 đăng ký: validate + gửi OTP về email. User CHƯA được tạo —
+// tạo ở bước 2 (/api/auth/register/verify) sau khi xác thực mã.
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { name, email, password, role } = Registerschema.parse(body);
-        const hashedPassword = await hashPassword(password);
-        const user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password_hash: hashedPassword,
-                role
-            }
+        const { email } = Registerschema.parse(body);
+
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) {
+            return NextResponse.json({ error: "Email đã được sử dụng" }, { status: 409 });
+        }
+
+        // Vô hiệu hoá các mã cũ chưa dùng (cùng pattern forgot-password)
+        await prisma.emailVerification.updateMany({
+            where: { email, used: false },
+            data:  { used: true },
         });
-        const { password_hash: _, ...safeUser } = user;
-        return NextResponse.json({ user: safeUser }, { status: 200 });
+
+        const code       = String(randomInt(100_000, 1_000_000)); // CSPRNG, max exclusive → 100000..999999
+        const code_hash  = await hashPassword(code);               // lưu hash, không lưu mã gốc
+        const expires_at = new Date(Date.now() + 10 * 60 * 1000); // 10 phút
+
+        await prisma.emailVerification.create({ data: { email, code_hash, expires_at } });
+        await sendRegisterOtpEmail(email, code);
+
+        return NextResponse.json({ message: "Mã xác thực đã được gửi đến email của bạn" }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json({ errors: error.message }, { status: 400 });
         }
+        console.error("register error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 }
