@@ -1,5 +1,6 @@
 import prisma from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getCourseAccess } from "@/lib/course-access";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
@@ -7,11 +8,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const userId = request.headers.get("x-user-id");
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const course = await prisma.course.findFirst({
-            where: { id, instructor_id: userId },
-            select: { id: true },
-        });
-        if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
+        // Chủ khóa học hoặc trợ giảng có quyền quiz đều xem được hàng chờ chấm
+        const access = await getCourseAccess(userId, id);
+        if (!access?.canManageQuizzes) return NextResponse.json({ error: "Course not found" }, { status: 404 });
 
         const gradedFalse = request.nextUrl.searchParams.get("graded") === "false";
 
@@ -21,7 +20,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
                     type: "SHORT_ANSWER",
                     quiz: { lesson: { chapter: { course_id: id } } },
                 },
-                attempt: { user_id: { not: userId } }, // exclude course owner's own answers
+                // Bỏ qua bài tự làm thử của chính người chấm và của chủ khóa học
+                attempt: { user_id: { notIn: [userId, access.instructorId] } },
                 ...(gradedFalse ? { points_earned: null } : {}),
             },
             include: {

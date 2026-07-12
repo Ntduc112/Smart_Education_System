@@ -46,7 +46,12 @@ function CourseCard({ item }: { item: AssistantMembership }) {
         {item.can_manage_quizzes && <PermissionPill icon={<ClipboardList size={12} />} label="Quiz" />}
       </div>
       <div className="mt-4 flex items-center gap-4 text-xs text-[rgba(4,14,32,0.48)]"><span className="flex items-center gap-1"><BookOpen size={13} />{item.course._count.sections} chương</span><span className="flex items-center gap-1"><Users size={13} />{item.course._count.enrollments} học viên</span></div>
-      <Link href={`/teacher/courses/${item.course.id}/edit`} className="mt-5 flex w-full items-center justify-center rounded-xl border border-[#1b61c9]/25 bg-[#EAF1FC] py-2.5 text-sm font-semibold text-[#1b61c9] hover:bg-[#DDEAFB]">Mở không gian làm việc</Link>
+      <div className="mt-5 flex flex-col gap-2">
+        <Link href={`/teacher/courses/${item.course.id}/edit`} className="flex w-full items-center justify-center rounded-xl border border-[#1b61c9]/25 bg-[#EAF1FC] py-2.5 text-sm font-semibold text-[#1b61c9] hover:bg-[#DDEAFB]">Mở không gian làm việc</Link>
+        {item.can_manage_quizzes && (
+          <Link href={`/teacher/courses/${item.course.id}/essays`} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#DCE6F4] py-2.5 text-sm font-semibold text-[#181d26] hover:bg-[#F4F8FE]"><ClipboardList size={14} />Chấm tự luận</Link>
+        )}
+      </div>
     </div>
   </article>;
 }

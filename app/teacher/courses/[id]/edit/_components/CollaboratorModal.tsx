@@ -30,6 +30,7 @@ const ACTION_LABELS: Record<string, string> = {
   UPDATE_QUESTION: "sửa câu hỏi trong quiz",
   DELETE_QUESTION: "xóa câu hỏi khỏi quiz",
   UPDATE_TEST_CASES: "cập nhật test case trong quiz",
+  GRADE_ESSAY: "chấm bài tự luận",
 };
 
 function timeAgo(iso: string) {
@@ -121,7 +122,7 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
               <label className="mb-1.5 block text-sm font-semibold text-[#181d26]">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)]" size={16} />
-                <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="trogiang@example.com"
+                <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="trogiang@example.com" autoComplete="off" name="collaborator-email"
                   className="w-full rounded-xl border border-[#DCE6F4] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10" />
               </div>
             </div>
@@ -130,7 +131,7 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
             <label className="mb-1.5 block text-sm font-semibold text-[#181d26]">Mật khẩu tạm</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)]" size={16} />
-              <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Tối thiểu 6 ký tự"
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Tối thiểu 6 ký tự" autoComplete="new-password" name="collaborator-temp-password"
                 className="w-full rounded-xl border border-[#DCE6F4] py-2.5 pl-10 pr-10 text-sm outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10" />
               <button type="button" aria-label="Hiện mật khẩu" onClick={() => setShowPassword((value) => !value)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26]">
@@ -141,7 +142,7 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <PermissionToggle icon={<BookOpen size={16} />} label="Quản lý bài giảng" description="Tạo, sửa, sắp xếp chương và bài học" checked={lessons} onChange={setLessons} />
-            <PermissionToggle icon={<ClipboardList size={16} />} label="Quản lý quiz" description="Tạo, sửa câu hỏi và cấu hình quiz" checked={quizzes} onChange={setQuizzes} />
+            <PermissionToggle icon={<ClipboardList size={16} />} label="Quản lý quiz" description="Tạo, sửa câu hỏi, cấu hình quiz và chấm tự luận" checked={quizzes} onChange={setQuizzes} />
           </div>
           <button onClick={handleCreate} disabled={!email.trim() || (!lessons && !quizzes) || create.isPending}
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1b61c9] py-2.5 text-sm font-semibold text-white hover:bg-[#254fad] disabled:opacity-50">

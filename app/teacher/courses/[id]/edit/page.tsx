@@ -450,7 +450,7 @@ function AssistantAccessPanel({ canManageLessons, canManageQuizzes }: { canManag
         </div>
         <div className={`flex items-center gap-3 rounded-2xl border p-4 ${canManageQuizzes ? "border-[#7C5CFC]/25 bg-[#7C5CFC]/[0.06]" : "border-[#DCE6F4] bg-[#F8FAFC] opacity-60"}`}>
           <ClipboardList size={18} className="text-[#7C5CFC]" />
-          <div><p className="text-sm font-semibold">Quản lý quiz</p><p className="text-xs text-[rgba(4,14,32,0.5)]">{canManageQuizzes ? "Chọn một bài học để tạo hoặc chỉnh sửa quiz." : "Bạn chưa được cấp quyền này."}</p></div>
+          <div><p className="text-sm font-semibold">Quản lý quiz</p><p className="text-xs text-[rgba(4,14,32,0.5)]">{canManageQuizzes ? "Chọn một bài học để tạo, chỉnh sửa quiz và chấm bài tự luận." : "Bạn chưa được cấp quyền này."}</p></div>
         </div>
         <p className="pt-2 text-xs leading-relaxed text-[rgba(4,14,32,0.45)]">Trợ giảng không thể sửa giá, thông tin khóa học, công bố hoặc xóa nội dung. Nếu cần thay đổi phạm vi, hãy liên hệ giáo viên sở hữu.</p>
       </div>

@@ -33,6 +33,7 @@ describe("course access", () => {
 
     await expect(getCourseAccess("owner-1", "course-1")).resolves.toEqual({
       isOwner: true,
+      instructorId: "owner-1",
       isAssistant: false,
       canManageLessons: true,
       canManageQuizzes: true,

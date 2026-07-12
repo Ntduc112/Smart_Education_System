@@ -45,6 +45,7 @@ export async function getCourseAccess(userId: string, courseId: string) {
 
   return {
     isOwner,
+    instructorId: course.instructor_id,
     isAssistant: !isOwner && Boolean(membership),
     canManageLessons: isOwner || Boolean(membership?.can_manage_lessons),
     canManageQuizzes: isOwner || Boolean(membership?.can_manage_quizzes),

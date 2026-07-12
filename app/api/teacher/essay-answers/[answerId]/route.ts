@@ -2,6 +2,8 @@ import prisma from "@/prisma/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { didAttemptPass } from "@/lib/quiz-policy";
+import { getCourseAccess } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 import { buildQuizAttemptResultLink } from "@/lib/quiz-attempt-link";
 
 const GradeSchema = z.object({
@@ -29,7 +31,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
                                     include: {
                                         chapter: {
                                             include: {
-                                                course: { select: { instructor_id: true } },
+                                                course: { select: { id: true } },
                                             },
                                         },
                                     },
@@ -43,13 +45,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
         if (!existing) return NextResponse.json({ error: "Answer not found" }, { status: 404 });
 
-        const instructorId = existing.question.quiz.lesson.chapter.course.instructor_id;
-        if (instructorId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        // Chủ khóa học hoặc trợ giảng có quyền quiz đều được chấm tự luận
+        const access = await getCourseAccess(userId, existing.question.quiz.lesson.chapter.course.id);
+        if (!access?.canManageQuizzes) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
         const answer = await prisma.attemptAnswer.update({
             where: { id: answerId },
             // được điểm > 0 coi như đúng (dùng cho hiển thị số câu đúng)
             data: { points_earned, ai_feedback: feedback, is_correct: points_earned > 0 },
+        });
+
+        await logCourseActivity({
+            courseId: existing.question.quiz.lesson.chapter.course.id,
+            actorId: userId,
+            action: "GRADE_ESSAY",
+            entityType: "QUESTION",
+            entityId: existing.question.id,
+            entityTitle: existing.question.content.slice(0, 80),
         });
 
         // Chấm xong 1 câu → nếu attempt đã hết câu chờ chấm thì tính lại điểm tổng
