@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef, use } from "react";
+import { useState, useRef, use } from "react";
 import { motion } from "framer-motion";
 import {
   Plus, Save,
@@ -202,7 +202,11 @@ function CourseInfoPanel({
     status:           course.status,
   });
 
-  useEffect(() => {
+  // Resync form khi server trả course mới (vd: Công bố đổi status ngoài panel).
+  // Set-state-during-render thay cho useEffect: không render thừa, lint sạch.
+  const [prevCourse, setPrevCourse] = useState(course);
+  if (prevCourse !== course) {
+    setPrevCourse(course);
     setForm({
       title:            course.title,
       description:      course.description,
@@ -213,7 +217,7 @@ function CourseInfoPanel({
       category_id:      course.category_id,
       status:           course.status,
     });
-  }, [course]);
+  }
 
   const handleSave = () => updateCourse.mutate(
     { ...form, discount_percent: form.discount_percent > 0 ? form.discount_percent : null },
@@ -397,7 +401,11 @@ function ChapterPanel({
   const updateChapter = useUpdateChapter(courseId);
   const [title, setTitle] = useState(chapter.title);
 
-  useEffect(() => setTitle(chapter.title), [chapter.title]);
+  const [prevChapterTitle, setPrevChapterTitle] = useState(chapter.title);
+  if (prevChapterTitle !== chapter.title) {
+    setPrevChapterTitle(chapter.title);
+    setTitle(chapter.title);
+  }
 
   return (
     <>
@@ -673,7 +681,9 @@ function LessonPanel({
 
   const transcript = useTranscriptStatus(lesson.id, form.video_url || null);
 
-  useEffect(() => {
+  const [prevLesson, setPrevLesson] = useState(lesson);
+  if (prevLesson !== lesson) {
+    setPrevLesson(lesson);
     setForm({
       title:     lesson.title,
       is_free:   lesson.is_free,
@@ -682,7 +692,7 @@ function LessonPanel({
       pdf_url:   lesson.pdf_url ?? "",
       pdf_text:  lesson.pdf_text ?? "",
     });
-  }, [lesson]);
+  }
 
   const handleSave = () => {
     setSaveStatus("idle");
