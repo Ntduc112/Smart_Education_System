@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getGroq } from "@/lib/ai/groq";
+import { getLessonGrounding } from "@/lib/ai/lesson-grounding";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -8,11 +9,8 @@ const MessageSchema = z.object({
 });
 
 const BodySchema = z.object({
-  lessonTitle:   z.string().min(1).max(200),
-  lessonContent: z.string().max(5000).nullable().optional(),
-  courseTitle:   z.string().min(1).max(200),
-  chapterTitle:  z.string().min(1).max(200),
-  messages:      z.array(MessageSchema).min(1).max(20),
+  lessonId: z.string().min(1),
+  messages: z.array(MessageSchema).min(1).max(20),
 });
 
 export async function POST(request: NextRequest) {
@@ -26,15 +24,19 @@ export async function POST(request: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const { lessonTitle, lessonContent, courseTitle, chapterTitle, messages } = body;
+  const { messages } = body;
 
-  const hasContent = !!lessonContent?.trim();
+  // Server tự lấy nội dung bài (text + PDF + transcript video) — client không gửi content
+  const lesson = await getLessonGrounding(userId, body.lessonId);
+  if (!lesson) return new Response("Not found or not enrolled", { status: 403 });
+
+  const { lessonTitle, chapterTitle, courseTitle, grounding } = lesson;
 
   const systemPrompt = `Bạn là trợ lý học tập AI của Learnust.
 
 Học sinh đang học bài: "${lessonTitle}"
 Thuộc chương: "${chapterTitle}" — Khóa học: "${courseTitle}"
-${hasContent ? `\nTài liệu bài học:\n"""\n${lessonContent}\n"""` : "\n(Bài học này chưa có tài liệu đính kèm.)"}
+${grounding ? `\nTài liệu bài học:\n"""\n${grounding}\n"""` : "\n(Bài học này chưa có tài liệu đính kèm.)"}
 
 QUY TẮC BẮT BUỘC:
 1. Chỉ trả lời các câu hỏi liên quan đến nội dung bài học "${lessonTitle}" và tài liệu được cung cấp ở trên.

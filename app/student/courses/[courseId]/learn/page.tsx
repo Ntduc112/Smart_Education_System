@@ -196,7 +196,7 @@ function ChapterItem({
 
 // ── Video Player ───────────────────────────────────────────────────────────
 
-function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef, startTime }: { lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
+function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef, startTime }: { lessonId: string; onWatchPercent: (pct: number, positionSec: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
   const [src, setSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -216,7 +216,7 @@ function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef, startTime }: { les
   return <NativePlayer src={src} onWatchPercent={onWatchPercent} videoRef={videoRef} startTime={startTime} />;
 }
 
-function VideoPlayer({ url, lessonId, onWatchPercent, videoRef, startTime }: { url: string; lessonId: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
+function VideoPlayer({ url, lessonId, onWatchPercent, videoRef, startTime }: { url: string; lessonId: string; onWatchPercent: (pct: number, positionSec: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
   if (url.startsWith("r2:")) {
     return <CFWorkerPlayer lessonId={lessonId} onWatchPercent={onWatchPercent} videoRef={videoRef} startTime={startTime} />;
   }
@@ -241,12 +241,12 @@ function VideoPlayer({ url, lessonId, onWatchPercent, videoRef, startTime }: { u
   );
 }
 
-function NativePlayer({ src, onWatchPercent, videoRef: externalRef, startTime }: { src: string; onWatchPercent: (pct: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
+function NativePlayer({ src, onWatchPercent, videoRef: externalRef, startTime }: { src: string; onWatchPercent: (pct: number, positionSec: number) => void; videoRef?: React.RefObject<HTMLVideoElement | null>; startTime?: number | null }) {
   const internalRef = useRef<HTMLVideoElement>(null);
   const videoRef    = externalRef ?? internalRef;
   const lastPctRef = useRef(0);
 
-  // Tua tới mốc thời gian từ URL (?t=) khi mở note có timestamp.
+  // Tua tới mốc thời gian từ URL (?t= của note) hoặc vị trí xem dở (resume).
   useEffect(() => {
     const video = videoRef.current;
     if (!video || startTime == null) return;
@@ -254,6 +254,8 @@ function NativePlayer({ src, onWatchPercent, videoRef: externalRef, startTime }:
     const seek = () => {
       if (done) return;
       done = true;
+      // Đã xem quá 1s (progress query về muộn) → không giật vị trí nữa
+      if (video.currentTime > 1) return;
       video.currentTime = startTime;
       video.play().catch(() => {});
     };
@@ -273,15 +275,24 @@ function NativePlayer({ src, onWatchPercent, videoRef: externalRef, startTime }:
       const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
       if (pct - lastPctRef.current >= 5) {
         lastPctRef.current = pct;
-        onWatchPercent(pct);
+        onWatchPercent(pct, Math.floor(video.currentTime));
       }
     };
-    const handleEnded = () => { lastPctRef.current = 100; onWatchPercent(100); };
+    // Pause là điểm dừng tự nhiên — luôn báo vị trí để resume chính xác
+    const handlePause = () => {
+      if (!video.duration || video.ended) return;
+      const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+      onWatchPercent(pct, Math.floor(video.currentTime));
+    };
+    // Xem hết: vị trí về 0 để lần sau mở lại từ đầu
+    const handleEnded = () => { lastPctRef.current = 100; onWatchPercent(100, 0); };
 
     video.addEventListener("timeupdate", reportProgress);
+    video.addEventListener("pause", handlePause);
     video.addEventListener("ended", handleEnded);
     return () => {
       video.removeEventListener("timeupdate", reportProgress);
+      video.removeEventListener("pause", handlePause);
       video.removeEventListener("ended", handleEnded);
     };
   }, [src, onWatchPercent]);
@@ -974,16 +985,30 @@ function LearnContent({
     }
   }, []);
 
+  // Vị trí xem trong phiên hiện tại — ưu tiên hơn server (progress query có thể stale)
+  const localPositionsRef = useRef<Record<string, number>>({});
+
   // Stable callback để tránh re-register event listeners mỗi render
   const handleWatchPercent = useCallback(
-    (pct: number) => {
+    (pct: number, positionSec: number) => {
       if (!selectedItem || selectedItem.kind !== "lesson") return;
       setWatchPercent((p) => Math.max(p, pct));
-      reportWatchProgress.mutate({ lessonId: selectedItem.item.id, watchPercent: pct });
+      localPositionsRef.current[selectedItem.item.id] = positionSec;
+      reportWatchProgress.mutate({ lessonId: selectedItem.item.id, watchPercent: pct, positionSec });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedItem?.item.id]
   );
+
+  // Mốc bắt đầu video: ?t= từ note ưu tiên, sau đó vị trí xem dở (phiên này > server)
+  const resumeStartTime = (() => {
+    if (!selectedItem || selectedItem.kind !== "lesson") return null;
+    if (selectedItem.item.id === lessonIdFromUrl && startTimeFromUrl != null) return startTimeFromUrl;
+    const pos = localPositionsRef.current[selectedItem.item.id]
+      ?? progress?.last_positions?.[selectedItem.item.id]
+      ?? 0;
+    return pos > 5 ? pos : null;
+  })();
 
   const navigateToItem = useCallback(
     (navItem: NavItem) => {
@@ -1151,7 +1176,7 @@ function LearnContent({
                       {/* Left column: video, pdf, content */}
                       <div className="flex-1 min-w-0">
                         {selectedItem.item.video_url ? (
-                          <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} videoRef={videoRef} startTime={selectedItem.item.id === lessonIdFromUrl ? startTimeFromUrl : null} />
+                          <VideoPlayer url={selectedItem.item.video_url} lessonId={selectedItem.item.id} onWatchPercent={handleWatchPercent} videoRef={videoRef} startTime={resumeStartTime} />
                         ) : (
                           <NoVideoPlaceholder content={selectedItem.item.content} />
                         )}
@@ -1175,11 +1200,8 @@ function LearnContent({
                       </div>
                     </div>
 
-                    <AISummary
-                      lessonTitle={selectedItem.item.title}
-                      lessonContent={selectedItem.item.pdf_text ?? selectedItem.item.content}
-                      courseTitle={course.title}
-                    />
+                    {/* key theo lesson: đổi bài thì reset summary/chat, tránh dính nội dung bài cũ */}
+                    <AISummary key={selectedItem.item.id} lessonId={selectedItem.item.id} />
 
                     {user && (
                       <QASection
@@ -1188,19 +1210,11 @@ function LearnContent({
                       />
                     )}
 
-                    {(() => {
-                      const chapter = course.sections.find((s) =>
-                        s.lessons.some((l) => l.id === selectedItem.item.id)
-                      );
-                      return (
-                        <AIChatBox
-                          lessonTitle={selectedItem.item.title}
-                          lessonContent={selectedItem.item.pdf_text ?? selectedItem.item.content}
-                          courseTitle={course.title}
-                          chapterTitle={chapter?.title ?? ""}
-                        />
-                      );
-                    })()}
+                    <AIChatBox
+                      key={selectedItem.item.id}
+                      lessonId={selectedItem.item.id}
+                      lessonTitle={selectedItem.item.title}
+                    />
                   </>
                 ) : (
                   <QuizView quizId={selectedItem.item.id} courseId={courseId} />

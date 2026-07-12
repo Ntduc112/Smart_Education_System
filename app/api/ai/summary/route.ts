@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getGroq } from "@/lib/ai/groq";
+import { getLessonGrounding } from "@/lib/ai/lesson-grounding";
 
 const BodySchema = z.object({
-  lessonTitle:   z.string().min(1).max(200),
-  lessonContent: z.string().max(8000).nullable().optional(),
-  courseTitle:   z.string().min(1).max(200),
+  lessonId: z.string().min(1),
 });
 
 export async function POST(request: NextRequest) {
@@ -19,13 +18,17 @@ export async function POST(request: NextRequest) {
     return new Response("Invalid request body", { status: 400 });
   }
 
-  const { lessonTitle, lessonContent, courseTitle } = body;
+  // Server tự lấy nội dung bài (text + PDF + transcript video) — client không gửi content
+  const lesson = await getLessonGrounding(userId, body.lessonId);
+  if (!lesson) return new Response("Not found or not enrolled", { status: 403 });
+
+  const { lessonTitle, courseTitle, grounding } = lesson;
 
   const prompt = `Tóm tắt tài liệu bài học sau bằng tiếng Việt dưới dạng 3–6 bullet points, mỗi điểm là một ý chính quan trọng.
 
 Khóa học: ${courseTitle}
 Bài học: ${lessonTitle}
-${lessonContent ? `\nTài liệu:\n"""\n${lessonContent}\n"""` : "\n(Không có tài liệu — chỉ tóm tắt dựa trên tên bài học)"}
+${grounding ? `\nTài liệu:\n"""\n${grounding}\n"""` : "\n(Không có tài liệu — chỉ tóm tắt dựa trên tên bài học)"}
 
 Yêu cầu:
 - Chỉ tóm tắt từ tài liệu được cung cấp, không thêm thông tin bên ngoài

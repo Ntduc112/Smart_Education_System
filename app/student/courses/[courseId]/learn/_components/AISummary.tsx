@@ -3,12 +3,10 @@
 import { useState, useRef } from "react";
 
 interface AISummaryProps {
-  lessonTitle: string;
-  lessonContent: string | null;
-  courseTitle: string;
+  lessonId: string;
 }
 
-export function AISummary({ lessonTitle, lessonContent, courseTitle }: AISummaryProps) {
+export function AISummary({ lessonId }: AISummaryProps) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +22,7 @@ export function AISummary({ lessonTitle, lessonContent, courseTitle }: AISummary
       const res = await fetch("/api/ai/summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonTitle, lessonContent, courseTitle }),
+        body: JSON.stringify({ lessonId }),
         signal: abortRef.current.signal,
       });
 

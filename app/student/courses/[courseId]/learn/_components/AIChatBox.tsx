@@ -8,10 +8,8 @@ interface Message {
 }
 
 interface AIChatBoxProps {
+  lessonId: string;
   lessonTitle: string;
-  lessonContent: string | null;
-  courseTitle: string;
-  chapterTitle: string;
 }
 
 function SparkleIcon() {
@@ -89,12 +87,7 @@ function MessageBubble({ msg, isStreaming }: { msg: Message; isStreaming?: boole
   );
 }
 
-export function AIChatBox({
-  lessonTitle,
-  lessonContent,
-  courseTitle,
-  chapterTitle,
-}: AIChatBoxProps) {
+export function AIChatBox({ lessonId, lessonTitle }: AIChatBoxProps) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -133,10 +126,7 @@ export function AIChatBox({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          lessonTitle,
-          lessonContent,
-          courseTitle,
-          chapterTitle,
+          lessonId,
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
         }),
         signal: abortRef.current.signal,
@@ -173,7 +163,7 @@ export function AIChatBox({
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [input, isStreaming, messages, lessonTitle, lessonContent, courseTitle, chapterTitle]);
+  }, [input, isStreaming, messages, lessonId]);
 
   const handleClose = () => {
     abortRef.current?.abort();

@@ -63,6 +63,8 @@ export interface CourseProgress {
   percentage: number;
   completed_lesson_ids: string[];
   current_lesson_id: string | null;
+  // Vị trí xem dở từng bài (giây) để player resume
+  last_positions: Record<string, number>;
   quiz_states: QuizState[];
 }
 
@@ -180,8 +182,8 @@ export function useCourseProgress(courseId: string) {
 export function useReportWatchProgress(courseId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ lessonId, watchPercent }: { lessonId: string; watchPercent: number }) =>
-      api.patch(`/student/lessons/${lessonId}/progress`, { watch_percent: watchPercent }),
+    mutationFn: ({ lessonId, watchPercent, positionSec }: { lessonId: string; watchPercent: number; positionSec?: number }) =>
+      api.patch(`/student/lessons/${lessonId}/progress`, { watch_percent: watchPercent, position_sec: positionSec }),
     onSuccess: (_, vars) => {
       // Invalidate progress khi đã đủ điều kiện hoàn thành (>= 80%)
       if (vars.watchPercent >= 80) {

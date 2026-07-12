@@ -74,15 +74,17 @@ model PasswordReset {
 }
 
 model LessonProgress {
-  id              String    @id @default(uuid())
-  user_id         String
-  user            User      @relation(fields: [user_id], references: [id])
-  lesson_id       String
-  lesson          Lesson    @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
-  is_completed    Boolean   @default(false)
-  watch_percent   Int       @default(0)
-  last_watched_at DateTime?
-  updated_at      DateTime  @updatedAt
+  id                String    @id @default(uuid())
+  user_id           String
+  user              User      @relation(fields: [user_id], references: [id])
+  lesson_id         String
+  lesson            Lesson    @relation(fields: [lesson_id], references: [id], onDelete: Cascade)
+  is_completed      Boolean   @default(false)
+  watch_percent     Int       @default(0)
+  // Vị trí xem dở (giây) để resume video — khác watch_percent: được phép lùi
+  last_position_sec Int       @default(0)
+  last_watched_at   DateTime?
+  updated_at        DateTime  @updatedAt
 
   @@unique([user_id, lesson_id])
 }

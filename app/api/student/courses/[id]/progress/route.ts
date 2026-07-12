@@ -27,16 +27,22 @@ export async function GET(
         });
         const lessonIds = lessons.map((l) => l.id);
 
-        const completed = await prisma.lessonProgress.findMany({
+        const progressRows = await prisma.lessonProgress.findMany({
             where: {
-                user_id:      userId,
-                lesson_id:    { in: lessonIds },
-                is_completed: true,
+                user_id:   userId,
+                lesson_id: { in: lessonIds },
             },
-            select: { lesson_id: true },
+            select: { lesson_id: true, is_completed: true, last_position_sec: true },
         });
 
-        const completedSet     = new Set(completed.map((c) => c.lesson_id));
+        const completedSet = new Set(
+            progressRows.filter((p) => p.is_completed).map((p) => p.lesson_id)
+        );
+        // Vị trí xem dở từng bài (giây) để player resume — chỉ gửi bài có vị trí > 0
+        const lastPositions: Record<string, number> = {};
+        for (const p of progressRows) {
+            if (p.last_position_sec > 0) lastPositions[p.lesson_id] = p.last_position_sec;
+        }
         const totalLessons     = lessonIds.length;
         const completedLessons = completedSet.size;
         const percentage       = totalLessons > 0
@@ -80,6 +86,7 @@ export async function GET(
                 percentage,
                 completed_lesson_ids: [...completedSet],
                 current_lesson_id:    currentLesson?.id ?? null,
+                last_positions:       lastPositions,
                 quiz_states:          quizStates,
             },
         }, { status: 200 });

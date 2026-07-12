@@ -29,6 +29,10 @@ export async function PATCH(
     const body = await request.json();
     const raw = typeof body.watch_percent === "number" ? body.watch_percent : 0;
     const newPct = Math.max(0, Math.min(100, Math.round(raw)));
+    // Vị trí xem dở (giây) để resume — optional, được phép lùi (khác watch_percent)
+    const positionSec = typeof body.position_sec === "number"
+        ? Math.max(0, Math.round(body.position_sec))
+        : undefined;
 
     const existing = await prisma.lessonProgress.findUnique({
         where: { user_id_lesson_id: { user_id: userId, lesson_id: id } },
@@ -41,8 +45,8 @@ export async function PATCH(
 
     const progress = await prisma.lessonProgress.upsert({
         where: { user_id_lesson_id: { user_id: userId, lesson_id: id } },
-        create: { user_id: userId, lesson_id: id, watch_percent: finalPct, is_completed: finalCompleted, last_watched_at: new Date() },
-        update: { watch_percent: finalPct, is_completed: finalCompleted, last_watched_at: new Date() },
+        create: { user_id: userId, lesson_id: id, watch_percent: finalPct, is_completed: finalCompleted, last_position_sec: positionSec ?? 0, last_watched_at: new Date() },
+        update: { watch_percent: finalPct, is_completed: finalCompleted, last_position_sec: positionSec, last_watched_at: new Date() },
     });
 
     return NextResponse.json({ progress }, { status: 200 });
