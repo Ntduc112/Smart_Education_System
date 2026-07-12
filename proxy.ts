@@ -34,6 +34,21 @@ const TEACHER_ROUTES = [
     "/teacher",
     "/api/teacher",
 ];
+const STUDENT_ROUTES = [
+    "/student",
+    "/api/student",
+];
+const ASSISTANT_ROUTES = [
+    "/assistant",
+    "/api/assistant",
+];
+// Route chỉ dành cho guest — user đã đăng nhập bị đẩy về home theo role.
+// (/changePassword cũng nằm trong nhóm (auth) nhưng cần login nên không liệt kê)
+const GUEST_ONLY_ROUTES = [
+    "/login",
+    "/register",
+    "/forgot-password",
+];
 function matchesRoutes(pathName: string, routes: string[]){
     return routes.some(route => pathName === route || pathName.startsWith(route + "/"));
 }
@@ -123,6 +138,12 @@ export async function proxy(request: NextRequest){
         response.cookies.delete(ACCESS_TOKEN_COOKIE);
         return response;
     }
+    // User đã đăng nhập không xem trang login/register/forgot-password
+    if(matchesRoutes(pathName, GUEST_ONLY_ROUTES)){
+        const res = NextResponse.redirect(new URL(roleHome(session.role), request.url));
+        if(refreshedAccessToken) setAccessCookie(res, refreshedAccessToken);
+        return res;
+    }
     if(matchesRoutes(pathName, ADMIN_ROUTES) && session.role !== "ADMIN"){
         if(pathName.startsWith("/api")){
             return NextResponse.json({ error: "Không có quyền truy cập" }, { status: 403 });
@@ -130,6 +151,18 @@ export async function proxy(request: NextRequest){
         return NextResponse.redirect(new URL("/403", request.url));
     }
     if(matchesRoutes(pathName, TEACHER_ROUTES) && session.role !== "TEACHER" && session.role !== "TEACHING_ASSISTANT" && session.role !== "ADMIN"){
+        if(pathName.startsWith("/api")){
+            return NextResponse.json({ error: "Không có quyền truy cập" }, { status: 403 });
+        }
+        return NextResponse.redirect(new URL("/403", request.url));
+    }
+    if(matchesRoutes(pathName, STUDENT_ROUTES) && session.role !== "STUDENT" && session.role !== "ADMIN"){
+        if(pathName.startsWith("/api")){
+            return NextResponse.json({ error: "Không có quyền truy cập" }, { status: 403 });
+        }
+        return NextResponse.redirect(new URL("/403", request.url));
+    }
+    if(matchesRoutes(pathName, ASSISTANT_ROUTES) && session.role !== "TEACHING_ASSISTANT" && session.role !== "ADMIN"){
         if(pathName.startsWith("/api")){
             return NextResponse.json({ error: "Không có quyền truy cập" }, { status: 403 });
         }
@@ -144,5 +177,5 @@ export async function proxy(request: NextRequest){
     return response;
 }
 export const config = {
-    matcher: ["/((?!login|register|_next/static|_next/image|favicon.ico).*)"]
+    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"]
 }
