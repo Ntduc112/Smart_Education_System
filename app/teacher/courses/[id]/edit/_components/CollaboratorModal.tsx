@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Activity, BookOpen, ClipboardList, Eye, EyeOff, Lock, Mail, Trash2, UserRoundPlus, Users, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Activity, BookOpen, Check, ChevronDown, ClipboardList, Eye, EyeOff, Lock, Mail, Trash2, UserRoundPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { getApiError } from "@/lib/api/error";
@@ -196,13 +196,11 @@ function ActivityTab({ courseId, collaborators }: { courseId: string; collaborat
     <div className="space-y-3 px-6 py-5">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-[#181d26]">Nhật ký hoạt động</h3>
-        <select value={actorId ?? ""} onChange={(event) => setActorId(event.target.value || null)}
-          className="rounded-xl border border-[#DCE6F4] px-3 py-1.5 text-xs outline-none focus:border-[#1b61c9]">
-          <option value="">Tất cả mọi người</option>
-          {collaborators.map((collaborator) => (
-            <option key={collaborator.user.id} value={collaborator.user.id}>{collaborator.user.name}</option>
-          ))}
-        </select>
+        <ActorFilter
+          value={actorId}
+          onChange={setActorId}
+          options={collaborators.map((collaborator) => ({ id: collaborator.user.id, name: collaborator.user.name }))}
+        />
       </div>
 
       {isLoading ? <p className="py-5 text-sm text-[rgba(4,14,32,0.45)]">Đang tải...</p> : activities.length === 0 ? (
@@ -211,6 +209,52 @@ function ActivityTab({ courseId, collaborators }: { courseId: string; collaborat
         <ul className="space-y-1">
           {activities.map((activity) => <ActivityRow key={activity.id} activity={activity} />)}
         </ul>
+      )}
+    </div>
+  );
+}
+
+function ActorFilter({ value, onChange, options }: {
+  value: string | null;
+  onChange: (id: string | null) => void;
+  options: { id: string; name: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open]);
+
+  const items = [{ id: null as string | null, name: "Tất cả mọi người" }, ...options];
+  const current = items.find((item) => item.id === value) ?? items[0];
+
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${open ? "border-[#1b61c9]/40 bg-[#EAF1FC] text-[#1b61c9]" : "border-[#DCE6F4] text-[rgba(4,14,32,0.65)] hover:border-[#1b61c9]/30 hover:text-[#1b61c9]"}`}>
+        {current.name}
+        <ChevronDown size={13} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-10 mt-1.5 min-w-[190px] overflow-hidden rounded-2xl border border-[#DCE6F4] bg-white py-1.5"
+          style={{ boxShadow: "rgba(0,0,0,0.32) 0px 0px 1px, rgba(0,0,0,0.08) 0px 4px 16px" }}>
+          {items.map((item) => {
+            const selected = item.id === value;
+            return (
+              <button key={item.id ?? "all"} onClick={() => { onChange(item.id); setOpen(false); }}
+                className={`flex w-full items-center justify-between gap-3 px-3.5 py-2 text-left text-xs transition-colors hover:bg-[#F4F8FE] ${selected ? "font-semibold text-[#1b61c9]" : "text-[#181d26]"}`}>
+                <span className="truncate">{item.name}</span>
+                {selected && <Check size={13} className="shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );
