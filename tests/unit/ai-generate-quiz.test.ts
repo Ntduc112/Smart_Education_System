@@ -128,4 +128,93 @@ describe("POST /api/teacher/ai/generate-quiz", () => {
     expect(body.questions[0].testCases).toHaveLength(1);
     expect(body.questions[1]).toMatchObject({ sample_answer: "4", language: "python" });
   });
+
+  it("chịu được field null từ AI và tự dựng options cho câu TRUE_FALSE thiếu", async () => {
+    mocks.createCompletion.mockResolvedValue({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            questions: [
+              {
+                content: "Duyệt mảng dùng để làm gì?",
+                type: "SHORT_ANSWER",
+                points: 2,
+                sample_answer: "Tính tổng và tìm phần tử lớn nhất.",
+                options: null,
+                testCases: null,
+                language: null,
+              },
+              {
+                content: "Duyệt mảng có thể dùng để tính tổng, đúng hay sai?",
+                type: "TRUE_FALSE",
+                points: 1,
+                sample_answer: "Đúng",
+                options: null,
+              },
+            ],
+          }),
+        },
+      }],
+    });
+
+    const response = await POST(new NextRequest("http://localhost/api/teacher/ai/generate-quiz", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-user-id": "teacher-1" },
+      body: JSON.stringify({
+        lessonId: "20000000-0000-4000-8000-000000000001",
+        counts: { mcq: 0, trueFalse: 1, shortAnswer: 1, coding: 0, debugging: 0, codeOutput: 0 },
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.questions.map((question: { type: string }) => question.type)).toEqual(["SHORT_ANSWER", "TRUE_FALSE"]);
+    expect(body.questions[1].options).toEqual([
+      { content: "Đúng", is_correct: true },
+      { content: "Sai", is_correct: false },
+    ]);
+  });
+
+  it("loại riêng câu sai schema, giữ các câu hợp lệ thay vì trả lỗi cả lô", async () => {
+    mocks.createCompletion.mockResolvedValue({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            questions: [
+              {
+                content: "Mảng một chiều dùng để làm gì?",
+                type: "MCQ",
+                points: 1,
+                options: [
+                  { content: "Lưu dãy phần tử", is_correct: true },
+                  { content: "Chỉ lưu 1 phần tử", is_correct: false },
+                ],
+              },
+              {
+                content: "Câu MCQ hỏng vì thiếu options.",
+                type: "MCQ",
+                points: 1,
+              },
+            ],
+          }),
+        },
+      }],
+    });
+
+    const response = await POST(new NextRequest("http://localhost/api/teacher/ai/generate-quiz", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-user-id": "teacher-1" },
+      body: JSON.stringify({
+        lessonId: "20000000-0000-4000-8000-000000000001",
+        counts: { mcq: 2, trueFalse: 0, shortAnswer: 0, coding: 0, debugging: 0, codeOutput: 0 },
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.questions).toHaveLength(1);
+    expect(body.questions[0].content).toBe("Mảng một chiều dùng để làm gì?");
+    // Lô chưa sạch → được phép thử lại tối đa 3 lần trước khi chấp nhận lô tốt nhất.
+    expect(mocks.createCompletion.mock.calls.length).toBeGreaterThanOrEqual(1);
+  });
 });
