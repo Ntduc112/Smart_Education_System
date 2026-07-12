@@ -624,8 +624,8 @@ function VideoUploadSection({
             </svg>
           </div>
           <div className="text-center">
-            <p className="text-xs font-medium">URL YouTube</p>
-            <p className="text-[10px] text-[rgba(4,14,32,0.4)] mt-0.5">Dán link embed</p>
+            <p className="text-xs font-medium">Đường dẫn tới bài học</p>
+            <p className="text-[10px] text-[rgba(4,14,32,0.4)] mt-0.5">Dán link video YouTube</p>
           </div>
         </button>
       </div>
