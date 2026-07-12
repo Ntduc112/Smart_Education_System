@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Secrets giả cho test/build — CI không chạm hạ tầng thật.
+  ACCESS_TOKEN_SECRET: ci-access-secret
+  REFRESH_TOKEN_SECRET: ci-refresh-secret
+  VIDEO_TOKEN_SECRET: ci-video-secret
+  ACCESS_TOKEN_EXPIRES_IN: 900
+  REFRESH_TOKEN_EXPIRES_IN: 604800
+  DATABASE_URL: postgresql://admin:password@localhost:5433/smart_education
+
+jobs:
+  test:
+    name: Lint, unit & integration test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: smart_education
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U admin"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Integration tests (Postgres service)
+        run: npm run test:integration
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: smart_education
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U admin"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Build
+        run: npm run build
