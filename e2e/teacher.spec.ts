@@ -7,7 +7,7 @@ test.describe("Teacher workflow", () => {
   });
 
   test("dashboard loads", async ({ page }) => {
-    await page.goto("/teacher/dashboard");
+    await page.goto("/teacher/home");
     await expectPageOk(page);
   });
 
@@ -37,7 +37,7 @@ test.describe("Teacher workflow", () => {
   test("student cannot reach teacher dashboard", async ({ page }) => {
     await page.context().clearCookies();
     await login(page, "STUDENT");
-    await page.goto("/teacher/dashboard");
-    await expect(page).not.toHaveURL(/\/teacher\/dashboard$/);
+    await page.goto("/teacher/home");
+    await expect(page).not.toHaveURL(/\/teacher\/home$/);
   });
 });

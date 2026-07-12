@@ -6,7 +6,7 @@ test.describe("Admin workflow", () => {
     await login(page, "ADMIN");
   });
 
-  for (const path of ["/admin/dashboard", "/admin/users", "/admin/students", "/admin/teachers", "/admin/categories", "/admin/statistics"]) {
+  for (const path of ["/admin/dashboard", "/admin/users", "/admin/courses", "/admin/posts", "/admin/roadmaps", "/admin/categories", "/admin/statistics"]) {
     test(`admin page loads: ${path}`, async ({ page }) => {
       await page.goto(path);
       await expectPageOk(page);
