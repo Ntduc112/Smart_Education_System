@@ -3,6 +3,7 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const OptionSchema = z.object({
     content:    z.string().min(1).max(2_000),
@@ -70,6 +71,7 @@ export async function POST(
                 deleted_at: null,
                 lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
             },
+            include: { lesson: { select: { chapter: { select: { course_id: true } } } } },
         });
         if (!quiz) {
             return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
@@ -99,6 +101,7 @@ export async function POST(
             include: { options: true, testCases: true },
         });
 
+        await logCourseActivity({ courseId: quiz.lesson.chapter.course_id, actorId: userId, action: "CREATE_QUESTION", entityType: "QUESTION", entityId: question.id, entityTitle: quiz.title });
         return NextResponse.json({ question }, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {

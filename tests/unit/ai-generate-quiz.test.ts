@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   createCompletion: vi.fn(),
   findLesson: vi.fn(),
   findTranscript: vi.fn(),
+  createActivityLog: vi.fn(),
 }));
 
 vi.mock("groq-sdk", () => ({
@@ -17,6 +18,7 @@ vi.mock("@/prisma/prisma", () => ({
   default: {
     lesson: { findFirst: mocks.findLesson },
     videoTranscript: { findUnique: mocks.findTranscript },
+    courseActivityLog: { create: mocks.createActivityLog },
   },
 }));
 
@@ -30,6 +32,7 @@ describe("POST /api/teacher/ai/generate-quiz", () => {
       content: "Duyệt mảng để tính tổng và tìm phần tử lớn nhất.",
       pdf_text: null,
       video_url: null,
+      chapter: { course_id: "10000000-0000-4000-8000-000000000001" },
     });
   });
 

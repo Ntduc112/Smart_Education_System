@@ -7,6 +7,7 @@ const prismaMock = vi.hoisted(() => ({
     update: vi.fn(),
     delete: vi.fn(),
   },
+  courseActivityLog: { create: vi.fn() },
 }));
 
 vi.mock("@/prisma/prisma", () => ({ default: prismaMock }));
@@ -19,7 +20,7 @@ describe("DELETE /api/teacher/quizzes/:id", () => {
   });
 
   it("xóa mềm quiz để giữ nguyên attempts và answers", async () => {
-    prismaMock.quiz.findFirst.mockResolvedValue({ id: "quiz-1", questions: [] });
+    prismaMock.quiz.findFirst.mockResolvedValue({ id: "quiz-1", title: "Quiz 1", questions: [], lesson: { chapter: { course_id: "course-1" } } });
     prismaMock.quiz.update.mockResolvedValue({ id: "quiz-1" });
 
     const response = await DELETE(

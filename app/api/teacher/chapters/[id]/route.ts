@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const UpdateChapterSchema = z.object({
     title: z.string().min(1, "Title is required").optional(),
@@ -52,6 +53,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             where: { id },
             data:  { title, order },
         });
+        await logCourseActivity({ courseId: existing.course_id, actorId: userId, action: "UPDATE_CHAPTER", entityType: "CHAPTER", entityId: id, entityTitle: chapter.title });
         return NextResponse.json({ chapter }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -78,6 +80,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
         }
 
         await prisma.chapter.delete({ where: { id } });
+        await logCourseActivity({ courseId: existing.course_id, actorId: userId, action: "DELETE_CHAPTER", entityType: "CHAPTER", entityId: id, entityTitle: existing.title });
         return NextResponse.json({ message: "Chapter deleted successfully" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting chapter:", error);

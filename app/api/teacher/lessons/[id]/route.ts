@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const UpdateLessonSchema = z.object({
     title:      z.string().min(1, "Title is required").optional(),
@@ -49,6 +50,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         const existing = await prisma.lesson.findFirst({
             where: { id, chapter: { course: courseAccessWhere(userId, "LESSONS") } },
+            include: { chapter: { select: { course_id: true } } },
         });
         if (!existing) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
@@ -68,6 +70,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             where: { id },
             data:  { title, order, chapter_id, content, video_url, pdf_url, pdf_text, is_free },
         });
+        await logCourseActivity({ courseId: existing.chapter.course_id, actorId: userId, action: "UPDATE_LESSON", entityType: "LESSON", entityId: id, entityTitle: lesson.title });
         return NextResponse.json({ lesson }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -88,12 +91,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
         const existing = await prisma.lesson.findFirst({
             where: { id, chapter: { course: { instructor_id: userId } } },
+            include: { chapter: { select: { course_id: true } } },
         });
         if (!existing) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
         }
 
         await prisma.lesson.delete({ where: { id } });
+        await logCourseActivity({ courseId: existing.chapter.course_id, actorId: userId, action: "DELETE_LESSON", entityType: "LESSON", entityId: id, entityTitle: existing.title });
         return NextResponse.json({ message: "Lesson deleted successfully" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting lesson:", error);

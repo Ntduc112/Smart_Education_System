@@ -3,6 +3,7 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { MAX_QUIZ_ATTEMPTS } from "@/lib/quiz-policy";
 import { courseAccessWhere, getCourseAccess } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const UpdateQuizSchema = z.object({
     title:        z.string().min(1).optional(),
@@ -19,7 +20,10 @@ async function verifyOwnership(quizId: string, userId: string) {
             deleted_at: null,
             lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
         },
-        include: { questions: { include: { options: true, testCases: { orderBy: { order: "asc" } } }, orderBy: { order: "asc" } } },
+        include: {
+            questions: { include: { options: true, testCases: { orderBy: { order: "asc" } } }, orderBy: { order: "asc" } },
+            lesson: { select: { chapter: { select: { course_id: true } } } },
+        },
     });
 }
 
@@ -73,6 +77,7 @@ export async function PUT(
         const data = UpdateQuizSchema.parse(body);
 
         const quiz = await prisma.quiz.update({ where: { id }, data });
+        await logCourseActivity({ courseId: existing.lesson.chapter.course_id, actorId: userId, action: "UPDATE_QUIZ", entityType: "QUIZ", entityId: id, entityTitle: quiz.title });
         return NextResponse.json({ quiz }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -96,6 +101,7 @@ export async function DELETE(
 
         const existing = await prisma.quiz.findFirst({
             where: { id, deleted_at: null, lesson: { chapter: { course: { instructor_id: userId } } } },
+            include: { lesson: { select: { chapter: { select: { course_id: true } } } } },
         });
         if (!existing) {
             return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
@@ -105,6 +111,7 @@ export async function DELETE(
             where: { id },
             data: { deleted_at: new Date() },
         });
+        await logCourseActivity({ courseId: existing.lesson.chapter.course_id, actorId: userId, action: "DELETE_QUIZ", entityType: "QUIZ", entityId: id, entityTitle: existing.title });
         return NextResponse.json({ message: "Quiz deleted; student attempts preserved" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting quiz:", error);

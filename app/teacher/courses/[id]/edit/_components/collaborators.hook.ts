@@ -56,3 +56,23 @@ export function useRevokeCourseCollaborator(courseId: string) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["teacher", "course", courseId, "collaborators"] }),
   });
 }
+
+export interface CourseActivity {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  entity_title: string | null;
+  created_at: string;
+  actor: { id: string; name: string; email: string; avatar: string | null; role: string };
+}
+
+export function useCourseActivity(courseId: string, actorId: string | null, enabled: boolean) {
+  return useQuery<CourseActivity[]>({
+    queryKey: ["teacher", "course", courseId, "activity", actorId ?? "all"],
+    queryFn: async () => (await api.get<{ activities: CourseActivity[] }>(
+      `/teacher/courses/${courseId}/activity${actorId ? `?actor_id=${actorId}` : ""}`,
+    )).data.activities,
+    enabled,
+  });
+}

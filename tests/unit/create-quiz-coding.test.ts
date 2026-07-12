@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const prismaMock = vi.hoisted(() => ({
   lesson: { findFirst: vi.fn() },
   quiz: { create: vi.fn() },
+  courseActivityLog: { create: vi.fn() },
 }));
 
 vi.mock("@/prisma/prisma", () => ({ default: prismaMock }));
@@ -13,7 +14,7 @@ import { POST } from "@/app/api/teacher/quizzes/route";
 describe("POST /api/teacher/quizzes với câu lập trình", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    prismaMock.lesson.findFirst.mockResolvedValue({ id: "lesson-1" });
+    prismaMock.lesson.findFirst.mockResolvedValue({ id: "lesson-1", chapter: { course_id: "course-1" } });
     prismaMock.quiz.create.mockResolvedValue({ id: "quiz-1" });
   });
 

@@ -3,6 +3,7 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const OptionInput = z.object({
     content:    z.string().min(1).max(2_000),
@@ -40,6 +41,7 @@ async function verifyOwnership(questionId: string, userId: string) {
                 lesson: { chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
             },
         },
+        include: { quiz: { select: { title: true, lesson: { select: { chapter: { select: { course_id: true } } } } } } },
     });
 }
 
@@ -100,6 +102,7 @@ export async function PUT(
                 include: { options: { orderBy: { order: "asc" } }, testCases: { orderBy: { order: "asc" } } },
             });
         });
+        await logCourseActivity({ courseId: existing.quiz.lesson.chapter.course_id, actorId: userId, action: "UPDATE_QUESTION", entityType: "QUESTION", entityId: id, entityTitle: existing.quiz.title });
         return NextResponse.json({ question }, { status: 200 });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -127,6 +130,7 @@ export async function DELETE(
         }
 
         await prisma.question.delete({ where: { id } });
+        await logCourseActivity({ courseId: existing.quiz.lesson.chapter.course_id, actorId: userId, action: "DELETE_QUESTION", entityType: "QUESTION", entityId: id, entityTitle: existing.quiz.title });
         return NextResponse.json({ message: "Question deleted" }, { status: 200 });
     } catch (error) {
         console.error("Error deleting question:", error);

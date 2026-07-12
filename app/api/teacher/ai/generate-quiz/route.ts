@@ -4,6 +4,7 @@ import { z } from "zod";
 import prisma from "@/prisma/prisma";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
   // Tra lesson + kiểm tra giáo viên sở hữu khóa học chứa bài này.
   const lesson = await prisma.lesson.findFirst({
     where: { id: lessonId, chapter: { course: courseAccessWhere(userId, "QUIZZES") } },
-    select: { title: true, content: true, pdf_text: true, video_url: true },
+    select: { title: true, content: true, pdf_text: true, video_url: true, chapter: { select: { course_id: true } } },
   });
   if (!lesson) return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
 
@@ -178,6 +179,7 @@ Trả về JSON đúng schema:
       if (!raw) throw new Error("Empty response");
 
       const parsed = AIQuizSchema.parse(JSON.parse(raw));
+      await logCourseActivity({ courseId: lesson.chapter.course_id, actorId: userId, action: "AI_GENERATE_QUIZ", entityType: "LESSON", entityId: lessonId, entityTitle: lesson.title });
       return NextResponse.json({
         questions: parsed.questions,
         sourcesUsed: {

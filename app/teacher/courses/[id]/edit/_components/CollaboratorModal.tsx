@@ -1,19 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, ClipboardList, Eye, EyeOff, Lock, Mail, Trash2, UserRoundPlus, X } from "lucide-react";
+import { Activity, BookOpen, ClipboardList, Eye, EyeOff, Lock, Mail, Trash2, UserRoundPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { getApiError } from "@/lib/api/error";
 import {
+  type CourseActivity,
   type CourseCollaborator,
+  useCourseActivity,
   useCourseCollaborators,
   useCreateCourseAssistant,
   useRevokeCourseCollaborator,
   useUpdateCourseCollaborator,
 } from "./collaborators.hook";
 
+const ACTION_LABELS: Record<string, string> = {
+  CREATE_CHAPTER: "tạo chương",
+  UPDATE_CHAPTER: "sửa chương",
+  DELETE_CHAPTER: "xóa chương",
+  CREATE_LESSON: "tạo bài học",
+  UPDATE_LESSON: "sửa bài học",
+  DELETE_LESSON: "xóa bài học",
+  CREATE_QUIZ: "tạo quiz",
+  UPDATE_QUIZ: "sửa quiz",
+  DELETE_QUIZ: "xóa quiz",
+  AI_GENERATE_QUIZ: "tạo câu hỏi bằng AI cho bài",
+  CREATE_QUESTION: "thêm câu hỏi vào quiz",
+  UPDATE_QUESTION: "sửa câu hỏi trong quiz",
+  DELETE_QUESTION: "xóa câu hỏi khỏi quiz",
+  UPDATE_TEST_CASES: "cập nhật test case trong quiz",
+};
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "vừa xong";
+  if (minutes < 60) return `${minutes} phút trước`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} giờ trước`;
+  return new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 export function CollaboratorModal({ courseId, onClose }: { courseId: string; onClose: () => void }) {
+  const [tab, setTab] = useState<"members" | "activity">("members");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -72,6 +102,14 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
           <button aria-label="Đóng" onClick={onClose} className="rounded-lg p-2 text-[rgba(4,14,32,0.45)] hover:bg-[#F4F8FE]"><X size={18} /></button>
         </div>
 
+        <div className="flex gap-1 border-b border-[#DCE6F4] px-6 pt-3">
+          <TabButton icon={<Users size={14} />} label="Trợ giảng" active={tab === "members"} onClick={() => setTab("members")} />
+          <TabButton icon={<Activity size={14} />} label="Hoạt động" active={tab === "activity"} onClick={() => setTab("activity")} />
+        </div>
+
+        {tab === "activity" && <ActivityTab courseId={courseId} collaborators={collaborators} />}
+
+        {tab === "members" && <>
         <div className="space-y-4 border-b border-[#DCE6F4] px-6 py-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
@@ -133,6 +171,7 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
             </div>
           ))}
         </div>
+        </>}
       </div>
 
       <ConfirmModal open={revoking !== null} title="Thu hồi quyền trợ giảng?"
@@ -140,6 +179,60 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
         confirmLabel="Thu hồi quyền" onCancel={() => setRevoking(null)}
         onConfirm={handleRevoke} isLoading={revoke.isPending} />
     </div>
+  );
+}
+
+function TabButton({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
+  return <button onClick={onClick} className={`flex items-center gap-1.5 rounded-t-lg border-b-2 px-3 py-2 text-sm font-semibold transition-colors ${active ? "border-[#1b61c9] text-[#1b61c9]" : "border-transparent text-[rgba(4,14,32,0.45)] hover:text-[#181d26]"}`}>
+    {icon}{label}
+  </button>;
+}
+
+function ActivityTab({ courseId, collaborators }: { courseId: string; collaborators: CourseCollaborator[] }) {
+  const [actorId, setActorId] = useState<string | null>(null);
+  const { data: activities = [], isLoading } = useCourseActivity(courseId, actorId, true);
+
+  return (
+    <div className="space-y-3 px-6 py-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-[#181d26]">Nhật ký hoạt động</h3>
+        <select value={actorId ?? ""} onChange={(event) => setActorId(event.target.value || null)}
+          className="rounded-xl border border-[#DCE6F4] px-3 py-1.5 text-xs outline-none focus:border-[#1b61c9]">
+          <option value="">Tất cả mọi người</option>
+          {collaborators.map((collaborator) => (
+            <option key={collaborator.user.id} value={collaborator.user.id}>{collaborator.user.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {isLoading ? <p className="py-5 text-sm text-[rgba(4,14,32,0.45)]">Đang tải...</p> : activities.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-[#C2D4EE] bg-[#F4F8FE] px-4 py-7 text-center text-sm text-[rgba(4,14,32,0.5)]">Chưa có hoạt động nào được ghi lại.</p>
+      ) : (
+        <ul className="space-y-1">
+          {activities.map((activity) => <ActivityRow key={activity.id} activity={activity} />)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function ActivityRow({ activity }: { activity: CourseActivity }) {
+  const isDelete = activity.action.startsWith("DELETE");
+  return (
+    <li className="flex items-start gap-3 rounded-xl px-2 py-2.5 hover:bg-[#F8FAFC]">
+      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#EAF1FC] text-xs font-semibold text-[#1b61c9]">
+        {activity.actor.name.charAt(0).toUpperCase()}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm text-[#181d26]">
+          <span className="font-semibold">{activity.actor.name}</span>
+          {activity.actor.role === "TEACHING_ASSISTANT" && <span className="ml-1.5 rounded-full bg-[#7C5CFC]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[#7C5CFC]">Trợ giảng</span>}
+          {" "}<span className={isDelete ? "text-red-600" : ""}>{ACTION_LABELS[activity.action] ?? activity.action.toLowerCase()}</span>
+          {activity.entity_title && <span className="font-medium"> “{activity.entity_title}”</span>}
+        </p>
+        <p className="mt-0.5 text-xs text-[rgba(4,14,32,0.4)]">{timeAgo(activity.created_at)}</p>
+      </div>
+    </li>
   );
 }
 

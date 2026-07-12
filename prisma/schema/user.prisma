@@ -38,6 +38,7 @@ model User {
   postLikes                   PostLike[]
   courseCollaborations        CourseCollaborator[] @relation("CourseCollaboratorUser")
   invitedCourseCollaborators  CourseCollaborator[] @relation("CourseCollaboratorInviter")
+  courseActivityLogs          CourseActivityLog[]
 }
 
 model RefreshToken {

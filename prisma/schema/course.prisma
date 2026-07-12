@@ -41,6 +41,7 @@ model Course {
   roadmapItems             RoadmapItem[]
   roadmapCreationProposals RoadmapCreationProposal[]
   collaborators            CourseCollaborator[]
+  activityLogs             CourseActivityLog[]
 
   // Course-listing filters always pin status=PUBLISHED, then combine with a
   // sort/filter dimension. Composite [status, X] indexes let Postgres avoid a
@@ -69,6 +70,25 @@ model CourseCollaborator {
   @@unique([course_id, user_id])
   @@index([user_id, status])
   @@index([course_id, status])
+}
+
+// Nhật ký thao tác nội dung khóa học — để giáo viên sở hữu giám sát trợ giảng.
+// action/entity_type là String tự do (giống Notification.type) để khỏi migrate enum.
+model CourseActivityLog {
+  id           String   @id @default(uuid())
+  course_id    String
+  actor_id     String
+  action       String // CREATE_CHAPTER | UPDATE_LESSON | AI_GENERATE_QUIZ | ...
+  entity_type  String // CHAPTER | LESSON | QUIZ | QUESTION
+  entity_id    String?
+  entity_title String?
+  created_at   DateTime @default(now())
+
+  course Course @relation(fields: [course_id], references: [id], onDelete: Cascade)
+  actor  User   @relation(fields: [actor_id], references: [id], onDelete: Cascade)
+
+  @@index([course_id, created_at])
+  @@index([course_id, actor_id, created_at])
 }
 
 model Chapter {

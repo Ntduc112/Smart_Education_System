@@ -3,6 +3,7 @@ import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { isExecutableQuestionType } from "@/lib/question-types";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const TestCaseSchema = z.object({
     input:     z.string().max(10_000),
@@ -107,6 +108,7 @@ export async function PUT(
             orderBy: { order: "asc" },
         });
 
+        await logCourseActivity({ courseId: question.quiz.lesson.chapter.course_id, actorId: userId, action: "UPDATE_TEST_CASES", entityType: "QUESTION", entityId: id, entityTitle: question.quiz.title });
         return NextResponse.json({ testCases: updated });
     } catch (error) {
         if (error instanceof z.ZodError) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const CreateChapterSchema = z.object({
     course_id: z.string().uuid("Course ID must be a valid UUID"),
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
         const chapter = await prisma.chapter.create({
             data: { course_id, title, order },
         });
+        await logCourseActivity({ courseId: course_id, actorId: userId, action: "CREATE_CHAPTER", entityType: "CHAPTER", entityId: chapter.id, entityTitle: title });
         return NextResponse.json({ chapter }, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {

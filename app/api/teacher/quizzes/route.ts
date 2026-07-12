@@ -4,6 +4,7 @@ import { z } from "zod";
 import { MAX_QUIZ_ATTEMPTS } from "@/lib/quiz-policy";
 import { isCodeBasedQuestionType, isExecutableQuestionType } from "@/lib/question-types";
 import { courseAccessWhere } from "@/lib/course-access";
+import { logCourseActivity } from "@/lib/activity-log";
 
 const OptionSchema = z.object({
     content:    z.string().min(1),
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
                 id:      quizData.lesson_id,
                 chapter: { course: courseAccessWhere(userId, "QUIZZES") },
             },
+            include: { chapter: { select: { course_id: true } } },
         });
         if (!lesson) {
             return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
@@ -100,6 +102,7 @@ export async function POST(request: NextRequest) {
             },
             include: questions ? { questions: { include: { options: true, testCases: true } } } : undefined,
         });
+        await logCourseActivity({ courseId: lesson.chapter.course_id, actorId: userId, action: "CREATE_QUIZ", entityType: "QUIZ", entityId: quiz.id, entityTitle: quizData.title });
         return NextResponse.json({ quiz }, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {
