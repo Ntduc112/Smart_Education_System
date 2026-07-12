@@ -6,6 +6,7 @@ import { Logo } from "./Logo";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
 import { UserMenu } from "./UserMenu";
 import { NotificationBell } from "./NotificationBell";
+import { FirstLoginPasswordPrompt } from "./FirstLoginPasswordPrompt";
 
 
 function MainAuth() {
@@ -65,6 +66,7 @@ export function MainNavbar() {
       transition={{ duration: 0.5, ease: "easeOut" }}
       className="sticky top-0 z-30 relative flex items-center px-8 h-[64px] bg-white/80 backdrop-blur-xl border-b border-[#e4eaf5]"
     >
+      <FirstLoginPasswordPrompt />
       {/* Logo — left */}
       <Link href="/" className="flex items-center gap-2.5 shrink-0">
         <Logo size={30} />

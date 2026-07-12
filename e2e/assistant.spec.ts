@@ -39,18 +39,15 @@ test("teacher creates an assistant account and assistant enters the limited work
     await owner.screenshot({ path: testInfo.outputPath("teacher-collaborators.png"), fullPage: true });
 
     await login(assistant, ASSISTANT_EMAIL, ASSISTANT_PASSWORD);
-    // Đăng nhập đầu tiên: modal nhắc đổi mật khẩu (đóng được) chặn redirect.
-    // Chờ 1 trong 2: modal hiện hoặc đã redirect (lần chạy sau khi đã đổi mật khẩu).
+    await assistant.waitForURL("**/assistant/home");
+    // Vào trang đích xong mới nhắc đổi mật khẩu (đóng được); account đã đổi
+    // mật khẩu từ trước thì không hiện.
     const changePasswordModal = assistant.getByRole("heading", { name: "Đổi mật khẩu" });
-    await Promise.race([
-      changePasswordModal.waitFor({ timeout: 15_000 }).catch(() => {}),
-      assistant.waitForURL("**/assistant/home", { timeout: 15_000 }).catch(() => {}),
-    ]);
+    await changePasswordModal.waitFor({ timeout: 10_000 }).catch(() => {});
     if (await changePasswordModal.count()) {
       await assistant.screenshot({ path: testInfo.outputPath("assistant-first-login.png") });
       await assistant.getByRole("button", { name: "Hủy" }).click();
     }
-    await assistant.waitForURL("**/assistant/home");
     const membershipsResponse = await assistantContext.request.get("/api/assistant/courses");
     expect(membershipsResponse.ok()).toBeTruthy();
     const payload = await membershipsResponse.json();

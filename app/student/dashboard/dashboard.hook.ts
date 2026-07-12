@@ -9,6 +9,7 @@ export interface Me {
   email: string;
   role: string;
   avatar: string | null;
+  must_change_password: boolean;
   created_at: string;
 }
 

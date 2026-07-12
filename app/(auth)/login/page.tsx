@@ -9,7 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useLogin } from "./login.hook";
 import { loginSchema, LoginInput } from "./login.schema";
 import { getApiError } from "@/lib/api/error";
-import { ChangePasswordModal } from "@/app/(auth)/changePassword/ChangePasswordModal";
 import { motion, type Variants } from "framer-motion";
 
 // ── Palette (cozy-blue) ──────────────────────────────────────────────────────
@@ -82,9 +81,6 @@ function LoginContent() {
   const rawRedirect = searchParams.get("redirect");
   const redirect = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : null;
   const [showPassword, setShowPassword] = useState(false);
-  // Account do giáo viên tạo (trợ giảng) đăng nhập lần đầu → nhắc đổi mật khẩu
-  // trước khi vào app; đóng modal thì vẫn đi tiếp tới trang đích.
-  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
   const { mutateAsync: login, isPending } = useLogin();
 
   const {
@@ -98,14 +94,11 @@ function LoginContent() {
     try {
       const result = await login(data);
       const role = result.user?.role;
-      const destination =
-        redirect ??
-        (role === "ADMIN" ? "/admin/dashboard"
-          : role === "TEACHER" ? "/teacher/home"
-          : role === "TEACHING_ASSISTANT" ? "/assistant/home"
-          : "/");
-      if (result.user?.must_change_password) setPendingRedirect(destination);
-      else router.push(destination);
+      if (redirect) router.push(redirect);
+      else if (role === "ADMIN") router.push("/admin/dashboard");
+      else if (role === "TEACHER") router.push("/teacher/home");
+      else if (role === "TEACHING_ASSISTANT") router.push("/assistant/home");
+      else router.push("/");
     } catch (err) {
       setError("root", { message: getApiError(err, "Đăng nhập thất bại") });
     }
@@ -117,8 +110,6 @@ function LoginContent() {
       style={{ background: "linear-gradient(170deg,#EFF5FE,#F3F8FE,#EAF2FD)" }}
     >
       <Atmosphere />
-
-      {pendingRedirect && <ChangePasswordModal onClose={() => router.push(pendingRedirect)} />}
 
       {/* Card */}
       <motion.div variants={cardVariants} initial="hidden" animate="visible" className="relative z-10 w-full max-w-md mx-4">
