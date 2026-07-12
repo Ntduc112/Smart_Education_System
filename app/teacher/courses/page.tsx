@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Plus, Eye, MoreHorizontal, Trash2, Globe, Lock } from "lucide-react";
+import { Plus, Eye, MoreHorizontal, Trash2, Globe, Lock, ChevronLeft } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
 import {
   useTeacherCourses,
@@ -194,6 +194,7 @@ function CourseRow({
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function TeacherCoursesPage() {
+  const router = useRouter();
   const [tab, setTab]               = useState<Tab>("all");
   const [search, setSearch]         = useState("");
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -219,11 +220,26 @@ export default function TeacherCoursesPage() {
       <main className="mx-auto max-w-6xl px-6 py-10">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="font-display text-3xl font-semibold" style={{ color: C.ink }}>Khóa học</h1>
-            {!isLoading && (
-              <p className="text-sm mt-0.5" style={{ color: C.inkSoft }}>{courses.length} khóa học</p>
-            )}
+          <div className="flex items-center gap-3">
+            <button
+              // Quay về đúng trang trước đó; mở thẳng bằng link (không có
+              // lịch sử) thì rơi về trang chủ giáo viên.
+              onClick={() => {
+                if (window.history.length > 1) router.back();
+                else router.push("/teacher/home");
+              }}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
+              style={{ border: `1px solid ${C.border}`, color: C.ink }}
+            >
+              <ChevronLeft size={16} />
+              Quay lại
+            </button>
+            <div>
+              <h1 className="font-display text-3xl font-semibold" style={{ color: C.ink }}>Khóa học</h1>
+              {!isLoading && (
+                <p className="text-sm mt-0.5" style={{ color: C.inkSoft }}>{courses.length} khóa học</p>
+              )}
+            </div>
           </div>
           <Link
             href="/teacher/courses/new"
