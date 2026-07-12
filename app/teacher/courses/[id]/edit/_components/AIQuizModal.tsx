@@ -363,8 +363,10 @@ export function AIQuizModal({
   const generate = useAIGenerateQuiz();
   const createWithQuestions = useCreateQuizWithQuestions(courseId);
 
-  const noContent =
-    (generate.error as AxiosError<{ error?: string }>)?.response?.data?.error === "no_content";
+  const generateErrorData =
+    (generate.error as AxiosError<{ error?: string; message?: string }>)?.response?.data;
+  const noContent = generateErrorData?.error === "no_content";
+  const rateLimited = generateErrorData?.error === "rate_limited";
 
   const totalCount = counts.mcq + counts.trueFalse + counts.shortAnswer + counts.coding + counts.debugging + counts.codeOutput;
   const hasInvalidCodeQuestion = questions.some((question) =>
@@ -511,6 +513,10 @@ export function AIQuizModal({
               {noContent ? (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
                   Bài học chưa có nội dung (text/PDF/transcript video) để tạo câu hỏi sát bài. Thêm nội dung rồi thử lại.
+                </p>
+              ) : rateLimited ? (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+                  {generateErrorData?.message ?? "AI đã hết hạn mức trong ngày. Vui lòng thử lại sau."}
                 </p>
               ) : generate.isError ? (
                 <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">Không thể tạo câu hỏi. Vui lòng thử lại.</p>

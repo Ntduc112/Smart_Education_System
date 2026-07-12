@@ -217,4 +217,29 @@ describe("POST /api/teacher/ai/generate-quiz", () => {
     // Lô chưa sạch → được phép thử lại tối đa 3 lần trước khi chấp nhận lô tốt nhất.
     expect(mocks.createCompletion.mock.calls.length).toBeGreaterThanOrEqual(1);
   });
+
+  it("hết hạn mức Groq (429): không retry, trả 429 kèm thời gian thử lại", async () => {
+    mocks.createCompletion.mockRejectedValue(
+      Object.assign(new Error("429 rate_limit_exceeded"), {
+        status: 429,
+        headers: new Headers({ "retry-after": "6679" }),
+      }),
+    );
+
+    const response = await POST(new NextRequest("http://localhost/api/teacher/ai/generate-quiz", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-user-id": "teacher-1" },
+      body: JSON.stringify({
+        lessonId: "20000000-0000-4000-8000-000000000001",
+        counts: { mcq: 1, trueFalse: 0, shortAnswer: 0, coding: 0, debugging: 0, codeOutput: 0 },
+      }),
+    }));
+
+    expect(response.status).toBe(429);
+    const body = await response.json();
+    expect(body.error).toBe("rate_limited");
+    expect(body.message).toContain("112 phút");
+    // 429 dừng ngay — retry chỉ đốt thêm quota.
+    expect(mocks.createCompletion).toHaveBeenCalledTimes(1);
+  });
 });

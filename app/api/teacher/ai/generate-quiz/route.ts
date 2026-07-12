@@ -219,10 +219,26 @@ Trả về JSON đúng schema:
       lastErr = results.find((r) => !r.success)?.error;
     } catch (err) {
       lastErr = err;
+      // Hết hạn mức Groq (429) — retry chỉ đốt thêm quota, dừng ngay.
+      if ((err as { status?: number })?.status === 429) break;
     }
   }
 
   if (!best.length) {
+    if ((lastErr as { status?: number })?.status === 429) {
+      const headers = (lastErr as { headers?: Headers })?.headers;
+      const retryAfter = Number(headers?.get?.("retry-after")) || null;
+      const minutes = retryAfter ? Math.ceil(retryAfter / 60) : null;
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          message: minutes
+            ? `AI đã hết hạn mức trong ngày. Thử lại sau khoảng ${minutes} phút.`
+            : "AI đã hết hạn mức trong ngày. Vui lòng thử lại sau.",
+        },
+        { status: 429 }
+      );
+    }
     console.error("[AI Generate Quiz] error:", lastErr);
     return NextResponse.json({ error: "Không thể tạo câu hỏi. Vui lòng thử lại." }, { status: 500 });
   }
