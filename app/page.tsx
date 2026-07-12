@@ -1,11 +1,63 @@
 import { CoursesSection } from "./_components/home/CoursesSection";
 import { PostsFeedSection } from "./_components/home/PostsFeedSection";
-import { HeroSection } from "./_components/home/HeroSection";
+import { RoadmapMetroSection, type MetroRoadmap } from "./_components/home/RoadmapMetroSection";
 import { FeaturesSection } from "./_components/home/FeaturesSection";
 import { CTASection } from "./_components/home/CTASection";
 import { MainNavbar } from "./_components/MainNavbar";
 import { Logo } from "./_components/Logo";
 import Link from "next/link";
+import prisma from "@/prisma/prisma";
+
+// Tối đa 5 tuyến trên bản đồ, mỗi tuyến tối đa 8 ga để nhãn không chồng nhau
+const MAX_LINES = 5;
+const MAX_STOPS = 8;
+
+async function getMetroRoadmaps(): Promise<MetroRoadmap[]> {
+  try {
+    const roadmaps = await prisma.roadmap.findMany({
+      where: { status: "PUBLISHED", items: { some: { status: "APPROVED" } } },
+      orderBy: { created_at: "asc" },
+      take: MAX_LINES,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        items: {
+          where: { status: "APPROVED" },
+          orderBy: [{ order: "asc" }, { created_at: "asc" }],
+          take: MAX_STOPS,
+          select: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                instructor: { select: { name: true } },
+                _count: { select: { enrollments: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return roadmaps.map((rm) => ({
+      id: rm.id,
+      title: rm.title,
+      description: rm.description,
+      stops: rm.items.map((it) => ({
+        courseId: it.course.id,
+        title: it.course.title,
+        description: it.course.description,
+        instructor: it.course.instructor.name,
+        enrollments: it.course._count.enrollments,
+      })),
+    }));
+  } catch (error) {
+    console.error("Error fetching roadmaps for landing:", error);
+    return [];
+  }
+}
 
 const FOOTER_COLS = [
   { heading: "Sản phẩm", links: ["Khóa học", "AI Tutor", "Chứng chỉ"] },
@@ -13,7 +65,9 @@ const FOOTER_COLS = [
   { heading: "Hỗ trợ", links: ["Trợ giúp", "Liên hệ", "Điều khoản"] },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const roadmaps = await getMetroRoadmaps();
+
   return (
     <div className="min-h-screen relative overflow-x-hidden" style={{ background: "linear-gradient(170deg,#EFF5FE 0%,#F3F8FE 45%,#EAF2FD 100%)" }}>
 
@@ -43,8 +97,8 @@ export default function HomePage() {
       {/* Navbar */}
       <MainNavbar />
 
-      {/* Hero */}
-      <HeroSection />
+      {/* Hero: bản đồ lộ trình kiểu metro */}
+      <RoadmapMetroSection roadmaps={roadmaps} />
 
       {/* Courses */}
       <CoursesSection />

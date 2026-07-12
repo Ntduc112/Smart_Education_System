@@ -4,26 +4,24 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChangePasswordModal } from "@/app/(auth)/changePassword/ChangePasswordModal";
 import { useMe } from "@/app/student/dashboard/dashboard.hook";
-
-const DISMISS_KEY = "first-login-password-prompt-dismissed";
+import api from "@/lib/axios";
 
 // Account do giáo viên tạo sẵn (trợ giảng) còn giữ mật khẩu tạm → sau khi vào
-// trang đích, nhắc đổi mật khẩu. Đóng modal thì thôi nhắc trong phiên này.
+// trang đích, nhắc đổi mật khẩu ĐÚNG MỘT LẦN: đổi xong hay bấm Hủy đều tắt cờ
+// trong DB, không hỏi lại.
 export function FirstLoginPasswordPrompt() {
   const { data: me } = useMe();
   const queryClient = useQueryClient();
-  const [dismissed, setDismissed] = useState(
-    () => typeof window !== "undefined" && sessionStorage.getItem(DISMISS_KEY) === "1",
-  );
+  const [closed, setClosed] = useState(false);
 
-  if (!me?.must_change_password || dismissed) return null;
+  if (closed || !me?.must_change_password) return null;
 
   return (
     <ChangePasswordModal
-      onClose={() => {
-        sessionStorage.setItem(DISMISS_KEY, "1");
-        setDismissed(true);
-        // Đổi thành công thì flag trong DB đã tắt — refetch để khỏi nhắc lại phiên sau.
+      onClose={async () => {
+        setClosed(true); // ẩn ngay, không chờ server
+        // Đổi mật khẩu thành công cũng đã tắt cờ — gọi thêm lần nữa vô hại.
+        await api.post("/user/dismiss-password-prompt").catch(() => {});
         queryClient.invalidateQueries({ queryKey: ["me"] });
       }}
     />
