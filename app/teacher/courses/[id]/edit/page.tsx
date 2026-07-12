@@ -913,47 +913,6 @@ function LessonPanel({
         )}
       </div>
 
-      {/* Save */}
-      <button
-        onClick={handleSave}
-        disabled={updateLesson.isPending}
-        className={`w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-60 ${
-          saveStatus === "success"
-            ? "bg-emerald-500 hover:bg-emerald-600"
-            : saveStatus === "error"
-            ? "bg-red-500 hover:bg-red-600"
-            : "bg-[#1b61c9] hover:bg-[#254fad]"
-        }`}
-      >
-        {updateLesson.isPending ? (
-          <>
-            <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
-            </svg>
-            Đang lưu...
-          </>
-        ) : saveStatus === "success" ? (
-          <>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Đã lưu thành công
-          </>
-        ) : saveStatus === "error" ? (
-          <>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-            Lưu thất bại — thử lại
-          </>
-        ) : (
-          <>
-            <Save size={14} />
-            Lưu bài học
-          </>
-        )}
-      </button>
-
       </div></>}
 
       {/* Quiz section */}
@@ -1053,6 +1012,49 @@ function LessonPanel({
             </button>
           </div>
         )}
+      </div>}
+
+      {/* Save — luôn nằm cuối form, sau cả phần bài kiểm tra */}
+      {canManageLessons && <div className={sectionCls}>
+      <button
+        onClick={handleSave}
+        disabled={updateLesson.isPending}
+        className={`w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-60 ${
+          saveStatus === "success"
+            ? "bg-emerald-500 hover:bg-emerald-600"
+            : saveStatus === "error"
+            ? "bg-red-500 hover:bg-red-600"
+            : "bg-[#1b61c9] hover:bg-[#254fad]"
+        }`}
+      >
+        {updateLesson.isPending ? (
+          <>
+            <svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+            </svg>
+            Đang lưu...
+          </>
+        ) : saveStatus === "success" ? (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Đã lưu thành công
+          </>
+        ) : saveStatus === "error" ? (
+          <>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            Lưu thất bại — thử lại
+          </>
+        ) : (
+          <>
+            <Save size={14} />
+            Lưu bài học
+          </>
+        )}
+      </button>
       </div>}
 
       {canManageQuizzes && showAIModal && (
