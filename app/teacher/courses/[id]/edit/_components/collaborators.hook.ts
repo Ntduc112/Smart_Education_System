@@ -15,14 +15,13 @@ export interface CollaboratorPermissions {
 
 export interface CreateAssistantInput extends CollaboratorPermissions {
   email: string;
-  name?: string;
-  password?: string;
 }
 
 export interface CreateAssistantResult {
   collaborator: CourseCollaborator;
   created: boolean;
   emailSent: boolean;
+  temporaryPassword?: string;
 }
 
 export function useCourseCollaborators(courseId: string) {

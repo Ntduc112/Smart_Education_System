@@ -10,6 +10,6 @@ async function changePassword(payload: Omit<ChangePasswordInput, "confirmPasswor
 export function useChangePassword() {
   return useMutation({
     mutationFn: (input: ChangePasswordInput) =>
-      changePassword({ currentPassword: input.currentPassword, newPassword: input.newPassword }),
+      changePassword({ name: input.name, currentPassword: input.currentPassword, newPassword: input.newPassword }),
   });
 }

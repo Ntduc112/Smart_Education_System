@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import prisma from "@/prisma/prisma";
-import { hashPassword } from "@/lib/auth/password";
-import { sendAssistantWelcomeEmail } from "@/lib/email/resend";
+import { generateTempPassword, hashPassword } from "@/lib/auth/password";
+import { sendAssistantAddedEmail, sendAssistantWelcomeEmail } from "@/lib/email/resend";
 
 const CreateAssistantSchema = z.object({
   email: z.string().email("Email không hợp lệ"),
-  name: z.string().trim().min(1, "Tên không được để trống").optional(),
-  password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự").optional(),
   can_manage_lessons: z.boolean().default(true),
   can_manage_quizzes: z.boolean().default(true),
 }).refine((value) => value.can_manage_lessons || value.can_manage_quizzes, {
@@ -68,9 +66,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (existing && !existing.is_active) {
       return NextResponse.json({ error: "Tài khoản trợ giảng này đã bị khóa" }, { status: 400 });
     }
-    if (!existing && (!input.name || !input.password)) {
-      return NextResponse.json({ error: "Cần nhập tên và mật khẩu để tạo tài khoản mới" }, { status: 400 });
-    }
+
+    // Tài khoản mới: tự sinh tên tạm (theo phần trước @ email) + mật khẩu tạm,
+    // TA bị bắt đổi cả hai ở lần đăng nhập đầu (must_change_password).
+    const generatedName = email.split("@")[0];
+    const generatedPassword = generateTempPassword();
 
     let emailSent = false;
     const collaborator = await prisma.$transaction(async (tx) => {
@@ -78,9 +78,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         ? existing.id
         : (await tx.user.create({
             data: {
-              name: input.name!,
+              name: generatedName,
               email,
-              password_hash: await hashPassword(input.password!),
+              password_hash: await hashPassword(generatedPassword),
               role: "TEACHING_ASSISTANT",
               must_change_password: true,
             },
@@ -117,25 +117,39 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return membership;
     });
 
-    // Account mới → gửi thông tin đăng nhập. Lỗi gửi mail không rollback account,
-    // teacher vẫn có thể gửi mật khẩu cho trợ giảng theo cách khác.
-    if (!existing) {
-      try {
+    const loginUrl = `${process.env.APP_URL ?? request.nextUrl.origin}/login`;
+    // Lỗi gửi mail không rollback account — nếu account mới mà gửi mail thất bại,
+    // trả mật khẩu tạm về cho teacher hiển thị để tự báo tay cho trợ giảng.
+    try {
+      if (!existing) {
         await sendAssistantWelcomeEmail({
           email,
-          name: input.name!,
-          password: input.password!,
+          name: generatedName,
+          password: generatedPassword,
           courseTitle: course.title,
           teacherName: course.instructor.name,
-          loginUrl: `${process.env.APP_URL ?? request.nextUrl.origin}/login`,
+          loginUrl,
         });
-        emailSent = true;
-      } catch (error) {
-        console.error("Error sending assistant welcome email:", error);
+      } else {
+        await sendAssistantAddedEmail({
+          email,
+          name: collaborator.user.name,
+          courseTitle: course.title,
+          teacherName: course.instructor.name,
+          loginUrl,
+        });
       }
+      emailSent = true;
+    } catch (error) {
+      console.error("Error sending assistant email:", error);
     }
 
-    return NextResponse.json({ collaborator, created: !existing, emailSent }, { status: 201 });
+    return NextResponse.json({
+      collaborator,
+      created: !existing,
+      emailSent,
+      temporaryPassword: !existing && !emailSent ? generatedPassword : undefined,
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0]?.message ?? "Dữ liệu không hợp lệ" }, { status: 400 });

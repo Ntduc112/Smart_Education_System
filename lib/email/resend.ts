@@ -160,8 +160,64 @@ export async function sendAssistantWelcomeEmail(input: {
               <a href="${input.loginUrl}" style="display:inline-block;background:#1b61c9;color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-radius:12px;padding:12px 32px">Đăng nhập ngay</a>
             </div>
             <p style="margin:0;color:rgba(4,14,32,.4);font-size:12px;line-height:1.6">
-              Vì lý do bảo mật, hãy <strong>đổi mật khẩu</strong> ngay sau lần đăng nhập đầu tiên.
+              Vì lý do bảo mật, hãy <strong>đổi mật khẩu và cập nhật tên hiển thị</strong> ngay sau lần đăng nhập đầu tiên.
             </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 40px;border-top:1px solid #f0f2f5">
+            <p style="margin:0;color:rgba(4,14,32,.35);font-size:11px;text-align:center">
+              © ${new Date().getFullYear()} Learnust. All rights reserved.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+    });
+
+    if (error) {
+        throw new Error(`Resend gửi mail thất bại: ${error.name} – ${error.message}`);
+    }
+    return data;
+}
+
+export async function sendAssistantAddedEmail(input: {
+    email: string;
+    name: string;
+    courseTitle: string;
+    teacherName: string;
+    loginUrl: string;
+}) {
+    const { data, error } = await getResend().emails.send({
+        from: process.env.RESEND_FROM_EMAIL ?? "Learnust <noreply@learnust.dev>",
+        to: input.email,
+        subject: `Bạn được thêm làm trợ giảng khóa học "${input.courseTitle}" – Learnust`,
+        html: `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#f4f6fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px">
+    <tr><td align="center">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+        <tr>
+          <td style="background:#1b61c9;padding:32px 40px">
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;letter-spacing:-.3px">Learnust</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px">
+            <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;color:#181d26">Chào ${input.name},</h2>
+            <p style="margin:0 0 28px;color:rgba(4,14,32,.55);font-size:14px;line-height:1.6">
+              Giáo viên <strong>${input.teacherName}</strong> vừa thêm bạn làm trợ giảng
+              trong khóa học <strong>“${input.courseTitle}”</strong> trên Learnust. Đăng nhập bằng
+              tài khoản trợ giảng hiện có của bạn để bắt đầu.
+            </p>
+            <div style="text-align:center;margin:0 0 28px">
+              <a href="${input.loginUrl}" style="display:inline-block;background:#1b61c9;color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-radius:12px;padding:12px 32px">Đăng nhập ngay</a>
+            </div>
           </td>
         </tr>
         <tr>

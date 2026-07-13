@@ -4,6 +4,7 @@ import { z } from "zod";
 import { verifyPassword, hashPassword } from "@/lib/auth/password";
 
 const ChangePasswordSchema = z.object({
+  name: z.string().trim().min(1, "Tên không được để trống").optional(),
   currentPassword: z.string().min(1, "Mật khẩu hiện tại không được để trống"),
   newPassword: z.string().min(6, "Mật khẩu mới tối thiểu 6 ký tự"),
 });
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { currentPassword, newPassword } = ChangePasswordSchema.parse(body);
+    const { name, currentPassword, newPassword } = ChangePasswordSchema.parse(body);
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     const newHash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: userId },
-      data: { password_hash: newHash, must_change_password: false },
+      data: { password_hash: newHash, must_change_password: false, ...(name ? { name } : {}) },
     });
 
     return NextResponse.json({ message: "Đổi mật khẩu thành công" }, { status: 200 });

@@ -18,6 +18,7 @@ export function FirstLoginPasswordPrompt() {
 
   return (
     <ChangePasswordModal
+      requireName={me.name}
       onClose={async () => {
         setClosed(true); // ẩn ngay, không chờ server
         // Đổi mật khẩu thành công cũng đã tắt cờ — gọi thêm lần nữa vô hại.

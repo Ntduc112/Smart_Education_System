@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Activity, BookOpen, Check, ChevronDown, ClipboardList, Eye, EyeOff, Lock, Mail, Trash2, UserRoundPlus, Users, X } from "lucide-react";
+import { Activity, BookOpen, Check, ChevronDown, ClipboardList, Copy, Mail, Trash2, UserRoundPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/app/_components/ConfirmModal";
 import { getApiError } from "@/lib/api/error";
@@ -45,36 +45,38 @@ function timeAgo(iso: string) {
 
 export function CollaboratorModal({ courseId, onClose }: { courseId: string; onClose: () => void }) {
   const [tab, setTab] = useState<"members" | "activity">("members");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [lessons, setLessons] = useState(true);
   const [quizzes, setQuizzes] = useState(true);
   const [revoking, setRevoking] = useState<CourseCollaborator | null>(null);
+  const [fallback, setFallback] = useState<{ email: string; password: string } | null>(null);
   const { data: collaborators = [], isLoading } = useCourseCollaborators(courseId);
   const create = useCreateCourseAssistant(courseId);
   const update = useUpdateCourseCollaborator(courseId);
   const revoke = useRevokeCourseCollaborator(courseId);
 
-  // name/password bỏ trống = thêm tài khoản trợ giảng có sẵn theo email.
-  const handleCreate = () => create.mutate({
-    email: email.trim(),
-    name: name.trim() || undefined,
-    password: password || undefined,
-    can_manage_lessons: lessons,
-    can_manage_quizzes: quizzes,
-  }, {
-    onSuccess: (result) => {
-      setName("");
-      setEmail("");
-      setPassword("");
-      if (!result.created) toast.success("Đã thêm trợ giảng có sẵn vào khóa học");
-      else if (result.emailSent) toast.success("Đã tạo tài khoản và gửi thông tin đăng nhập qua email");
-      else toast.warning("Đã tạo tài khoản nhưng gửi email thất bại. Hãy gửi mật khẩu cho trợ giảng theo cách khác.");
-    },
-    onError: (error) => toast.error(getApiError(error, "Không thể thêm trợ giảng")),
-  });
+  // Chỉ cần email: tài khoản mới tự sinh tên+mật khẩu và gửi qua mail;
+  // email đã là trợ giảng sẵn có → gán thẳng vào khóa, không tạo lại gì.
+  const handleCreate = () => {
+    const trimmedEmail = email.trim();
+    create.mutate({
+      email: trimmedEmail,
+      can_manage_lessons: lessons,
+      can_manage_quizzes: quizzes,
+    }, {
+      onSuccess: (result) => {
+        setEmail("");
+        setFallback(null);
+        if (!result.created) toast.success(result.emailSent ? "Đã thêm trợ giảng có sẵn và gửi email thông báo" : "Đã thêm trợ giảng có sẵn vào khóa học");
+        else if (result.emailSent) toast.success("Đã tạo tài khoản và gửi thông tin đăng nhập qua email");
+        else {
+          toast.warning("Đã tạo tài khoản nhưng gửi email thất bại. Gửi mật khẩu tạm bên dưới cho trợ giảng theo cách khác.");
+          if (result.temporaryPassword) setFallback({ email: trimmedEmail, password: result.temporaryPassword });
+        }
+      },
+      onError: (error) => toast.error(getApiError(error, "Không thể thêm trợ giảng")),
+    });
+  };
 
   const togglePermission = (collaborator: CourseCollaborator, field: "lessons" | "quizzes") => update.mutate({
     id: collaborator.id,
@@ -112,33 +114,26 @@ export function CollaboratorModal({ courseId, onClose }: { courseId: string; onC
 
         {tab === "members" && <>
         <div className="space-y-4 border-b border-[#DCE6F4] px-6 py-5">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[#181d26]">Tên trợ giảng</label>
-              <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Nguyễn Văn A"
-                className="w-full rounded-xl border border-[#DCE6F4] px-3 py-2.5 text-sm outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10" />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-[#181d26]">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)]" size={16} />
-                <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="trogiang@example.com" autoComplete="off" name="collaborator-email"
-                  className="w-full rounded-xl border border-[#DCE6F4] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10" />
+          {fallback && (
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-800">Gửi email thất bại — gửi tay thông tin này cho trợ giảng</p>
+              <p className="mt-1.5 text-xs text-amber-700">Email: {fallback.email}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <code className="rounded-lg bg-white px-2.5 py-1 text-xs text-amber-900">{fallback.password}</code>
+                <button type="button" aria-label="Sao chép mật khẩu"
+                  onClick={() => { navigator.clipboard.writeText(fallback.password); toast.success("Đã sao chép mật khẩu"); }}
+                  className="rounded-lg p-1.5 text-amber-700 hover:bg-amber-100"><Copy size={14} /></button>
               </div>
             </div>
-          </div>
+          )}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-[#181d26]">Mật khẩu tạm</label>
+            <label className="mb-1.5 block text-sm font-semibold text-[#181d26]">Email trợ giảng</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)]" size={16} />
-              <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Tối thiểu 6 ký tự" autoComplete="new-password" name="collaborator-temp-password"
-                className="w-full rounded-xl border border-[#DCE6F4] py-2.5 pl-10 pr-10 text-sm outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10" />
-              <button type="button" aria-label="Hiện mật khẩu" onClick={() => setShowPassword((value) => !value)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)] hover:text-[#181d26]">
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(4,14,32,0.35)]" size={16} />
+              <input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="trogiang@example.com" autoComplete="off" name="collaborator-email"
+                className="w-full rounded-xl border border-[#DCE6F4] py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#1b61c9] focus:ring-2 focus:ring-[#1b61c9]/10" />
             </div>
-            <p className="mt-1.5 text-xs text-[rgba(4,14,32,0.45)]">Trợ giảng sẽ được nhắc đổi mật khẩu ở lần đăng nhập đầu tiên. Nếu email đã là tài khoản trợ giảng, tên và mật khẩu được bỏ qua.</p>
+            <p className="mt-1.5 text-xs text-[rgba(4,14,32,0.45)]">Email chưa có tài khoản → hệ thống tự tạo và gửi tên đăng nhập, mật khẩu tạm qua email. Email đã là trợ giảng sẵn có → gán thẳng vào khóa này.</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <PermissionToggle icon={<BookOpen size={16} />} label="Quản lý bài giảng" description="Tạo, sửa, sắp xếp chương và bài học" checked={lessons} onChange={setLessons} />

@@ -1,6 +1,11 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const SALT_ROUNDS =10;
+
+export function generateTempPassword(): string {
+    return crypto.randomBytes(9).toString("base64url");
+}
 export async function hashPassword(password: string):Promise<string> {
     try{
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);

@@ -11,9 +11,10 @@ import { getApiError } from "@/lib/api/error";
 
 interface ChangePasswordModalProps {
   onClose: () => void;
+  requireName?: string;
 }
 
-export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
+export function ChangePasswordModal({ onClose, requireName }: ChangePasswordModalProps) {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -26,7 +27,10 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<ChangePasswordInput>({ resolver: zodResolver(changePasswordSchema) });
+  } = useForm<ChangePasswordInput>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: requireName !== undefined ? { name: requireName } : undefined,
+  });
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -87,6 +91,21 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
             {errors.root && (
               <div className="px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
                 {errors.root.message}
+              </div>
+            )}
+
+            {/* Name (chỉ bắt buộc ở luồng đổi mật khẩu lần đầu của trợ giảng) */}
+            {requireName !== undefined && (
+              <div>
+                <label className="block text-sm font-medium text-[#181d26] mb-1.5 tracking-[0.08px]">
+                  Tên hiển thị
+                </label>
+                <input
+                  placeholder="Tên của bạn"
+                  {...register("name")}
+                  className={`w-full px-4 py-2.5 text-sm text-[#181d26] bg-white border rounded-xl outline-none focus:ring-2 focus:ring-[#1b61c9]/15 transition-all placeholder:text-[rgba(4,14,32,0.35)] ${errors.name ? "border-red-400 focus:border-red-400" : "border-[#DCE6F4] focus:border-[#1b61c9]"}`}
+                />
+                {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
               </div>
             )}
 
