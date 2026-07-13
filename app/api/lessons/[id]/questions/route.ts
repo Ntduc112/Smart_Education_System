@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { createNotification } from "@/lib/notification";
+import { getCourseAccess } from "@/lib/course-access";
 
 const AskSchema = z.object({
     content: z.string().min(1, "Nội dung không được trống").max(2000),
 });
 
-async function getEnrollmentOrTeacher(userId: string, lessonId: string) {
+async function getLessonAccess(userId: string, lessonId: string) {
     const lesson = await prisma.lesson.findUnique({
         where: { id: lessonId },
         include: { chapter: { select: { course_id: true } } },
@@ -16,7 +17,7 @@ async function getEnrollmentOrTeacher(userId: string, lessonId: string) {
 
     const courseId = lesson.chapter.course_id;
 
-    const [enrollment, course] = await Promise.all([
+    const [enrollment, course, courseAccess] = await Promise.all([
         prisma.enrollment.findUnique({
             where: { user_id_course_id: { user_id: userId, course_id: courseId } },
         }),
@@ -24,9 +25,10 @@ async function getEnrollmentOrTeacher(userId: string, lessonId: string) {
             where: { id: courseId },
             select: { instructor_id: true },
         }),
+        getCourseAccess(userId, courseId),
     ]);
-    if (enrollment && course) return { courseId, isTeacher: false, instructorId: course.instructor_id };
-    if (course?.instructor_id === userId) return { courseId, isTeacher: true, instructorId: course.instructor_id };
+    if (enrollment && course) return { courseId, isStaff: false, instructorId: course.instructor_id };
+    if (courseAccess) return { courseId, isStaff: true, instructorId: courseAccess.instructorId };
 
     return null;
 }
@@ -40,7 +42,7 @@ export async function GET(
         const userId = request.headers.get("x-user-id");
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const access = await getEnrollmentOrTeacher(userId, lessonId);
+        const access = await getLessonAccess(userId, lessonId);
         if (!access) return NextResponse.json({ error: "Access denied" }, { status: 403 });
 
         const rawQuestions = await prisma.lessonQuestion.findMany({
@@ -102,8 +104,8 @@ export async function POST(
         const userId = request.headers.get("x-user-id");
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        const access = await getEnrollmentOrTeacher(userId, lessonId);
-        if (!access || access.isTeacher) {
+        const access = await getLessonAccess(userId, lessonId);
+        if (!access || access.isStaff) {
             return NextResponse.json({ error: "Only enrolled students can ask questions" }, { status: 403 });
         }
 

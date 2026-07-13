@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.r2.cloudflarestorage.com",
       },
+      // Public R2 development domains used by S3_PUBLIC_URL.
+      {
+        protocol: "https",
+        hostname: "*.r2.dev",
+      },
     ],
   },
 };

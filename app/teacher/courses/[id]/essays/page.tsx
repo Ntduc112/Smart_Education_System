@@ -4,10 +4,9 @@ import { use, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { FileText, ChevronLeft } from "lucide-react";
+import { FileText } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
-import { Breadcrumb } from "@/app/teacher/_components/Breadcrumb";
-import { useTeacherCourses } from "@/app/teacher/courses/courses.hook";
+import { BackButton } from "@/app/student/_components/BackButton";
 import { useEssays, useGradeAnswer, useAIGrade, EssayAnswer } from "./essays.hook";
 import { gradeAnswerSchema, GradeAnswerInput } from "./grade-answer.schema";
 
@@ -284,8 +283,6 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
     const { id } = use(params);
     const [gradedFilter, setGradedFilter] = useState<"all" | "ungraded">("all");
     const { data, isLoading } = useEssays(id, gradedFilter);
-    const { data: courses = [] } = useTeacherCourses();
-    const courseTitle = courses.find((c) => c.id === id)?.title ?? "…";
 
     if (isLoading) {
         return (
@@ -308,11 +305,7 @@ export default function EssaysPage({ params }: { params: Promise<{ id: string }>
             <MainNavbar />
             <main className="mx-auto max-w-5xl px-6 py-10 space-y-6">
             <div>
-                <Breadcrumb items={[
-                  { label: "Khóa học",       href: "/teacher/courses" },
-                  { label: courseTitle,       href: `/teacher/courses/${id}/edit` },
-                  { label: "Chấm bài tự luận" },
-                ]} />
+                <BackButton href={`/teacher/courses/${id}/edit`} label="Quay lại không gian làm việc" />
                 <h1 className="font-display text-3xl font-semibold text-[#181d26]">Chấm bài tự luận</h1>
             </div>
 

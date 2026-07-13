@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
+import { courseAccessWhere, getCourseAccess } from "@/lib/course-access";
 
 export async function GET(
   request: NextRequest,
@@ -13,8 +14,8 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const course = await prisma.course.findFirst({
-      where: { id, instructor_id: userId },
+    const [course, access] = await Promise.all([prisma.course.findFirst({
+      where: { id, ...courseAccessWhere(userId) },
       select: {
         id: true,
         title: true,
@@ -60,14 +61,16 @@ export async function GET(
           },
         },
       },
-    });
+    }), getCourseAccess(userId, id)]);
 
-    if (!course) {
+    if (!course || !access) {
       return NextResponse.json({ error: "Course not found" }, { status: 404 });
     }
 
     const classroom = {
       ...course,
+      access,
+      viewer_id: userId,
       sections: course.sections.map((section) => ({
         ...section,
         lessons: section.lessons.map(({ questions, ...lesson }) => ({

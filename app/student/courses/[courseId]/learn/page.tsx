@@ -201,7 +201,7 @@ function CFWorkerPlayer({ lessonId, onWatchPercent, videoRef, startTime }: { les
 
   useEffect(() => {
     api.get<{ token: string; workerUrl: string; videoKey: string }>(
-      `/student/lessons/${lessonId}/video-token`
+      `/lessons/${lessonId}/video-token`
     ).then(({ data }) => {
       setSrc(`${data.workerUrl}/${data.videoKey}?token=${data.token}`);
     }).catch(() => setSrc(null));
