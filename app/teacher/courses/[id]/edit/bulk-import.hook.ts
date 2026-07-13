@@ -235,7 +235,7 @@ async function uploadPdf(file: File): Promise<string> {
 }
 
 /** Upload quiz.pdf → lấy text → nhờ Groq trích nguyên văn câu hỏi → ParsedQuiz. */
-async function extractQuizFromPdf(file: File, lessonTitle: string): Promise<ParsedQuiz | null> {
+export async function extractQuizFromPdf(file: File, lessonTitle: string): Promise<ParsedQuiz | null> {
   const fd = new FormData();
   fd.append("file", file);
   const { data: up } = await api.post<{ pdfText: string | null }>(

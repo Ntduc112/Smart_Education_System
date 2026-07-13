@@ -44,7 +44,7 @@ const LANGUAGE_OPTIONS = [
   { value: "java", label: "Java" },
 ] as const;
 
-function QuestionEditor({
+export function QuestionEditor({
   q, index, onChange, onRemove,
 }: {
   q: AIQuestion;

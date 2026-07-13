@@ -19,6 +19,7 @@ import {
   BuilderChapter, BuilderLesson, BuilderQuiz,
 } from "./edit.hook";
 import { AIQuizModal } from "./_components/AIQuizModal";
+import { UploadQuizModal } from "./_components/UploadQuizModal";
 import { BulkImportModal } from "./_components/BulkImportModal";
 import { ChapterTree, type Selection } from "./_components/ChapterTree";
 import { CollaboratorModal } from "./_components/CollaboratorModal";
@@ -672,6 +673,7 @@ function LessonPanel({
   const [quizToDelete, setQuizToDelete]   = useState<BuilderQuiz | null>(null);
   const [showAIModal, setShowAIModal]     = useState(false);
   const [showAIWarn, setShowAIWarn]       = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [quizTitle, setQuizTitle]         = useState("");
   const [quizPolicy, setQuizPolicy]       = useState<QuizPolicyFormValue>({
     requirePass: true,
@@ -1003,10 +1005,10 @@ function LessonPanel({
             </div>
           </div>
         ) : (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowQuizForm(true)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#C2D4EE] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#C2D4EE] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
             >
               <Plus size={14} />
               Thêm quiz
@@ -1021,12 +1023,21 @@ function LessonPanel({
                   ? "Lời giảng video chưa trích xong — quiz sẽ thiếu phần video"
                   : undefined
               }
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#1b61c9]/40 rounded-xl text-sm text-[#1b61c9] hover:bg-[#1b61c9]/6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#1b61c9]/40 rounded-xl text-sm text-[#1b61c9] hover:bg-[#1b61c9]/6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                 <path d="M12 3L13.5 8.5L19 10L13.5 11.5L12 17L10.5 11.5L5 10L10.5 8.5L12 3Z" />
               </svg>
               Tạo với AI
+            </button>
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 py-2.5 border border-dashed border-[#C2D4EE] rounded-xl text-sm text-[rgba(4,14,32,0.55)] hover:border-[#1b61c9] hover:text-[#1b61c9] transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Tải đề có sẵn
             </button>
           </div>
         )}
@@ -1082,6 +1093,16 @@ function LessonPanel({
           lessonTitle={lesson.title}
           onClose={() => setShowAIModal(false)}
           onSuccess={() => setShowAIModal(false)}
+        />
+      )}
+
+      {canManageQuizzes && showUploadModal && (
+        <UploadQuizModal
+          courseId={courseId}
+          lessonId={lesson.id}
+          lessonTitle={lesson.title}
+          onClose={() => setShowUploadModal(false)}
+          onSuccess={() => setShowUploadModal(false)}
         />
       )}
 
