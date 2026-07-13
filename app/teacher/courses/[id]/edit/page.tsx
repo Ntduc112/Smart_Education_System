@@ -30,6 +30,7 @@ import {
   QuizPolicyFields,
   type QuizPolicyFormValue,
 } from "@/app/teacher/courses/[id]/_components/QuizPolicyFields";
+import { LessonVideoPlayer } from "@/app/teacher/courses/[id]/_components/LessonVideoPlayer";
 
 // ── Palette (cozy-blue, đồng bộ teacher/home) ─────────────────────────────────
 const C = { canvas:"#EFF5FE", ink:"#181d26", inkSoft:"rgba(4,14,32,0.62)", inkFaint:"rgba(4,14,32,0.40)", border:"#DCE6F4", blue:"#1b61c9", blueDark:"#254fad", sky:"#2E8BE6", emerald:"#0E9F6E", violet:"#7C5CFC", rose:"#E5484D" };
@@ -915,6 +916,24 @@ function LessonPanel({
 
       </div></>}
 
+      {form.video_url && (
+        <div className={`${sectionCls} border-t border-[#DCE6F4] pt-5`}>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-[#181d26]"><Video size={15} className="text-[#1b61c9]" />Xem trước video bài học</p>
+              <p className="mt-0.5 text-xs text-[rgba(4,14,32,0.45)]">Kiểm tra đúng video trước khi học viên truy cập.</p>
+            </div>
+          </div>
+          {isR2Video && form.video_url !== lesson.video_url ? (
+            <div className="flex aspect-video w-full items-center justify-center rounded-2xl bg-[#101827] px-6 text-center">
+              <span className="text-sm text-white/60">Đang lưu video để tạo bản xem trước...</span>
+            </div>
+          ) : (
+            <LessonVideoPlayer lessonId={lesson.id} title={form.title || lesson.title} videoUrl={form.video_url} />
+          )}
+        </div>
+      )}
+
       {/* Quiz section */}
       {canManageQuizzes && <div className={`${sectionCls} border-t border-[#DCE6F4] pt-5`}>
         <div className="flex items-center gap-2 mb-3">
@@ -1279,10 +1298,10 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
               className="inline-flex items-center gap-2 rounded-xl border border-[#DCE6F4] bg-white px-4 py-2 text-sm font-medium text-[#181d26] transition-colors hover:border-[#1b61c9]/40 hover:text-[#1b61c9]">
               <UserRoundCog size={16} /> Trợ giảng
             </button>}
-            {isOwner && <Link href={`/teacher/courses/${id}/classroom`}
+            <Link href={`/teacher/courses/${id}/classroom`}
               className="inline-flex items-center gap-2 rounded-xl bg-[#1b61c9] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#254fad]">
               Vào lớp học
-            </Link>}
+            </Link>
           </div>
         </div>
 

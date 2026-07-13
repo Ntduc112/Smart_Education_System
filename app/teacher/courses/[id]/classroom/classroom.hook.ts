@@ -36,6 +36,13 @@ export interface TeacherClassroom {
   title: string;
   status: "DRAFT" | "PUBLISHED";
   instructor: { id: string; name: string; avatar: string | null };
+  viewer_id: string;
+  access: {
+    isOwner: boolean;
+    isAssistant: boolean;
+    canManageLessons: boolean;
+    canManageQuizzes: boolean;
+  };
   sections: ClassroomChapter[];
 }
 

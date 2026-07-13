@@ -138,7 +138,7 @@ function ClassroomContent({ params }: { params: Promise<{ id: string }> }) {
           <div className="rounded-3xl border bg-white px-8 py-14" style={{ borderColor: C.border }}>
             <CircleHelp size={36} className="mx-auto text-[rgba(4,14,32,0.3)]" />
             <h1 className="mt-4 font-display text-xl font-semibold" style={{ color: C.ink }}>Không thể mở lớp học</h1>
-            <p className="mt-2 text-sm" style={{ color: C.inkSoft }}>Khóa học không tồn tại hoặc bạn không phải giảng viên sở hữu.</p>
+            <p className="mt-2 text-sm" style={{ color: C.inkSoft }}>Khóa học không tồn tại hoặc bạn không có quyền truy cập.</p>
             <Link href="/teacher/courses" className="mt-6 inline-flex rounded-xl bg-[#1b61c9] px-4 py-2.5 text-sm font-medium text-white">
               Quay lại khóa học
             </Link>
@@ -168,7 +168,7 @@ function ClassroomContent({ params }: { params: Promise<{ id: string }> }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1b61c9]/10 px-2.5 py-1 text-xs font-semibold text-[#1b61c9]">
                   <ShieldCheck size={13} />
-                  Chế độ giảng viên
+                  {course.access.isAssistant ? "Chế độ trợ giảng" : "Chế độ giảng viên"}
                 </span>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${isPublished ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                   {isPublished ? "Đã công bố" : "Bản nháp"}
@@ -185,13 +185,15 @@ function ClassroomContent({ params }: { params: Promise<{ id: string }> }) {
             </div>
 
             <div className="flex flex-wrap gap-2.5">
-              <Link
-                href={`/teacher/courses/${courseId}/edit`}
-                className="inline-flex items-center gap-2 rounded-xl border border-[#DCE6F4] bg-white px-4 py-2.5 text-sm font-medium text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
-              >
-                <Pencil size={15} />
-                Chỉnh sửa khóa học
-              </Link>
+              {(course.access.canManageLessons || course.access.canManageQuizzes) ? (
+                <Link
+                  href={`/teacher/courses/${courseId}/edit`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-[#DCE6F4] bg-white px-4 py-2.5 text-sm font-medium text-[#181d26] hover:border-[#1b61c9]/40 hover:text-[#1b61c9]"
+                >
+                  <Pencil size={15} />
+                  Mở không gian làm việc
+                </Link>
+              ) : null}
               {isPublished ? (
                 <Link
                   href={`/courses/${courseId}`}
@@ -289,7 +291,7 @@ function ClassroomContent({ params }: { params: Promise<{ id: string }> }) {
 
                 <QASection
                   lessonId={selectedLesson.id}
-                  currentUserId={course.instructor.id}
+                  currentUserId={course.viewer_id}
                   mode="owner"
                   onReplySuccess={() => { void refetch(); }}
                 />

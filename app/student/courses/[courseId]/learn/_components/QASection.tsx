@@ -38,10 +38,11 @@ function Avatar({ avatar, name, size = "md" }: { avatar: string | null; name: st
 }
 
 function RoleBadge({ role }: { role: string }) {
-  if (role !== "TEACHER" && role !== "ADMIN") return null;
+  if (role !== "TEACHER" && role !== "TEACHING_ASSISTANT" && role !== "ADMIN") return null;
+  const label = role === "TEACHING_ASSISTANT" ? "Trợ giảng" : "Giáo viên";
   return (
     <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#1b61c9]/10 text-[#1b61c9] uppercase tracking-wide">
-      Giáo viên
+      {label}
     </span>
   );
 }

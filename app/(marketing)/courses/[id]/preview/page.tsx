@@ -80,7 +80,7 @@ function PreviewPlayer({ lesson, isLoggedIn, loginHref }: { lesson: Lesson; isLo
   useEffect(() => {
     if (!isR2 || !isLoggedIn) return;
     api.get<{ token: string; workerUrl: string; videoKey: string }>(
-      `/student/lessons/${lesson.id}/video-token`
+      `/lessons/${lesson.id}/video-token`
     ).then(({ data }) => setSrc(`${data.workerUrl}/${data.videoKey}?token=${data.token}`))
       .catch(() => setError(true));
   }, [lesson.id, isR2, isLoggedIn]);

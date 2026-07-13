@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { z } from "zod";
 import { createNotification } from "@/lib/notification";
+import { getCourseAccess } from "@/lib/course-access";
 
 const ReplySchema = z.object({
     content: z.string().min(1, "Nội dung không được trống").max(2000),
@@ -26,16 +27,15 @@ export async function POST(
 
         const courseId = question.lesson.chapter.course_id;
 
-        const enrollment = await prisma.enrollment.findUnique({
-            where: { user_id_course_id: { user_id: userId, course_id: courseId } },
-        });
-        const course = await prisma.course.findUnique({
-            where: { id: courseId },
-            select: { instructor_id: true },
-        });
-        const isTeacher = course?.instructor_id === userId;
+        const [enrollment, courseAccess] = await Promise.all([
+            prisma.enrollment.findUnique({
+                where: { user_id_course_id: { user_id: userId, course_id: courseId } },
+            }),
+            getCourseAccess(userId, courseId),
+        ]);
+        const isStaff = Boolean(courseAccess);
 
-        if (!enrollment && !isTeacher) {
+        if (!enrollment && !isStaff) {
             return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 
@@ -52,9 +52,9 @@ export async function POST(
         // Notify question author (skip if replying to own question)
         if (question.user_id !== userId) {
             const lessonId = question.lesson_id;
-            const notifTitle = isTeacher ? "Giáo viên đã trả lời" : "Có người trả lời câu hỏi của bạn";
-            const notifMsg = isTeacher
-                ? "Giáo viên đã trả lời câu hỏi của bạn"
+            const notifTitle = isStaff ? "Giảng viên đã trả lời" : "Có người trả lời câu hỏi của bạn";
+            const notifMsg = isStaff
+                ? "Giáo viên hoặc trợ giảng đã trả lời câu hỏi của bạn"
                 : "Có học viên đã trả lời câu hỏi của bạn";
             createNotification(
                 question.user_id,
