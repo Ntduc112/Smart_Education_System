@@ -201,6 +201,7 @@ function EnrollmentRow({ enrollment }: { enrollment: RecentEnrollment }) {
 }
 
 type CourseFilter = "all" | "PUBLISHED" | "DRAFT";
+const CHART_HEIGHT = 160;
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function TeacherHomePage() {
@@ -354,9 +355,10 @@ export default function TeacherHomePage() {
               </h2>
               <Link href="/teacher/analytics" className="text-sm font-medium" style={{ color: C.blue }}>Chi tiết →</Link>
             </div>
-            <div className="flex items-end gap-3" style={{ height: 160 }}>
+            <div className="flex items-end gap-3" style={{ height: CHART_HEIGHT }}>
               {monthly.map((m) => {
                 const pct = (m.revenue / maxRev) * 100;
+                const barHeight = Math.max(4, (pct / 100) * CHART_HEIGHT);
                 return (
                   <div key={m.month} className="group flex flex-1 flex-col items-center justify-end gap-2">
                     <span className="text-[11px] font-semibold opacity-0 transition-opacity group-hover:opacity-100" style={{ color: C.emerald }}>
@@ -364,7 +366,7 @@ export default function TeacherHomePage() {
                     </span>
                     <motion.div className="w-full rounded-t-lg"
                       style={{ background: "linear-gradient(180deg,#34C38F,#0E9F6E)", minHeight: 4 }}
-                      initial={{ height: 0 }} animate={{ height: `${pct}%` }}
+                      initial={{ height: 0 }} animate={{ height: barHeight }}
                       transition={{ duration: 0.7, ease: [0.22, 0.61, 0.36, 1] }} />
                     <span className="text-[11px]" style={{ color: C.inkFaint }}>{m.month.slice(5)}</span>
                   </div>
