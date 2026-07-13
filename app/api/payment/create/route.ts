@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/prisma/prisma";
 import { createPaymentLink, getPayosStatus, cancelPaymentLink } from "@/lib/payment/payos";
 import { fulfillPayment } from "@/lib/payment/fulfill";
+import type { Payment } from "@/prisma/generated/prisma";
+
+class PaymentConflictError extends Error {}
+
+function isSerializationConflict(error: unknown): boolean {
+    return typeof error === "object" && error !== null && "code" in error && error.code === "P2034";
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -73,18 +80,42 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Tạo orderCode ngẫu nhiên 8 chữ số (fits trong Int32)
-        const orderCode = Math.floor(Math.random() * 900_000_000) + 100_000_000;
+        // Tạo đơn mới: bọc kiểm tra lại + ghi vào một transaction Serializable, retry
+        // khi Postgres phát hiện xung đột. Chống trường hợp 2 tab cùng bấm "Mua khóa
+        // học" cùng lúc vượt qua check pendingPayment ở trên rồi cùng tạo đơn PENDING
+        // trùng cho cùng một khóa học.
+        let payment: Payment | null = null;
+        for (let retry = 0; retry < 3 && !payment; retry++) {
+            try {
+                payment = await prisma.$transaction(async (tx) => {
+                    const stillPending = await tx.payment.findFirst({
+                        where: { user_id: userId, course_id, status: "PENDING" },
+                    });
+                    if (stillPending) {
+                        throw new PaymentConflictError(
+                            "Đã có một giao dịch khác cho khóa học này vừa được tạo. Vui lòng tải lại trang."
+                        );
+                    }
 
-        const payment = await prisma.payment.create({
-            data: {
-                user_id:    userId,
-                course_id,
-                amount:     finalPrice,
-                status:     "PENDING",
-                order_code: orderCode,
-            },
-        });
+                    // Tạo orderCode ngẫu nhiên 8 chữ số (fits trong Int32)
+                    const orderCode = Math.floor(Math.random() * 900_000_000) + 100_000_000;
+                    return tx.payment.create({
+                        data: {
+                            user_id:    userId,
+                            course_id,
+                            amount:     finalPrice,
+                            status:     "PENDING",
+                            order_code: orderCode,
+                        },
+                    });
+                }, { isolationLevel: "Serializable" });
+            } catch (error) {
+                if (error instanceof PaymentConflictError) throw error;
+                if (!isSerializationConflict(error)) throw error;
+                if (retry === 2) throw new PaymentConflictError("Không thể tạo đơn do xung đột, vui lòng thử lại.");
+            }
+        }
+        if (!payment) throw new PaymentConflictError("Không thể tạo đơn thanh toán.");
 
         const checkoutUrl = await createPaymentLink({
             orderCode:   payment.order_code,
@@ -96,6 +127,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ checkoutUrl }, { status: 201 });
     } catch (error) {
+        if (error instanceof PaymentConflictError) {
+            return NextResponse.json({ error: error.message }, { status: 409 });
+        }
         console.error("Error creating payment:", error);
         return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 });
     }
