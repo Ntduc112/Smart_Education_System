@@ -383,6 +383,8 @@ function QuestionItem({
   submitted,
   correctAnswer,
   answerCorrect,
+  aiFeedback,
+  pointsEarned,
 }: {
   question: QuizQuestion;
   answer: string;
@@ -390,16 +392,22 @@ function QuestionItem({
   submitted: boolean;
   correctAnswer?: string;
   answerCorrect?: boolean | null;
+  aiFeedback?: string | null;
+  pointsEarned?: number | null;
 }) {
   const matchesRevealedAnswer = !!correctAnswer && answer.toLowerCase() === correctAnswer.toLowerCase();
+  // Câu tự luận do AI chấm: đã có kết quả khi answerCorrect không còn null (không phải đang chờ chấm tay).
+  const shortAnswerGraded = question.type === "SHORT_ANSWER" && !!question.ai_graded && answerCorrect !== null && answerCorrect !== undefined;
   const isCorrect = submitted && answer !== "" && (answerCorrect === true || matchesRevealedAnswer);
-  const isWrong = submitted && answer !== "" && question.type !== "SHORT_ANSWER" &&
+  const isWrong = submitted && answer !== "" &&
+    (question.type !== "SHORT_ANSWER" || shortAnswerGraded) &&
     (answerCorrect === false || (!!correctAnswer && !matchesRevealedAnswer));
   const hasGradedResult = isCorrect || isWrong;
+  const showGradedStyle = question.type !== "SHORT_ANSWER" || shortAnswerGraded;
 
   return (
     <div className={`rounded-xl border p-5 transition-colors ${
-      submitted && question.type !== "SHORT_ANSWER" && hasGradedResult
+      submitted && showGradedStyle && hasGradedResult
         ? isCorrect ? "border-green-200 bg-green-50/50" : "border-red-200 bg-red-50/50"
         : "border-[#DCE6F4] bg-white"
     }`}>
@@ -469,7 +477,17 @@ function QuestionItem({
             rows={3}
             className="w-full px-4 py-3 rounded-lg border border-[#DCE6F4] text-sm text-[#181d26] placeholder:text-[rgba(4,14,32,0.35)] focus:outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]/30 resize-none disabled:bg-[#F4F8FE] disabled:text-[rgba(4,14,32,0.55)]"
           />
-          {submitted && (
+          {submitted && shortAnswerGraded && (
+            <div className="mt-2 rounded-lg bg-[#F4F8FE] border border-[#DCE6F4] p-3">
+              <p className={`text-xs font-semibold ${isCorrect ? "text-green-700" : "text-amber-700"}`}>
+                AI chấm: {pointsEarned ?? 0}/{question.points} điểm
+              </p>
+              {aiFeedback && (
+                <p className="text-xs text-[rgba(4,14,32,0.6)] mt-1">{aiFeedback}</p>
+              )}
+            </div>
+          )}
+          {submitted && !shortAnswerGraded && (
             <p className="text-xs text-[rgba(4,14,32,0.45)] mt-1.5">Câu trả lời tự luận sẽ được giáo viên chấm điểm</p>
           )}
         </div>
@@ -764,6 +782,7 @@ function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
             );
           }
 
+          const shortAnswerAttempt = attemptToShow?.answers?.find((a: { question_id: string }) => a.question_id === q.id);
           return (
             <QuestionItem
               key={q.id}
@@ -773,6 +792,8 @@ function QuizView({ quizId, courseId }: { quizId: string; courseId: string }) {
               submitted={reviewingAttempt}
               correctAnswer={correctAnswerMap.get(q.id)}
               answerCorrect={answerResultMap.get(q.id)}
+              aiFeedback={shortAnswerAttempt?.ai_feedback}
+              pointsEarned={shortAnswerAttempt?.points_earned}
             />
           );
         })}

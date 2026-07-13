@@ -93,6 +93,7 @@ export interface QuizQuestion {
   points: number;
   order: number;
   options: QuizOption[];
+  ai_graded?: boolean;
   // Code-question fields
   language?: string | null;
   starter_code?: string | null;
