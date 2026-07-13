@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { BookOpen, ClipboardList, DoorOpen, GraduationCap, Users } from "lucide-react";
+import { BookOpen, ClipboardList, GraduationCap, Users } from "lucide-react";
 import { MainNavbar } from "@/app/_components/MainNavbar";
 import { type AssistantMembership, useAssistantCourses } from "./home.hook";
 
@@ -47,8 +47,7 @@ function CourseCard({ item, eagerImage }: { item: AssistantMembership; eagerImag
       </div>
       <div className="mt-4 flex items-center gap-4 text-xs text-[rgba(4,14,32,0.48)]"><span className="flex items-center gap-1"><BookOpen size={13} />{item.course._count.sections} chương</span><span className="flex items-center gap-1"><Users size={13} />{item.course._count.enrollments} học viên</span></div>
       <div className="mt-5 flex flex-col gap-2">
-        <Link href={`/teacher/courses/${item.course.id}/classroom`} className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#1b61c9] py-2.5 text-sm font-semibold text-white hover:bg-[#254fad]"><DoorOpen size={14} />Vào lớp học</Link>
-        <Link href={`/teacher/courses/${item.course.id}/edit`} className="flex w-full items-center justify-center rounded-xl border border-[#1b61c9]/25 bg-[#EAF1FC] py-2.5 text-sm font-semibold text-[#1b61c9] hover:bg-[#DDEAFB]">Mở không gian làm việc</Link>
+        <Link href={`/teacher/courses/${item.course.id}/edit`} className="flex w-full items-center justify-center rounded-xl bg-[#1b61c9] py-2.5 text-sm font-semibold text-white hover:bg-[#254fad]">Mở không gian làm việc</Link>
         {item.can_manage_quizzes && (
           <Link href={`/teacher/courses/${item.course.id}/essays`} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#DCE6F4] py-2.5 text-sm font-semibold text-[#181d26] hover:bg-[#F4F8FE]"><ClipboardList size={14} />Chấm tự luận</Link>
         )}

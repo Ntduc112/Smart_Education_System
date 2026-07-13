@@ -920,8 +920,7 @@ function LessonPanel({
         <div className={`${sectionCls} border-t border-[#DCE6F4] pt-5`}>
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-[#181d26]"><Video size={15} className="text-[#1b61c9]" />Xem trước video bài học</p>
-              <p className="mt-0.5 text-xs text-[rgba(4,14,32,0.45)]">Kiểm tra đúng video trước khi học viên truy cập.</p>
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-[#181d26]"><Video size={15} className="text-[#1b61c9]" />Video</p>
             </div>
           </div>
           {isR2Video && form.video_url !== lesson.video_url ? (
