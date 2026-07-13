@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import Groq from "groq-sdk";
 import { z } from "zod";
-import { getGroq } from "@/lib/ai/groq";
+
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const BodySchema = z.object({
   pdfText: z.string().min(1).max(12000),
@@ -49,7 +51,7 @@ Trả về JSON đúng schema:
 }`;
 
   try {
-    const completion = await getGroq().chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
