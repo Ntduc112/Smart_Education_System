@@ -246,7 +246,15 @@ export async function extractQuizFromPdf(file: File, lessonTitle: string): Promi
   const { data } = await api.post<{ questions: ParsedQuestion[] }>(
     "/teacher/ai/extract-quiz", { pdfText: up.pdfText }
   );
-  const questions = (data.questions ?? []).filter((q) => q?.content && q?.type);
+  // MCQ/TRUE_FALSE không xác định được đáp án đúng (Groq bỏ trống options) → loại,
+  // khớp đúng quy tắc đã yêu cầu AI trong prompt extract-quiz.
+  const questions = (data.questions ?? []).filter((q) => {
+    if (!q?.content || !q?.type) return false;
+    if (q.type === "MCQ" || q.type === "TRUE_FALSE") {
+      return Array.isArray(q.options) && q.options.some((o) => o.is_correct);
+    }
+    return true;
+  });
   if (!questions.length) return null;
 
   return {
